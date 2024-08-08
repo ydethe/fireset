@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Added test_server, renamed files ([d50da8b](https://github.com/ydethe/fireset/commit/d50da8bd9fcc355bd2002aa2f464c13e6fe93a4f) by Yann de The).
 - Added .env template ([b561d19](https://github.com/ydethe/fireset/commit/b561d19f7a45aa71acf5ba26e190c6e9c4e051da) by Yann de The).
 - Added logfire ([6ecf437](https://github.com/ydethe/fireset/commit/6ecf4375c0c9ee8e27d050e4a01926d2cc5756b5) by Yann de The).
 - Added Configuration ([70633de](https://github.com/ydethe/fireset/commit/70633dee5db6cee454c01b9000252f4ac69e2155) by Yann de The).

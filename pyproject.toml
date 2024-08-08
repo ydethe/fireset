@@ -17,7 +17,9 @@ authors = [
 dependencies = [
     "rich~=13.7.1",
     "pydantic-settings~=2.4",
-    "logfire~=0.50",
+    "logfire[fastapi]~=0.50",
+    "fastapi~=0.112",
+    "uvicorn~=0.30",
 ]
 requires-python = ">=3.9,<3.13"
 readme = "README.md"
