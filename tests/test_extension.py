@@ -40,6 +40,7 @@ def test_vcard():
                 pays="France",
                 telephone="",
                 type="type1",
+                prefered=True,
             ),
             Adresse(
                 id=2,
@@ -52,22 +53,26 @@ def test_vcard():
                 pays="France",
                 telephone="",
                 type="type2",
+                prefered=False,
             ),
         ],
         emails=[
-            Email(email="chantal.goya@gmail.com", type="type1"),
-            Email(email="chantal.goya@olympia.fr", type="type2"),
-            Email(email="chantal.goya@cours-florent-alumni.com", type="type3"),
+            Email(id=1, email="chantal.goya@gmail.com", type="type1", prefered=True),
+            Email(id=2, email="chantal.goya@olympia.fr", type="type2", prefered=False),
+            Email(
+                id=3, email="chantal.goya@cours-florent-alumni.com", type="type3", prefered=False
+            ),
         ],
         telephones=[
-            Telephone(telephone="+33 6 98 76 54 32", type="type1"),
-            Telephone(telephone="+33 1 23 45 67 89", type="type2"),
+            Telephone(id=1, telephone="+33 6 98 76 54 32", type="type1", prefered=True),
+            Telephone(id=2, telephone="+33 1 23 45 67 89", type="type2", prefered=False),
         ],
     )
 
-    print(contact.toVcard().decode("utf-8"))
+    data = contact.toVcard()
+    with open("tests/generated.vcf", "wb") as f:
+        f.write(data)
 
 
 if __name__ == "__main__":
-
     test_vcard()
