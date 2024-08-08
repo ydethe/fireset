@@ -94,9 +94,14 @@ class Contact:
             nb_item += 1
 
         if len(self.website) > 0:
-            res += f"item{nb_item}.URL;TYPE=pref:{self.website}\n".encode(encoding="utf-8")
+            res += f"item{nb_item}.URL:{self.website}\n".encode(encoding="utf-8")
             res += f"item{nb_item}.X-ABLABEL:_$!<HomePage>!$_\n".encode(encoding="utf-8")
             nb_item += 1
+
+        # TODO: Link to the detailed information on contacts.johncloud.fr
+        res += f"item{nb_item}.URL;TYPE=pref:{self.website}\n".encode(encoding="utf-8")
+        res += f"item{nb_item}.X-ABLABEL:_$!<HomePage>!$_\n".encode(encoding="utf-8")
+        nb_item += 1
 
         for email in self.emails:
             if email.prefered:
