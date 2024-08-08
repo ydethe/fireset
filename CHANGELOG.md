@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Added logfire ([6ecf437](https://github.com/ydethe/fireset/commit/6ecf4375c0c9ee8e27d050e4a01926d2cc5756b5) by Yann de The).
 - Added Configuration ([70633de](https://github.com/ydethe/fireset/commit/70633dee5db6cee454c01b9000252f4ac69e2155) by Yann de The).
 - Added checks to deactivated unset fields in vcard ([fe5ea31](https://github.com/ydethe/fireset/commit/fe5ea31784ec9b0be329f5af52e2672b4aef79bc) by Yann de The).
 - Added minimal server code ([02d092b](https://github.com/ydethe/fireset/commit/02d092bf6232c7b58467e7cf2152eb86f2a848d4) by Yann de The).
