@@ -14,11 +14,13 @@ description = "A cardDAV server that uses any backend to store the contacts' inf
 authors = [
     { name = "Yann de Thé", email = "ydethe@gmail.com" },
 ]
+# sudo apt install libpq5
 dependencies = [
     "pydantic-settings~=2.4",
     "uvicorn~=0.30",
     "starlette~=0.38",
     "logfire[starlette]~=0.50",
+    "psycopg[binary]~=3.2",
 ]
 requires-python = ">=3.10,<3.13"
 readme = "README.md"

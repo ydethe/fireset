@@ -26,7 +26,7 @@ import os
 import logging
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import AnyHttpUrl
+from pydantic import AnyHttpUrl, AnyUrl
 import logfire
 
 
@@ -35,6 +35,7 @@ class Settings(BaseSettings):
 
     server_url: AnyHttpUrl
     logfire_token: str
+    database_uri: AnyUrl
 
 
 settings = Settings()
