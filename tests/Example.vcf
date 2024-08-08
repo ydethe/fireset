@@ -1,24 +1,31 @@
 BEGIN:VCARD
 VERSION:3.0
-N:Doe;John;Q.,Public
-FN;CHARSET=UTF-8:John Doe
-TEL;TYPE=WORK,VOICE:(111) 555-1212
-TEL;TYPE=HOME,VOICE:(404) 555-1212
-TEL;TYPE=HOME,TYPE=VOICE:(404) 555-1213
-EMAIL;TYPE=PREF,INTERNET:forrestgump@example.com
-EMAIL;TYPE=INTERNET:example@example.com
-ADR;TYPE=HOME:;;42 Plantation St.;Baytown;LA;30314;United States of America
-URL:https://www.google.com/
-PHOTO;VALUE=URL;TYPE=PNG:http://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Example_svg.svg/200px-Example_svg.svg.png
-AGENT:BEGIN:VCARD
- VERSION:3.0
- N:Doe;John;Q.,Public
- FN:John Doe
- TEL;TYPE=WORK,VOICE:(111) 555-1212
- TEL;TYPE=HOME,VOICE:(404) 555-1212
- TEL;TYPE=HOME,TYPE=VOICE:(404) 555-1213
- EMAIL;TYPE=PREF,INTERNET:forrestgump@example.com
- EMAIL;TYPE=INTERNET:example@example.com
- PHOTO;VALUE=URL;TYPE=PNG:http://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Example_svg.svg/200px-Example_svg.svg.png
- END:VCARD
+N:Goya;Chantal;;Mme;
+FN:Mme Chantal Goya
+ORG:Opera Production;
+BDAY;VALUE=date:1942-06-10
+TITLE:Chanteuse
+NOTE:Notes
+item1.ADR;TYPE=pref:;;12 rue Chauvelot;Paris;;75015;France
+item1.X-ABLABEL:type1
+item1.X-ABADR:fr
+item2.ADR:;;1 rue de la Paix;Paris;;75008;France
+item2.X-ABLABEL:type2
+item2.X-ABADR:fr
+item3.TEL;TYPE=pref:+33 6 98 76 54 32
+item3.X-ABLABEL:type1
+item4.TEL:+33 1 23 45 67 89
+item4.X-ABLABEL:type2
+item5.URL;TYPE=pref:https://home.domain.tld
+item5.X-ABLABEL:_$!<HomePage>!$_
+item6.EMAIL;TYPE=pref;TYPE=INTERNET:chantal.goya@gmail.com
+item6.X-ABLABEL:type1
+item7.EMAIL;TYPE=INTERNET:chantal.goya@olympia.fr
+item7.X-ABLABEL:type2
+item8.EMAIL;TYPE=INTERNET:chantal.goya@cours-florent-alumni.com
+item8.X-ABLABEL:type3
+X-SOCIALPROFILE;X-USER=chantalgoya;TYPE=linkedin:https://www.linkedin.com/i
+ n/chantalgoya
+PRODID:-//Apple Inc.//iCloud Web Address Book 2418B22//EN
+REV:2024-08-07T18:50:42Z
 END:VCARD
