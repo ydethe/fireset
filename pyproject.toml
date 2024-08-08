@@ -15,13 +15,12 @@ authors = [
     { name = "Yann de Thé", email = "ydethe@gmail.com" },
 ]
 dependencies = [
-    "rich~=13.7.1",
     "pydantic-settings~=2.4",
-    "logfire[fastapi]~=0.50",
-    "fastapi~=0.112",
     "uvicorn~=0.30",
+    "starlette~=0.38",
+    "logfire[starlette]~=0.50",
 ]
-requires-python = ">=3.9,<3.13"
+requires-python = ">=3.10,<3.13"
 readme = "README.md"
 
 [project.urls]

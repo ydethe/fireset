@@ -25,12 +25,23 @@ To run tests, just run:
 import os
 import logging
 
-from rich.logging import RichHandler
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import AnyHttpUrl
+import logfire
 
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+
+    server_url: AnyHttpUrl
+    logfire_token: str
+
+
+settings = Settings()
+
+logfire.configure(token=settings.logfire_token)
 
 # création de l'objet logger qui va nous servir à écrire dans les logs
 logger = logging.getLogger("fireset_logger")
 logger.setLevel(os.environ.get("LOGLEVEL", "INFO").upper())
-
-stream_handler = RichHandler()
-logger.addHandler(stream_handler)
+logger.addHandler(logfire.LogfireLoggingHandler())
