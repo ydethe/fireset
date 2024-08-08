@@ -11,7 +11,7 @@ from . import logger
 from .Contact import contact_test
 
 
-# TODO: GET, PUT, DELETE methods
+# TODO: Implement GET, PUT, DELETE methods
 
 
 async def get_vcard(request: Request):
