@@ -1,1 +1,0 @@
-- [src/fireset/Contact.py#L101](src/fireset/Contact.py#L101): Link to the detailed information on contacts.johncloud.fr

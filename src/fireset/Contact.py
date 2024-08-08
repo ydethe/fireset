@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from datetime import datetime
 import typing as T
 
+from .Configuration import settings
+
 
 @dataclass
 class Adresse:
@@ -98,9 +100,10 @@ class Contact:
             res += f"item{nb_item}.X-ABLABEL:_$!<HomePage>!$_\n".encode(encoding="utf-8")
             nb_item += 1
 
-        # TODO: Link to the detailed information on contacts.johncloud.fr
-        res += f"item{nb_item}.URL;TYPE=pref:{self.website}\n".encode(encoding="utf-8")
-        res += f"item{nb_item}.X-ABLABEL:_$!<HomePage>!$_\n".encode(encoding="utf-8")
+        res += f"item{nb_item}.URL;TYPE=pref:{settings.server_url}{self.id}\n".encode(
+            encoding="utf-8"
+        )
+        res += f"item{nb_item}.X-ABLABEL:_$!<ProfilePage>!$_\n".encode(encoding="utf-8")
         nb_item += 1
 
         for email in self.emails:
