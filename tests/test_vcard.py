@@ -1,15 +1,3 @@
-# List vCards::
-
-#     curl http://localhost:8000/
-
-# Upload a vCard::
-
-#     curl -X PUT --data-binary @contact.vcf http://localhost:8000/johndoe
-
-# Download a vCard::
-
-#     curl http://localhost:8000/johndoe
-
 from datetime import datetime
 
 import logfire

@@ -186,7 +186,7 @@ class CardDAVRequestHandler(http.server.BaseHTTPRequestHandler):
             self._send_response(400)
 
 
-def run(server_class=http.server.HTTPServer, handler_class=CardDAVRequestHandler, port=8000):
+def run(server_class=http.server.HTTPServer, handler_class=CardDAVRequestHandler, port=8901):
     server_address = ("", port)
     httpd = server_class(server_address, handler_class)
     print(f"Serving CardDAV server on port {port}")
