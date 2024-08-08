@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
-- Added checks to deactivated unset fields in vcard ([86d86de](https://github.com/ydethe/fireset/commit/86d86de553d70431041060fc7cf18dc981fdd6cb) by Yann de The).
+- Added checks to deactivated unset fields in vcard ([873e486](https://github.com/ydethe/fireset/commit/873e4868dfcaebbfc00f1185c71a3aa389f58662) by Yann de The).
 - Added minimal server code ([02d092b](https://github.com/ydethe/fireset/commit/02d092bf6232c7b58467e7cf2152eb86f2a848d4) by Yann de The).
 
 <!-- insertion marker -->

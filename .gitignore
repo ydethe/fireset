@@ -2,6 +2,7 @@ htmldoc
 test_results.xml
 .pdm-python
 tests/vcards
+tests/generated.vcf
 
 *.db
 __pypackages__
