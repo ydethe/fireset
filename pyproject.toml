@@ -23,6 +23,7 @@ dependencies = [
     "sqlalchemy~=2.0",
     "psycopg2-binary~=2.9",
     "starlette-auth-toolkit~=0.5",
+    "passlib~=1.7",
 ]
 requires-python = ">=3.10,<3.13"
 readme = "README.md"

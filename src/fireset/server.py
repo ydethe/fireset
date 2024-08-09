@@ -15,7 +15,6 @@ from . import logger
 from .database import get_db_vcard, list_db_vcards
 
 
-# TODO: Implement GET, PUT, DELETE methods
 # Password hasher
 hasher = PBKDF2Hasher()
 
@@ -145,11 +144,13 @@ app = Starlette(
         Route("/", get_options, methods=["OPTIONS"]),
         Route("/", get_props, methods=["PROPFIND"]),
     ],
-    middleware=Middleware(
-        AuthenticationMiddleware,
-        backend=BasicAuth(),
-        on_error=lambda _, exc: PlainTextResponse(str(exc), status_code=401),
-    ),
+    middleware=[
+        Middleware(
+            AuthenticationMiddleware,
+            backend=BasicAuth(),
+            on_error=lambda _, exc: PlainTextResponse(str(exc), status_code=401),
+        )
+    ],
 )
 
 logfire.instrument_starlette(app)

@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Added auth ([91b7e12](https://github.com/ydethe/fireset/commit/91b7e121f3d4a868f8d65a10648b9d987dcbfe61) by Yann de The).
 - Added labels to docker compose ([5aaa6fe](https://github.com/ydethe/fireset/commit/5aaa6fe81c2422b7503967b67d21c18e47a78108) by Yann de The).
 - Added docker files ([2868810](https://github.com/ydethe/fireset/commit/2868810f7b88d3cafc02ee735d33b03367e05a5d) by Yann de The).
 - Added postgresql support ([1017ba4](https://github.com/ydethe/fireset/commit/1017ba46a1bf4290c1834e15b514db7aee58b9d7) by Yann de The).
