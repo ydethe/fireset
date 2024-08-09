@@ -24,6 +24,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added checks to deactivated unset fields in vcard ([fe5ea31](https://github.com/ydethe/fireset/commit/fe5ea31784ec9b0be329f5af52e2672b4aef79bc) by Yann de The).
 - Added minimal server code ([02d092b](https://github.com/ydethe/fireset/commit/02d092bf6232c7b58467e7cf2152eb86f2a848d4) by Yann de The).
 
+### Fixed
+
+- Fixed auth pb ([c32eda7](https://github.com/ydethe/fireset/commit/c32eda77d28db4526320915c1468514ddb533e87) by Yann de The).
+
 ### Removed
 
 - Removed PORT env variable ([bdc6d88](https://github.com/ydethe/fireset/commit/bdc6d888eabff5d33423f96de9d7f10bdbc4e0ae) by Yann de The).

@@ -40,7 +40,9 @@ class BasicAuth(BaseBasicAuth):
         if len(found) == 0:
             return None
         else:
-            return found[0]
+            u = found[0]
+            u.is_authenticated = False
+            return u
 
     async def verify_password(self, user: BookUser, password: str):
         user.is_authenticated = await hasher.verify(password, user.password)
