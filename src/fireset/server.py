@@ -27,7 +27,7 @@ class BasicAuth(BaseBasicAuth):
         return await hasher.verify(password, user["password"])
 
 
-async def get_vcard(request: Request):
+async def handle_get(request: Request):
     # logger.debug(f"Method '{request.method}'")
     # logger.debug(f"Path '{request.path_params}'")
     # logger.debug(f"Query params '{request.query_params}'")
@@ -48,7 +48,7 @@ async def get_vcard(request: Request):
     )
 
 
-async def get_options(request: Request):
+async def handle_options(request: Request):
     return Response(
         headers={
             "Allow": "OPTIONS, GET, PUT, DELETE, PROPFIND, REPORT",
@@ -58,7 +58,7 @@ async def get_options(request: Request):
     )
 
 
-async def get_props(request: Request):
+async def handle_propfind(request: Request):
     depth = request.headers.get("Depth", "0")
     content_length = int(request.headers.get("Content-Length", 0))
     request_body = await request.body()
@@ -140,9 +140,9 @@ async def get_props(request: Request):
 
 app = Starlette(
     routes=[
-        Route("/{card_id}", get_vcard, methods=["GET"]),
-        Route("/", get_options, methods=["OPTIONS"]),
-        Route("/", get_props, methods=["PROPFIND"]),
+        Route("/{card_id}", handle_get, methods=["GET"]),
+        Route("/", handle_options, methods=["OPTIONS"]),
+        Route("/", handle_propfind, methods=["PROPFIND"]),
     ],
     middleware=[
         Middleware(
