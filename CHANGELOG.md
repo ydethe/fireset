@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Added auth + access rightcheck decorator ([979bb0b](https://github.com/ydethe/fireset/commit/979bb0bf439cf7d1316d96a12e5d1eb581ceb420) by Yann de The).
 - Added carddav spec ([e116597](https://github.com/ydethe/fireset/commit/e1165975a5e3936d00c54a938e200f6b3ddad3c3) by Yann de The).
 - Added password in database ([329b106](https://github.com/ydethe/fireset/commit/329b106b9f6559a871bb4d09ad037fb51d155ffb) by Yann de The).
 - Added auth ([91b7e12](https://github.com/ydethe/fireset/commit/91b7e121f3d4a868f8d65a10648b9d987dcbfe61) by Yann de The).
