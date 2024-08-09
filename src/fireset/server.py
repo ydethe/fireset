@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from datetime import datetime
 import xml.etree.ElementTree as ET
 
@@ -18,19 +19,42 @@ from .database import get_db_vcard, list_db_vcards
 # Password hasher
 hasher = PBKDF2Hasher()
 
+
+@dataclass
+class BookUser:
+    email: str
+    password: str
+    is_authenticated: bool
+
+
+USERS = [
+    BookUser(
+        email="ydethe@gmail.com", password=hasher.make_sync("alicepwd"), is_authenticated=False
+    )
+]
+
 # Authentication backend
 class BasicAuth(BaseBasicAuth):
     async def find_user(self, username: str):
-        return {"email": "ydethe@gmail.com", "password": hasher.make_sync("alicepwd")}
+        found = [u for u in USERS if u.email == username]
+        if len(found) == 0:
+            return None
+        else:
+            return found[0]
 
-    async def verify_password(self, user: dict, password: str):
-        return await hasher.verify(password, user["password"])
+    async def verify_password(self, user: BookUser, password: str):
+        user.is_authenticated = await hasher.verify(password, user.password)
+        return user.is_authenticated
 
 
 async def handle_get(request: Request):
     # logger.debug(f"Method '{request.method}'")
     # logger.debug(f"Path '{request.path_params}'")
     # logger.debug(f"Query params '{request.query_params}'")
+    logger.info(f"{request.user}")
+    if not request.user.is_authenticated:
+        return Response(status_code=401)
+
     card_id = int(request.path_params.get("card_id", -1))
 
     contact = get_db_vcard(card_id)
@@ -49,6 +73,9 @@ async def handle_get(request: Request):
 
 
 async def handle_options(request: Request):
+    if not request.user.is_authenticated:
+        return Response(status_code=401)
+
     return Response(
         headers={
             "Allow": "OPTIONS, GET, PUT, DELETE, PROPFIND, REPORT",
@@ -59,6 +86,9 @@ async def handle_options(request: Request):
 
 
 async def handle_propfind(request: Request):
+    if not request.user.is_authenticated:
+        return Response(status_code=401)
+
     depth = request.headers.get("Depth", "0")
     content_length = int(request.headers.get("Content-Length", 0))
     request_body = await request.body()
