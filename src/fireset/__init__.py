@@ -36,7 +36,6 @@ class Settings(BaseSettings):
     server_url: AnyHttpUrl
     logfire_token: str
     database_uri: AnyUrl
-    port: int
 
 
 settings = Settings()

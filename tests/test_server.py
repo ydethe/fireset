@@ -1,23 +1,22 @@
 # List vCards::
 
-#     curl http://localhost:8901/
+#     curl http://localhost:8000/
 
 # Upload a vCard::
 
-#     curl -X PUT --data-binary @contact.vcf http://localhost:8901/johndoe
+#     curl -X PUT --data-binary @contact.vcf http://localhost:8000/52
 
 # Download a vCard::
 
-#     curl http://localhost:8901/johndoe
+#     curl http://localhost:8000/52
 
-from fireset import settings
 from fireset.server import app
 
 
 def test_server():
     import uvicorn
 
-    uvicorn.run(app, port=settings.port)
+    uvicorn.run(app, port=8000)
 
 
 if __name__ == "__main__":
