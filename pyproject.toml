@@ -22,6 +22,7 @@ dependencies = [
     "logfire[starlette]~=0.50",
     "sqlalchemy~=2.0",
     "psycopg2-binary~=2.9",
+    "starlette-auth-toolkit~=0.5",
 ]
 requires-python = ">=3.10,<3.13"
 readme = "README.md"

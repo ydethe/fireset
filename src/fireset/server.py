@@ -5,13 +5,27 @@ import logfire
 from starlette.applications import Starlette
 from starlette.routing import Route
 from starlette.requests import Request
-from starlette.responses import Response
+from starlette.responses import Response, PlainTextResponse
+from starlette.middleware import Middleware
+from starlette.middleware.authentication import AuthenticationMiddleware
+from starlette_auth_toolkit.base.backends import BaseBasicAuth
+from starlette_auth_toolkit.cryptography import PBKDF2Hasher
 
 from . import logger
 from .database import get_db_vcard, list_db_vcards
 
 
 # TODO: Implement GET, PUT, DELETE methods
+# Password hasher
+hasher = PBKDF2Hasher()
+
+# Authentication backend
+class BasicAuth(BaseBasicAuth):
+    async def find_user(self, username: str):
+        return {"email": "ydethe@gmail.com", "password": hasher.make_sync("alicepwd")}
+
+    async def verify_password(self, user: dict, password: str):
+        return await hasher.verify(password, user["password"])
 
 
 async def get_vcard(request: Request):
@@ -130,7 +144,12 @@ app = Starlette(
         Route("/{card_id}", get_vcard, methods=["GET"]),
         Route("/", get_options, methods=["OPTIONS"]),
         Route("/", get_props, methods=["PROPFIND"]),
-    ]
+    ],
+    middleware=Middleware(
+        AuthenticationMiddleware,
+        backend=BasicAuth(),
+        on_error=lambda _, exc: PlainTextResponse(str(exc), status_code=401),
+    ),
 )
 
 logfire.instrument_starlette(app)

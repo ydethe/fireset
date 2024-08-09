@@ -5,7 +5,7 @@
 groups = ["default", "dev", "doc", "maintain", "quality", "test"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:c7f3cefd2c248554081312d398041aafcd7522473f938b5bc1b4be425862d6ea"
+content_hash = "sha256:711cb1d59260fe772fef38932352202598cb4a20d4e1ce5654f1933d8fa7bcac"
 
 [[metadata.targets]]
 requires_python = ">=3.10,<3.13"
@@ -1887,6 +1887,20 @@ dependencies = [
 files = [
     {file = "starlette-0.38.2-py3-none-any.whl", hash = "sha256:4ec6a59df6bbafdab5f567754481657f7ed90dc9d69b0c9ff017907dd54faeff"},
     {file = "starlette-0.38.2.tar.gz", hash = "sha256:c7c0441065252160993a1a37cf2a73bb64d271b17303e0b0c1eb7191cfb12d75"},
+]
+
+[[package]]
+name = "starlette-auth-toolkit"
+version = "0.5.0"
+requires_python = ">=3.6"
+summary = "Authentication backends and helpers for Starlette-based ASGI apps and frameworks"
+groups = ["default"]
+dependencies = [
+    "starlette>=0.11",
+]
+files = [
+    {file = "starlette-auth-toolkit-0.5.0.tar.gz", hash = "sha256:9fd041aff89fffe67feb8cd94e10e2a8bbf609aeb6a736a74fce79320254e1f1"},
+    {file = "starlette_auth_toolkit-0.5.0-py3-none-any.whl", hash = "sha256:5b3b651bf05d3f0332846fac52b7266b06f05d9264c7a9d065ca51dccf765a7a"},
 ]
 
 [[package]]

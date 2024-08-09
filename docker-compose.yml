@@ -5,16 +5,14 @@ services:
       - SERVER_URL=https://$HOST
       - LOGFIRE_TOKEN=$LOGFIRE_TOKEN
       - DATABASE_URI=$DATABASE_URI
-    # ports:
-    #   - "8000:8000"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.$COMPOSE_PROJECT_NAME.rule=Host(`$HOST`)"
       - "traefik.http.routers.$COMPOSE_PROJECT_NAME.entrypoints=websecure"
       - "traefik.http.routers.$COMPOSE_PROJECT_NAME.tls.certresolver=letsencrypt"
       - "traefik.http.services.$COMPOSE_PROJECT_NAME.loadbalancer.server.port=8000"
-      - "homepage.group=$HOME_GROUP"
-      - "homepage.name=$HOME_NAME"
-      - "homepage.icon=$HOME_ICON"
-      - "homepage.href=https://$HOST"
-      - "homepage.description=$HOME_DESCRIPTION"
+
+networks:
+  default:
+    external: true
+    name: $TRAEFIK_NETWORK
