@@ -118,7 +118,11 @@ class Contact:
             nb_item += 1
 
         if len(self.linkedin_profil) > 0:
-            res += f"X-SOCIALPROFILE;X-USER={self.linkedin_profil};TYPE=linkedin:https://www.linkedin.com/in/{self.linkedin_profil}\n".encode(
+            elem = self.linkedin_profil.split("/")
+            while "" in elem:
+                elem.remove("")
+            user = elem[-1]
+            res += f"X-SOCIALPROFILE;X-USER={user};TYPE=linkedin:{self.linkedin_profil}\n".encode(
                 encoding="utf-8"
             )
         res += b"PRODID:fireset\n"

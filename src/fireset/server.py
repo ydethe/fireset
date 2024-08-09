@@ -9,6 +9,7 @@ from starlette.responses import Response
 
 from . import logger
 from .Contact import contact_test
+from .database import get_db_vcard
 
 
 # TODO: Implement GET, PUT, DELETE methods
@@ -18,9 +19,14 @@ async def get_vcard(request: Request):
     # logger.debug(f"Method '{request.method}'")
     # logger.debug(f"Path '{request.path_params}'")
     # logger.debug(f"Query params '{request.query_params}'")
+    card_id = int(request.path_params.get("card_id", -1))
+
+    contact = get_db_vcard(card_id)
+    if contact is None:
+        return Response(status_code=400)
+
     vcard_data = contact_test.toVcard()
-    card_id = request.path_params.get("card_id", "")
-    logger.info(f"Got card id {card_id}")
+
     return Response(
         content=vcard_data,
         headers={

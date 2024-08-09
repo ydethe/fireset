@@ -1,1 +1,1 @@
-- [src/fireset/server.py#L14](src/fireset/server.py#L14): Implement GET, PUT, DELETE methods
+- [src/fireset/server.py#L15](src/fireset/server.py#L15): Implement GET, PUT, DELETE methods
