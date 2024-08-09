@@ -65,7 +65,7 @@ def contact_from_db(db_contact: DbContact) -> Contact:
     date_exp = date(1, 1, 1)
     org_adr = None
     for expe in db_contact.experience_collection:
-        if expe.date_debut > date_exp:
+        if expe.date_debut is None or expe.date_debut > date_exp:
             date_exp = expe.date_debut
             db_org = expe.organisation
 
@@ -90,17 +90,32 @@ def contact_from_db(db_contact: DbContact) -> Contact:
     else:
         notes = db_contact.notes
 
+    if db_contact.date_naissance is None:
+        date_naissance = date(1, 1, 1)
+    else:
+        date_naissance = db_contact.date_naissance
+
+    if db_contact.website is None:
+        website = ""
+    else:
+        website = db_contact.website
+
+    if db_contact.linkedin_profile is None:
+        linkedin_profile = ""
+    else:
+        linkedin_profile = db_contact.linkedin_profile
+
     contact = Contact(
         id=db_contact.id,
         organisation=organisation,
         fonction=fonction,
         nom=db_contact.nom,
         prenom=db_contact.prenom,
-        website=db_contact.website,
-        date_naissance=db_contact.date_naissance,
+        website=website,
+        date_naissance=date_naissance,
         nom_de_naissance=db_contact.nom_de_naissance,
         civilite=db_contact.civilite,
-        linkedin_profil=db_contact.linkedin_profile,
+        linkedin_profil=linkedin_profile,
         notes=notes,
         photo=photo_data,
         adresses=adresses,
@@ -111,12 +126,12 @@ def contact_from_db(db_contact: DbContact) -> Contact:
     return contact
 
 
-def list_db_vcards() -> T.Iterator[Contact]:
+def list_db_vcards() -> T.Iterator[DbContact]:
     with Session(engine) as session:
         statement = select(DbContact)
 
         for db_contact in session.scalars(statement).all():
-            yield contact_from_db(db_contact)
+            yield db_contact
 
 
 def get_db_vcard(card_id: int) -> Contact | None:

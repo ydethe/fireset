@@ -8,8 +8,7 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 from . import logger
-from .Contact import contact_test
-from .database import get_db_vcard
+from .database import get_db_vcard, list_db_vcards
 
 
 # TODO: Implement GET, PUT, DELETE methods
@@ -25,7 +24,7 @@ async def get_vcard(request: Request):
     if contact is None:
         return Response(status_code=400)
 
-    vcard_data = contact_test.toVcard()
+    vcard_data = contact.toVcard()
 
     return Response(
         content=vcard_data,
@@ -93,8 +92,10 @@ async def get_props(request: Request):
         response = '<?xml version="1.0" encoding="UTF-8"?>\n'
         response += '<D:multistatus xmlns:D="DAV:">\n'
 
-        _list_vcards = [("1", 123)]
-        for vcard_id, vcard_len in _list_vcards:
+        for vcard in list_db_vcards():
+            vcard_id = vcard.id
+            vcard_len = 100
+
             response += "  <D:response>\n"
             response += f"    <D:href>/{vcard_id}</D:href>\n"
             response += "    <D:propstat>\n"
