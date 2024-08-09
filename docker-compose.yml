@@ -1,0 +1,10 @@
+services:
+  web:
+    build: .
+    environment:
+      - SERVER_URL=$SERVER_URL
+      - LOGFIRE_TOKEN=$LOGFIRE_TOKEN
+      - DATABASE_URI=$DATABASE_URI
+      - PORT=$PORT
+    ports:
+      - "$PORT:$PORT"

@@ -1,4 +1,4 @@
-from fireset.database import get_vcard
+from fireset.database import get_db_vcard
 
 
 if __name__ == "__main__":
@@ -6,5 +6,5 @@ if __name__ == "__main__":
     #     print(c)
     #     break
 
-    c = get_vcard(52)
+    c = get_db_vcard(52)
     print(c.toVcard().decode("utf-8"))

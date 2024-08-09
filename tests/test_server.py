@@ -10,13 +10,14 @@
 
 #     curl http://localhost:8901/johndoe
 
+from fireset import settings
 from fireset.server import app
 
 
 def test_server():
     import uvicorn
 
-    uvicorn.run(app, port=8901)
+    uvicorn.run(app, port=settings.port)
 
 
 if __name__ == "__main__":
