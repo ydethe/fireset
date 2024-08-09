@@ -1,8 +1,12 @@
+import functools
+import inspect
+import typing as T
 from dataclasses import dataclass
 from datetime import datetime
 import xml.etree.ElementTree as ET
 
 import logfire
+from starlette.exceptions import HTTPException
 from starlette.applications import Starlette
 from starlette.routing import Route
 from starlette.requests import Request
@@ -12,16 +16,47 @@ from starlette.middleware.authentication import AuthenticationMiddleware
 from starlette_auth_toolkit.base.backends import BaseBasicAuth
 from starlette_auth_toolkit.cryptography import PBKDF2Hasher
 
-from . import logger
+from . import logger, settings
 from .database import get_db_vcard, list_db_vcards, get_contact_from_email
 
+
+_P = T.ParamSpec("_P")
 
 # Password hasher
 hasher = PBKDF2Hasher()
 
 
+def authenticated(func: T.Callable[_P, T.Any]) -> T.Callable[_P, T.Any]:
+    """Decorator that checks whether the request is authenticated,
+    and ig the user has the right to access the resource
+
+    """
+    sig = inspect.signature(func)
+    for idx, parameter in enumerate(sig.parameters.values()):
+        if parameter.name == "request" or parameter.name == "websocket":
+            break
+    else:
+        raise Exception(f'No "request" or "websocket" argument on function "{func}"')
+
+    # Handle async request/response functions.
+    @functools.wraps(func)
+    async def async_wrapper(*args, **kwargs) -> T.Any:
+        request = kwargs.get("request", args[idx] if idx < len(args) else None)
+        assert isinstance(request, Request)
+        user: BookUser = request.user
+        user_id = int(request.path_params.get("user_id", -1))
+
+        if "authenticated" not in request.auth.scopes or user.id != user_id:
+            raise HTTPException(status_code=403)
+
+        return await func(*args, **kwargs)
+
+    return async_wrapper
+
+
 @dataclass
 class BookUser:
+    id: int
     email: str
     password: str
     is_authenticated: bool
@@ -35,7 +70,12 @@ class BookUser:
         if db_contact.hashed_password is None:
             return None
 
-        res = cls(email=email, password=db_contact.hashed_password, is_authenticated=False)
+        res = cls(
+            id=db_contact.id,
+            email=email,
+            password=db_contact.hashed_password,
+            is_authenticated=False,
+        )
 
         return res
 
@@ -51,12 +91,11 @@ class BasicAuth(BaseBasicAuth):
         return user.is_authenticated
 
 
+@authenticated
 async def handle_get(request: Request):
     # logger.debug(f"Method '{request.method}'")
     # logger.debug(f"Path '{request.path_params}'")
     # logger.debug(f"Query params '{request.query_params}'")
-    if not request.user.is_authenticated:
-        return Response(status_code=401)
 
     card_id = int(request.path_params.get("card_id", -1))
 
@@ -75,9 +114,13 @@ async def handle_get(request: Request):
     )
 
 
+@authenticated
 async def handle_options(request: Request):
-    if not request.user.is_authenticated:
-        return Response(status_code=401)
+    user: BookUser = request.user
+    user_id = int(request.path_params.get("user_id", -1))
+
+    if user.id != user_id:
+        return Response(status_code=403)
 
     return Response(
         headers={
@@ -88,10 +131,8 @@ async def handle_options(request: Request):
     )
 
 
+@authenticated
 async def handle_propfind(request: Request):
-    if not request.user.is_authenticated:
-        return Response(status_code=401)
-
     depth = request.headers.get("Depth", "0")
     content_length = int(request.headers.get("Content-Length", 0))
     request_body = await request.body()
@@ -171,10 +212,19 @@ async def handle_propfind(request: Request):
         return Response(status_code=400)
 
 
+@authenticated
+async def handle_wall_known(request: Request):
+    user: BookUser = request.user
+    return Response(
+        status_code=302, headers={"Location": f"{settings.server_url}/users/{user.id}/"}
+    )
+
+
 app = Starlette(
     routes=[
+        Route("/.well-known/carddav", handle_wall_known, methods=["GET"]),
         Route("/{card_id}", handle_get, methods=["GET"]),
-        Route("/", handle_options, methods=["OPTIONS"]),
+        Route("/users/{user_id}", handle_options, methods=["OPTIONS"]),
         Route("/", handle_propfind, methods=["PROPFIND"]),
     ],
     middleware=[
