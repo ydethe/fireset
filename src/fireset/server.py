@@ -13,7 +13,7 @@ from starlette_auth_toolkit.base.backends import BaseBasicAuth
 from starlette_auth_toolkit.cryptography import PBKDF2Hasher
 
 from . import logger
-from .database import get_db_vcard, list_db_vcards
+from .database import get_db_vcard, list_db_vcards, get_contact_from_email
 
 
 # Password hasher
@@ -26,23 +26,25 @@ class BookUser:
     password: str
     is_authenticated: bool
 
+    @classmethod
+    def from_db(cls, email: str) -> "BookUser":
+        db_contact = get_contact_from_email(email)
+        if db_contact is None:
+            return None
 
-USERS = [
-    BookUser(
-        email="ydethe@gmail.com", password=hasher.make_sync("alicepwd"), is_authenticated=False
-    )
-]
+        if db_contact.hashed_password is None:
+            return None
+
+        res = cls(email=email, password=db_contact.hashed_password, is_authenticated=False)
+
+        return res
+
 
 # Authentication backend
 class BasicAuth(BaseBasicAuth):
     async def find_user(self, username: str):
-        found = [u for u in USERS if u.email == username]
-        if len(found) == 0:
-            return None
-        else:
-            u = found[0]
-            u.is_authenticated = False
-            return u
+        u = BookUser.from_db(email=username)
+        return u
 
     async def verify_password(self, user: BookUser, password: str):
         user.is_authenticated = await hasher.verify(password, user.password)
@@ -53,7 +55,6 @@ async def handle_get(request: Request):
     # logger.debug(f"Method '{request.method}'")
     # logger.debug(f"Path '{request.path_params}'")
     # logger.debug(f"Query params '{request.query_params}'")
-    logger.info(f"{request.user}")
     if not request.user.is_authenticated:
         return Response(status_code=401)
 

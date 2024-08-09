@@ -24,6 +24,7 @@ Base.prepare(autoload_with=engine)
 DbContact = Base.classes.contact
 DbAdresse = Base.classes.adresse
 DbOrganisation = Base.classes.organisation
+DbEmail = Base.classes.email
 
 
 def adresse_from_db(db_adr: DbAdresse, typ: str) -> Adresse:
@@ -132,6 +133,18 @@ def list_db_vcards() -> T.Iterator[DbContact]:
 
         for db_contact in session.scalars(statement).all():
             yield db_contact
+
+
+def get_contact_from_email(email: str) -> DbContact | None:
+    with Session(engine) as session:
+        statement = select(DbEmail).filter_by(email=email)
+        email_objs = list(session.scalars(statement).all())
+        if len(email_objs) == 0:
+            return None
+
+        contact = session.get(DbContact, email_objs[0].contact_id)
+
+        return contact
 
 
 def get_db_vcard(card_id: int) -> Contact | None:

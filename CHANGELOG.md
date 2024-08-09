@@ -26,7 +26,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
-- Fixed auth pb ([c32eda7](https://github.com/ydethe/fireset/commit/c32eda77d28db4526320915c1468514ddb533e87) by Yann de The).
+- Fixed auth pb ([5eca055](https://github.com/ydethe/fireset/commit/5eca0557c44f8389bca6c3b96064cc707fd97253) by Yann de The).
 
 ### Removed
 
