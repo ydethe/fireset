@@ -37,7 +37,7 @@ def authenticated(func: T.Callable[_P, T.Any]) -> T.Callable[_P, T.Any]:
         user: BookUser = request.user
         user_id = int(request.path_params.get("user_id", -1))
 
-        if "authenticated" not in request.auth.scopes or user.id != user_id:
+        if "authenticated" not in request.auth.scopes or (user_id != -1 and user.id != user_id):
             raise HTTPException(status_code=403)
 
         return await func(*args, **kwargs)

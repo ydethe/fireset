@@ -152,7 +152,9 @@ app = Starlette(
         Route("/.well-known/carddav", handle_wall_known, methods=["GET"]),
         Route("/users/{user_id}", handle_options, methods=["OPTIONS"]),
         Route("/users/{user_id}", handle_propfind, methods=["PROPFIND"]),
-        Route("/{card_id}", handle_get, methods=["GET"]),
+        Route(
+            "/users/{user_id}/addressbooks/{addressbook_id}/{card_id}", handle_get, methods=["GET"]
+        ),
     ],
     middleware=[
         Middleware(
