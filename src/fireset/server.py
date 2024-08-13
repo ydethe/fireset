@@ -136,6 +136,14 @@ async def handle_users_propfind(request: Request):
 
 
 @authenticated
+async def handle_wall_known(request: Request):
+    user: BookUser = request.user
+    return Response(
+        status_code=302, headers={"Location": f"{settings.server_url}/users/{user.id}/"}
+    )
+
+
+@authenticated
 async def handle_addressbooks_options(request: Request):
     return Response(
         headers={
@@ -192,21 +200,13 @@ async def handle_addressbooks_propfind(request: Request):
         return Response(status_code=400)
 
 
-@authenticated
-async def handle_wall_known(request: Request):
-    user: BookUser = request.user
-    return Response(
-        status_code=302, headers={"Location": f"{settings.server_url}/users/{user.id}/"}
-    )
-
-
 app = Starlette(
     routes=[
         Route("/.well-known/carddav", handle_wall_known, methods=["GET"]),
         Route("/users/{user_id}", handle_users_options, methods=["OPTIONS"]),
         Route("/users/{user_id}", handle_users_propfind, methods=["PROPFIND"]),
-        Route("/users/{user_id}/addressbooks", handle_addressbooks_options, methods=["OPTIONS"]),
         Route("/users/{user_id}/addressbooks", handle_addressbooks_propfind, methods=["PROPFIND"]),
+        Route("/users/{user_id}/addressbooks", handle_addressbooks_options, methods=["OPTIONS"]),
         Route(
             "/users/{user_id}/addressbooks/{addressbook_id}/{card_id}.vcf",
             handle_card_get,
