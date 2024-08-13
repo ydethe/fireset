@@ -203,8 +203,10 @@ async def handle_addressbooks_propfind(request: Request):
 app = Starlette(
     routes=[
         Route("/.well-known/carddav", handle_wall_known, methods=["GET"]),
-        Route("/users/{user_id}", handle_users_options, methods=["OPTIONS"]),
+        Route("/", handle_users_propfind, methods=["PROPFIND"]),
+        Route("/principals", handle_users_propfind, methods=["PROPFIND"]),
         Route("/users/{user_id}", handle_users_propfind, methods=["PROPFIND"]),
+        Route("/users/{user_id}", handle_users_options, methods=["OPTIONS"]),
         Route("/users/{user_id}/addressbooks", handle_addressbooks_propfind, methods=["PROPFIND"]),
         Route("/users/{user_id}/addressbooks", handle_addressbooks_options, methods=["OPTIONS"]),
         Route(
