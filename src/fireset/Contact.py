@@ -59,6 +59,15 @@ class Contact:
 
         res += b"BEGIN:VCARD\n"
         res += b"VERSION:3.0\n"
+        res += f"SOURCE:vcf:{settings.server_url}users/52/addressbooks/main/{self.id}.vcf\n".encode(
+            encoding="utf-8"
+        )
+        for adresse in self.adresses:
+            res += f"SOURCE:adr:{adresse.id}\n".encode(encoding="utf-8")
+        for email in self.emails:
+            res += f"SOURCE:email:{email.id}\n".encode(encoding="utf-8")
+        for telephone in self.telephones:
+            res += f"SOURCE:tel:{telephone.id}\n".encode(encoding="utf-8")
         res += f"N:{self.nom};{self.prenom};;{self.civilite};\n".encode(encoding="utf-8")
         res += f"FN:{self.prenom} {self.nom}\n".encode(encoding="utf-8")
         if self.date_naissance.year > 1:
@@ -100,7 +109,7 @@ class Contact:
             res += f"item{nb_item}.X-ABLABEL:_$!<HomePage>!$_\n".encode(encoding="utf-8")
             nb_item += 1
 
-        res += f"item{nb_item}.URL;TYPE=pref:{settings.server_url}{self.id}\n".encode(
+        res += f"item{nb_item}.URL;TYPE=pref:{settings.server_url}users/52/addressbooks/main/{self.id}.vcf\n".encode(
             encoding="utf-8"
         )
         res += f"item{nb_item}.X-ABLABEL:_$!<ProfilePage>!$_\n".encode(encoding="utf-8")
