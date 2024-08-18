@@ -1,3 +1,0 @@
-include CHANGELOG.md COPYING.md DOCUMENTATION.md README.md
-include config rights
-include radicale.wsgi
