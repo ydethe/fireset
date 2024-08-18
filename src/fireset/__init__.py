@@ -43,7 +43,7 @@ def package_version(name):
     return metadata.version(name)
 
 
-VERSION: str = package_version("")
+VERSION: str = package_version("fireset")
 
 _application_instance: Optional["Application"] = None  # noqa: F821
 _application_config_path: Optional[str] = None
