@@ -29,8 +29,8 @@ from typing import Iterator, List, Mapping, MutableMapping, Optional, Tuple
 import vobject
 
 from .. import item as radicale_item
-from . import httputils, pathutils, rights, storage, types, xmlutils
-from ..app.base import Access, ApplicationBase
+from .. import httputils, pathutils, rights, storage, types, xmlutils
+from .base import Access, ApplicationBase
 from ..hook import HookNotificationItem, HookNotificationItemTypes
 from ..log import logger
 

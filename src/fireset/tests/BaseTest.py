@@ -32,7 +32,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import defusedxml.ElementTree as DefusedET
 
-from . import app, config, types, xmlutils
+from .. import app, config, types, xmlutils
 
 RESPONSES = Dict[str, Union[int, Dict[str, Tuple[int, ET.Element]]]]
 

@@ -84,7 +84,7 @@ def run() -> None:
         help="print debug information",
     )
 
-    for section, section_data in config.DEFAULT_CONFIG_SCHEMA.items():
+    for section, section_data in config.DEFAULT_CONFIG_SCHEMA().items():
         if section.startswith("_"):
             continue
         assert ":" not in section  # check field separator
@@ -132,7 +132,7 @@ def run() -> None:
     unrecognized_args = []
     while remaining_args:
         arg = remaining_args.pop(0)
-        for section, data in config.DEFAULT_CONFIG_SCHEMA.items():
+        for section, data in config.DEFAULT_CONFIG_SCHEMA().items():
             if "type" not in data and not data.get("_allow_extra"):
                 continue
             prefix = "--%s-" % section
@@ -157,7 +157,7 @@ def run() -> None:
     # Preliminary configure logging
     with contextlib.suppress(ValueError):
         log.set_level(
-            config.DEFAULT_CONFIG_SCHEMA["logging"]["level"]["type"](
+            config.DEFAULT_CONFIG_SCHEMA()["logging"]["level"]["type"](
                 vars(args_ns).get("c:logging:level", "")
             ),
             True,

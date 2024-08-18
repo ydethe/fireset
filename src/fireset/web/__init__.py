@@ -23,7 +23,7 @@ Take a look at the class ``BaseWeb`` if you want to implement your own.
 
 from typing import Sequence
 
-from . import config, httputils, types, utils
+from .. import config, httputils, types, utils
 
 INTERNAL_TYPES: Sequence[str] = ("none", "internal")
 

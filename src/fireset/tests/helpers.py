@@ -26,7 +26,7 @@ This module offers helpers to use in tests.
 
 import os
 
-from . import config, types
+from .. import config, types
 
 EXAMPLES_FOLDER: str = os.path.join(os.path.dirname(__file__), "static")
 

@@ -22,9 +22,9 @@ import re
 from http import client
 from urllib.parse import urlparse
 
-from . import httputils, pathutils, storage, types
-from .app.base import Access, ApplicationBase
-from .log import logger
+from .. import httputils, pathutils, storage, types
+from .base import Access, ApplicationBase
+from ..log import logger
 
 
 def get_server_netloc(environ: types.WSGIEnviron, force_port: bool = False):

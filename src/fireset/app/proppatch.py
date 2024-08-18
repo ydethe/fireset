@@ -25,8 +25,8 @@ from typing import Dict, Optional, cast
 import defusedxml.ElementTree as DefusedET
 
 from .. import item as radicale_item
-from . import httputils, storage, types, xmlutils
-from ..app.base import Access, ApplicationBase
+from .. import httputils, storage, types, xmlutils
+from .base import Access, ApplicationBase
 from ..hook import HookNotificationItem, HookNotificationItemTypes
 from ..log import logger
 

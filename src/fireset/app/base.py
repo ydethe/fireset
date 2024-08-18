@@ -22,7 +22,7 @@ import sys
 import xml.etree.ElementTree as ET
 from typing import Optional
 
-from . import (
+from .. import (
     auth,
     config,
     hook,
@@ -34,7 +34,7 @@ from . import (
     web,
     xmlutils,
 )
-from .log import logger
+from ..log import logger
 
 # HACK: https://github.com/tiran/defusedxml/issues/54
 import defusedxml.ElementTree as DefusedET  # isort:skip

@@ -125,409 +125,414 @@ def json_str(value: Any) -> dict:
 
 INTERNAL_OPTIONS: Sequence[str] = ("_allow_extra",)
 # Default configuration
-DEFAULT_CONFIG_SCHEMA: types.CONFIG_SCHEMA = OrderedDict(
-    [
-        (
-            "server",
-            OrderedDict(
-                [
-                    (
-                        "hosts",
-                        {
-                            "value": "localhost:5232",
-                            "help": "set server hostnames including ports",
-                            "aliases": (
-                                "-H",
-                                "--hosts",
-                            ),
-                            "type": list_of_ip_address,
-                        },
-                    ),
-                    (
-                        "max_connections",
-                        {
-                            "value": "8",
-                            "help": "maximum number of parallel connections",
-                            "type": positive_int,
-                        },
-                    ),
-                    (
-                        "max_content_length",
-                        {
-                            "value": "100000000",
-                            "help": "maximum size of request body in bytes",
-                            "type": positive_int,
-                        },
-                    ),
-                    (
-                        "timeout",
-                        {
-                            "value": "30",
-                            "help": "socket timeout",
-                            "type": positive_float,
-                        },
-                    ),
-                    (
-                        "ssl",
-                        {
-                            "value": "False",
-                            "help": "use SSL connection",
-                            "aliases": (
-                                "-s",
-                                "--ssl",
-                            ),
-                            "opposite_aliases": (
-                                "-S",
-                                "--no-ssl",
-                            ),
-                            "type": bool,
-                        },
-                    ),
-                    (
-                        "certificate",
-                        {
-                            "value": "/etc/ssl/.cert.pem",
-                            "help": "set certificate file",
-                            "aliases": (
-                                "-c",
-                                "--certificate",
-                            ),
-                            "type": filepath,
-                        },
-                    ),
-                    (
-                        "key",
-                        {
-                            "value": "/etc/ssl/.key.pem",
-                            "help": "set private key file",
-                            "aliases": (
-                                "-k",
-                                "--key",
-                            ),
-                            "type": filepath,
-                        },
-                    ),
-                    (
-                        "certificate_authority",
-                        {
-                            "value": "",
-                            "help": "set CA certificate for validating clients",
-                            "aliases": ("--certificate-authority",),
-                            "type": filepath,
-                        },
-                    ),
-                    (
-                        "_internal_server",
-                        {
-                            "value": "False",
-                            "help": "the internal server is used",
-                            "type": bool,
-                        },
-                    ),
-                ]
+def DEFAULT_CONFIG_SCHEMA() -> types.CONFIG_SCHEMA:
+    return OrderedDict(
+        [
+            (
+                "server",
+                OrderedDict(
+                    [
+                        (
+                            "hosts",
+                            {
+                                "value": "localhost:5232",
+                                "help": "set server hostnames including ports",
+                                "aliases": (
+                                    "-H",
+                                    "--hosts",
+                                ),
+                                "type": list_of_ip_address,
+                            },
+                        ),
+                        (
+                            "max_connections",
+                            {
+                                "value": "8",
+                                "help": "maximum number of parallel connections",
+                                "type": positive_int,
+                            },
+                        ),
+                        (
+                            "max_content_length",
+                            {
+                                "value": "100000000",
+                                "help": "maximum size of request body in bytes",
+                                "type": positive_int,
+                            },
+                        ),
+                        (
+                            "timeout",
+                            {
+                                "value": "30",
+                                "help": "socket timeout",
+                                "type": positive_float,
+                            },
+                        ),
+                        (
+                            "ssl",
+                            {
+                                "value": "False",
+                                "help": "use SSL connection",
+                                "aliases": (
+                                    "-s",
+                                    "--ssl",
+                                ),
+                                "opposite_aliases": (
+                                    "-S",
+                                    "--no-ssl",
+                                ),
+                                "type": bool,
+                            },
+                        ),
+                        (
+                            "certificate",
+                            {
+                                "value": "/etc/ssl/.cert.pem",
+                                "help": "set certificate file",
+                                "aliases": (
+                                    "-c",
+                                    "--certificate",
+                                ),
+                                "type": filepath,
+                            },
+                        ),
+                        (
+                            "key",
+                            {
+                                "value": "/etc/ssl/.key.pem",
+                                "help": "set private key file",
+                                "aliases": (
+                                    "-k",
+                                    "--key",
+                                ),
+                                "type": filepath,
+                            },
+                        ),
+                        (
+                            "certificate_authority",
+                            {
+                                "value": "",
+                                "help": "set CA certificate for validating clients",
+                                "aliases": ("--certificate-authority",),
+                                "type": filepath,
+                            },
+                        ),
+                        (
+                            "_internal_server",
+                            {
+                                "value": "False",
+                                "help": "the internal server is used",
+                                "type": bool,
+                            },
+                        ),
+                    ]
+                ),
             ),
-        ),
-        (
-            "encoding",
-            OrderedDict(
-                [
-                    (
-                        "request",
-                        {
-                            "value": "utf-8",
-                            "help": "encoding for responding requests",
-                            "type": str,
-                        },
-                    ),
-                    (
-                        "stock",
-                        {
-                            "value": "utf-8",
-                            "help": "encoding for storing local collections",
-                            "type": str,
-                        },
-                    ),
-                ]
+            (
+                "encoding",
+                OrderedDict(
+                    [
+                        (
+                            "request",
+                            {
+                                "value": "utf-8",
+                                "help": "encoding for responding requests",
+                                "type": str,
+                            },
+                        ),
+                        (
+                            "stock",
+                            {
+                                "value": "utf-8",
+                                "help": "encoding for storing local collections",
+                                "type": str,
+                            },
+                        ),
+                    ]
+                ),
             ),
-        ),
-        (
-            "auth",
-            OrderedDict(
-                [
-                    (
-                        "type",
-                        {
-                            "value": "none",
-                            "help": "authentication method",
-                            "type": str_or_callable,
-                            "internal": auth.INTERNAL_TYPES,
-                        },
-                    ),
-                    (
-                        "htpasswd_filename",
-                        {
-                            "value": "/etc//users",
-                            "help": "htpasswd filename",
-                            "type": filepath,
-                        },
-                    ),
-                    (
-                        "htpasswd_encryption",
-                        {
-                            "value": "md5",
-                            "help": "htpasswd encryption method",
-                            "type": str,
-                        },
-                    ),
-                    (
-                        "realm",
-                        {
-                            "value": "Radicale - Password Required",
-                            "help": "message displayed when a password is needed",
-                            "type": str,
-                        },
-                    ),
-                    (
-                        "delay",
-                        {
-                            "value": "1",
-                            "help": "incorrect authentication delay",
-                            "type": positive_float,
-                        },
-                    ),
-                    (
-                        "strip_domain",
-                        {
-                            "value": "False",
-                            "help": "strip domain from username",
-                            "type": bool,
-                        },
-                    ),
-                    (
-                        "lc_username",
-                        {
-                            "value": "False",
-                            "help": "convert username to lowercase, must be true for case-insensitive auth providers",
-                            "type": bool,
-                        },
-                    ),
-                ]
+            (
+                "auth",
+                OrderedDict(
+                    [
+                        (
+                            "type",
+                            {
+                                "value": "none",
+                                "help": "authentication method",
+                                "type": str_or_callable,
+                                "internal": auth.INTERNAL_TYPES,
+                            },
+                        ),
+                        (
+                            "htpasswd_filename",
+                            {
+                                "value": "/etc//users",
+                                "help": "htpasswd filename",
+                                "type": filepath,
+                            },
+                        ),
+                        (
+                            "htpasswd_encryption",
+                            {
+                                "value": "md5",
+                                "help": "htpasswd encryption method",
+                                "type": str,
+                            },
+                        ),
+                        (
+                            "realm",
+                            {
+                                "value": "Radicale - Password Required",
+                                "help": "message displayed when a password is needed",
+                                "type": str,
+                            },
+                        ),
+                        (
+                            "delay",
+                            {
+                                "value": "1",
+                                "help": "incorrect authentication delay",
+                                "type": positive_float,
+                            },
+                        ),
+                        (
+                            "strip_domain",
+                            {
+                                "value": "False",
+                                "help": "strip domain from username",
+                                "type": bool,
+                            },
+                        ),
+                        (
+                            "lc_username",
+                            {
+                                "value": "False",
+                                "help": "convert username to lowercase, must be true for case-insensitive auth providers",
+                                "type": bool,
+                            },
+                        ),
+                    ]
+                ),
             ),
-        ),
-        (
-            "rights",
-            OrderedDict(
-                [
-                    (
-                        "type",
-                        {
-                            "value": "owner_only",
-                            "help": "rights backend",
-                            "type": str_or_callable,
-                            "internal": rights.INTERNAL_TYPES,
-                        },
-                    ),
-                    (
-                        "permit_delete_collection",
-                        {
-                            "value": "True",
-                            "help": "permit delete of a collection",
-                            "type": bool,
-                        },
-                    ),
-                    (
-                        "file",
-                        {
-                            "value": "/etc//rights",
-                            "help": "file for rights management from_file",
-                            "type": filepath,
-                        },
-                    ),
-                ]
+            (
+                "rights",
+                OrderedDict(
+                    [
+                        (
+                            "type",
+                            {
+                                "value": "owner_only",
+                                "help": "rights backend",
+                                "type": str_or_callable,
+                                "internal": rights.INTERNAL_TYPES,
+                            },
+                        ),
+                        (
+                            "permit_delete_collection",
+                            {
+                                "value": "True",
+                                "help": "permit delete of a collection",
+                                "type": bool,
+                            },
+                        ),
+                        (
+                            "file",
+                            {
+                                "value": "/etc//rights",
+                                "help": "file for rights management from_file",
+                                "type": filepath,
+                            },
+                        ),
+                    ]
+                ),
             ),
-        ),
-        (
-            "storage",
-            OrderedDict(
-                [
-                    (
-                        "type",
-                        {
-                            "value": "multifilesystem",
-                            "help": "storage backend",
-                            "type": str_or_callable,
-                            "internal": storage.INTERNAL_TYPES,
-                        },
-                    ),
-                    (
-                        "filesystem_folder",
-                        {
-                            "value": "/var/lib//collections",
-                            "help": "path where collections are stored",
-                            "type": filepath,
-                        },
-                    ),
-                    (
-                        "max_sync_token_age",
-                        {
-                            "value": "2592000",  # 30 days
-                            "help": "delete sync token that are older",
-                            "type": positive_int,
-                        },
-                    ),
-                    (
-                        "skip_broken_item",
-                        {
-                            "value": "True",
-                            "help": "skip broken item instead of triggering exception",
-                            "type": bool,
-                        },
-                    ),
-                    (
-                        "hook",
-                        {
-                            "value": "",
-                            "help": "command that is run after changes to storage",
-                            "type": str,
-                        },
-                    ),
-                    (
-                        "_filesystem_fsync",
-                        {
-                            "value": "True",
-                            "help": "sync all changes to filesystem during requests",
-                            "type": bool,
-                        },
-                    ),
-                    (
-                        "predefined_collections",
-                        {
-                            "value": "",
-                            "help": "predefined user collections",
-                            "type": json_str,
-                        },
-                    ),
-                ]
+            (
+                "storage",
+                OrderedDict(
+                    [
+                        (
+                            "type",
+                            {
+                                "value": "multifilesystem",
+                                "help": "storage backend",
+                                "type": str_or_callable,
+                                "internal": storage.INTERNAL_TYPES,
+                            },
+                        ),
+                        (
+                            "filesystem_folder",
+                            {
+                                "value": "/var/lib//collections",
+                                "help": "path where collections are stored",
+                                "type": filepath,
+                            },
+                        ),
+                        (
+                            "max_sync_token_age",
+                            {
+                                "value": "2592000",  # 30 days
+                                "help": "delete sync token that are older",
+                                "type": positive_int,
+                            },
+                        ),
+                        (
+                            "skip_broken_item",
+                            {
+                                "value": "True",
+                                "help": "skip broken item instead of triggering exception",
+                                "type": bool,
+                            },
+                        ),
+                        (
+                            "hook",
+                            {
+                                "value": "",
+                                "help": "command that is run after changes to storage",
+                                "type": str,
+                            },
+                        ),
+                        (
+                            "_filesystem_fsync",
+                            {
+                                "value": "True",
+                                "help": "sync all changes to filesystem during requests",
+                                "type": bool,
+                            },
+                        ),
+                        (
+                            "predefined_collections",
+                            {
+                                "value": "",
+                                "help": "predefined user collections",
+                                "type": json_str,
+                            },
+                        ),
+                    ]
+                ),
             ),
-        ),
-        (
-            "hook",
-            OrderedDict(
-                [
-                    (
-                        "type",
-                        {
-                            "value": "none",
-                            "help": "hook backend",
-                            "type": str,
-                            "internal": hook.INTERNAL_TYPES,
-                        },
-                    ),
-                    (
-                        "rabbitmq_endpoint",
-                        {
-                            "value": "",
-                            "help": "endpoint where rabbitmq server is running",
-                            "type": str,
-                        },
-                    ),
-                    (
-                        "rabbitmq_topic",
-                        {"value": "", "help": "topic to declare queue", "type": str},
-                    ),
-                    (
-                        "rabbitmq_queue_type",
-                        {
-                            "value": "",
-                            "help": "queue type for topic declaration",
-                            "type": str,
-                        },
-                    ),
-                ]
+            (
+                "hook",
+                OrderedDict(
+                    [
+                        (
+                            "type",
+                            {
+                                "value": "none",
+                                "help": "hook backend",
+                                "type": str,
+                                "internal": hook.INTERNAL_TYPES,
+                            },
+                        ),
+                        (
+                            "rabbitmq_endpoint",
+                            {
+                                "value": "",
+                                "help": "endpoint where rabbitmq server is running",
+                                "type": str,
+                            },
+                        ),
+                        (
+                            "rabbitmq_topic",
+                            {
+                                "value": "",
+                                "help": "topic to declare queue",
+                                "type": str,
+                            },
+                        ),
+                        (
+                            "rabbitmq_queue_type",
+                            {
+                                "value": "",
+                                "help": "queue type for topic declaration",
+                                "type": str,
+                            },
+                        ),
+                    ]
+                ),
             ),
-        ),
-        (
-            "web",
-            OrderedDict(
-                [
-                    (
-                        "type",
-                        {
-                            "value": "internal",
-                            "help": "web interface backend",
-                            "type": str_or_callable,
-                            "internal": web.INTERNAL_TYPES,
-                        },
-                    )
-                ]
+            (
+                "web",
+                OrderedDict(
+                    [
+                        (
+                            "type",
+                            {
+                                "value": "internal",
+                                "help": "web interface backend",
+                                "type": str_or_callable,
+                                "internal": web.INTERNAL_TYPES,
+                            },
+                        )
+                    ]
+                ),
             ),
-        ),
-        (
-            "logging",
-            OrderedDict(
-                [
-                    (
-                        "level",
-                        {
-                            "value": "info",
-                            "help": "threshold for the logger",
-                            "type": logging_level,
-                        },
-                    ),
-                    (
-                        "bad_put_request_content",
-                        {
-                            "value": "False",
-                            "help": "log bad PUT request content",
-                            "type": bool,
-                        },
-                    ),
-                    (
-                        "backtrace_on_debug",
-                        {
-                            "value": "False",
-                            "help": "log backtrace on level=debug",
-                            "type": bool,
-                        },
-                    ),
-                    (
-                        "request_header_on_debug",
-                        {
-                            "value": "False",
-                            "help": "log request header on level=debug",
-                            "type": bool,
-                        },
-                    ),
-                    (
-                        "request_content_on_debug",
-                        {
-                            "value": "False",
-                            "help": "log request content on level=debug",
-                            "type": bool,
-                        },
-                    ),
-                    (
-                        "response_content_on_debug",
-                        {
-                            "value": "False",
-                            "help": "log response content on level=debug",
-                            "type": bool,
-                        },
-                    ),
-                    (
-                        "mask_passwords",
-                        {
-                            "value": "True",
-                            "help": "mask passwords in logs",
-                            "type": bool,
-                        },
-                    ),
-                ]
+            (
+                "logging",
+                OrderedDict(
+                    [
+                        (
+                            "level",
+                            {
+                                "value": "info",
+                                "help": "threshold for the logger",
+                                "type": logging_level,
+                            },
+                        ),
+                        (
+                            "bad_put_request_content",
+                            {
+                                "value": "False",
+                                "help": "log bad PUT request content",
+                                "type": bool,
+                            },
+                        ),
+                        (
+                            "backtrace_on_debug",
+                            {
+                                "value": "False",
+                                "help": "log backtrace on level=debug",
+                                "type": bool,
+                            },
+                        ),
+                        (
+                            "request_header_on_debug",
+                            {
+                                "value": "False",
+                                "help": "log request header on level=debug",
+                                "type": bool,
+                            },
+                        ),
+                        (
+                            "request_content_on_debug",
+                            {
+                                "value": "False",
+                                "help": "log request content on level=debug",
+                                "type": bool,
+                            },
+                        ),
+                        (
+                            "response_content_on_debug",
+                            {
+                                "value": "False",
+                                "help": "log response content on level=debug",
+                                "type": bool,
+                            },
+                        ),
+                        (
+                            "mask_passwords",
+                            {
+                                "value": "True",
+                                "help": "mask passwords in logs",
+                                "type": bool,
+                            },
+                        ),
+                    ]
+                ),
             ),
-        ),
-        ("headers", OrderedDict([("_allow_extra", str)])),
-    ]
-)
+            ("headers", OrderedDict([("_allow_extra", str)])),
+        ]
+    )
 
 
 def parse_compound_paths(*compound_paths: Optional[str]) -> List[Tuple[str, bool]]:
@@ -571,7 +576,7 @@ def load(paths: Optional[Iterable[Tuple[str, bool]]] = None) -> "Configuration":
     """
     if paths is None:
         paths = []
-    configuration = Configuration(DEFAULT_CONFIG_SCHEMA)
+    configuration = Configuration(DEFAULT_CONFIG_SCHEMA())
     for path, ignore_if_missing in paths:
         parser = RawConfigParser()
         config_source = "config file %r" % path

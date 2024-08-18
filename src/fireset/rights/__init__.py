@@ -34,7 +34,7 @@ Take a look at the class ``BaseRights`` if you want to implement your own.
 
 from typing import Sequence
 
-from . import config, utils
+from .. import config, utils
 
 INTERNAL_TYPES: Sequence[str] = (
     "authenticated",

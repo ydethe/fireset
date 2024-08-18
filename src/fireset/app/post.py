@@ -18,8 +18,8 @@
 # You should have received a copy of the GNU General Public License
 # along with Radicale.  If not, see <http://www.gnu.org/licenses/>.
 
-from . import httputils, types
-from .app.base import ApplicationBase
+from .. import httputils, types
+from .base import ApplicationBase
 
 
 class ApplicationPartPost(ApplicationBase):

@@ -17,9 +17,9 @@
 # You should have received a copy of the GNU General Public License
 # along with Radicale.  If not, see <http://www.gnu.org/licenses/>.
 
-from . import types
-from .app.base import ApplicationBase
-from .app.get import ApplicationPartGet
+from .. import types
+from .base import ApplicationBase
+from .get import ApplicationPartGet
 
 
 class ApplicationPartHead(ApplicationPartGet, ApplicationBase):

@@ -25,9 +25,9 @@ import xml.etree.ElementTree as ET
 from http import client
 from typing import Dict, Iterable, Iterator, List, Optional, Sequence, Tuple
 
-from . import httputils, pathutils, rights, storage, types, xmlutils
-from .app.base import Access, ApplicationBase
-from .log import logger
+from .. import httputils, pathutils, rights, storage, types, xmlutils
+from .base import Access, ApplicationBase
+from ..log import logger
 
 
 def xml_propfind(

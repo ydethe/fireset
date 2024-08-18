@@ -19,8 +19,8 @@
 
 from http import client
 
-from . import httputils, types
-from .app.base import ApplicationBase
+from .. import httputils, types
+from .base import ApplicationBase
 
 
 class ApplicationPartOptions(ApplicationBase):

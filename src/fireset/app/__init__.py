@@ -35,21 +35,21 @@ import zlib
 from http import client
 from typing import Iterable, List, Mapping, Tuple, Union
 
-from . import config, httputils, log, pathutils, types
-from .app.base import ApplicationBase
-from .app.delete import ApplicationPartDelete
-from .app.get import ApplicationPartGet
-from .app.head import ApplicationPartHead
-from .app.mkcalendar import ApplicationPartMkcalendar
-from .app.mkcol import ApplicationPartMkcol
-from .app.move import ApplicationPartMove
-from .app.options import ApplicationPartOptions
-from .app.post import ApplicationPartPost
-from .app.propfind import ApplicationPartPropfind
-from .app.proppatch import ApplicationPartProppatch
-from .app.put import ApplicationPartPut
-from .app.report import ApplicationPartReport
-from .log import logger
+from .. import config, httputils, log, pathutils, types
+from .base import ApplicationBase
+from .delete import ApplicationPartDelete
+from .get import ApplicationPartGet
+from .head import ApplicationPartHead
+from .mkcalendar import ApplicationPartMkcalendar
+from .mkcol import ApplicationPartMkcol
+from .move import ApplicationPartMove
+from .options import ApplicationPartOptions
+from .post import ApplicationPartPost
+from .propfind import ApplicationPartPropfind
+from .proppatch import ApplicationPartProppatch
+from .put import ApplicationPartPut
+from .report import ApplicationPartReport
+from ..log import logger
 
 # Combination of types.WSGIStartResponse and WSGI application return value
 _IntermediateResponse = Tuple[str, List[Tuple[str, str]], Iterable[bytes]]

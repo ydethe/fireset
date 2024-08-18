@@ -21,9 +21,9 @@ import xml.etree.ElementTree as ET
 from http import client
 from typing import Optional
 
-from . import httputils, storage, types, xmlutils
-from .app.base import Access, ApplicationBase
-from .hook import HookNotificationItem, HookNotificationItemTypes
+from .. import httputils, storage, types, xmlutils
+from .base import Access, ApplicationBase
+from ..hook import HookNotificationItem, HookNotificationItemTypes
 
 
 def xml_delete(

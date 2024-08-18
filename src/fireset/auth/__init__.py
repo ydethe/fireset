@@ -31,8 +31,8 @@ Take a look at the class ``BaseAuth`` if you want to implement your own.
 
 from typing import Sequence, Tuple, Union
 
-from . import config, types, utils
-from .log import logger
+from .. import config, types, utils
+from ..log import logger
 
 INTERNAL_TYPES: Sequence[str] = (
     "none",

@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- Fixed import ([15fe683](https://github.com/ydethe/fireset/commit/15fe683ae4868a2550dd400c30d4e1249c73ae23) by Yann de The).
 - Fixed auth pb ([5eca055](https://github.com/ydethe/fireset/commit/5eca0557c44f8389bca6c3b96064cc707fd97253) by Yann de The).
 
 ### Removed

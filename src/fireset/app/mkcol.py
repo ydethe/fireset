@@ -22,8 +22,8 @@ import socket
 from http import client
 
 from .. import item as radicale_item
-from . import httputils, pathutils, rights, storage, types, xmlutils
-from ..app.base import ApplicationBase
+from .. import httputils, pathutils, rights, storage, types, xmlutils
+from .base import ApplicationBase
 from ..log import logger
 
 

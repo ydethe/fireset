@@ -2,8 +2,8 @@ import json
 from enum import Enum
 from typing import Sequence
 
-from . import pathutils, utils
-from .log import logger
+from .. import pathutils, utils
+from ..log import logger
 
 INTERNAL_TYPES: Sequence[str] = ("none", "rabbitmq")
 

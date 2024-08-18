@@ -40,10 +40,11 @@ from typing import (
 
 import vobject
 
-from . import config
-from . import item as radicale_item
-from . import types, utils
-from .item import filter as radicale_filter
+from .. import config
+from .. import package_version
+from .. import item as radicale_item
+from .. import types, utils
+from ..item import filter as radicale_filter
 
 INTERNAL_TYPES: Sequence[str] = (
     "multifilesystem",
@@ -51,12 +52,12 @@ INTERNAL_TYPES: Sequence[str] = (
 )
 
 CACHE_DEPS: Sequence[str] = (
-    "",
+    "fireset",
     "vobject",
     "python-dateutil",
 )
 CACHE_VERSION: bytes = "".join(
-    "%s=%s;" % (pkg, utils.package_version(pkg)) for pkg in CACHE_DEPS
+    "%s=%s;" % (pkg, package_version(pkg)) for pkg in CACHE_DEPS
 ).encode()
 
 

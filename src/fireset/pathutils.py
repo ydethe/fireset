@@ -31,6 +31,7 @@ from typing import Iterator, Type, Union
 
 from . import storage, types
 
+
 if sys.platform == "win32":
     import ctypes
     import ctypes.wintypes

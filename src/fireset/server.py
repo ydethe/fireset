@@ -43,7 +43,8 @@ from typing import (
 )
 from urllib.parse import unquote
 
-from . import Application, config
+from .app import Application
+from . import config
 from .log import logger
 
 COMPAT_EAI_ADDRFAMILY: int
@@ -198,7 +199,7 @@ class ParallelHTTPSServer(ParallelHTTPServer):
             ("key", keyfile),
             ("certificate_authority", cafile),
         ]:
-            type_name = config.DEFAULT_CONFIG_SCHEMA["server"][name]["type"].__name__
+            type_name = config.DEFAULT_CONFIG_SCHEMA()["server"][name]["type"].__name__
             source = self.configuration.get_source("server", name)
             if name == "certificate_authority" and not filename:
                 continue

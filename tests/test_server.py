@@ -35,9 +35,9 @@ from urllib.error import HTTPError, URLError
 
 import pytest
 
-from . import config, server
-from .tests import BaseTest
-from .tests.helpers import configuration_to_dict, get_file_path
+from fireset import config, server
+from fireset.tests.BaseTest import BaseTest
+from fireset.tests.helpers import configuration_to_dict, get_file_path
 
 
 class DisabledRedirectHandler(request.HTTPRedirectHandler):
@@ -215,13 +215,9 @@ class TestBaseServerRequests(BaseTest):
                 if option.startswith("_"):
                     continue
                 long_name = "--%s-%s" % (section, option.replace("_", "-"))
-                if (
-                    with_bool_options
-                    and config.DEFAULT_CONFIG_SCHEMA.get(section, {})
-                    .get(option, {})
-                    .get("type")
-                    == bool
-                ):
+                if with_bool_options and not config.DEFAULT_CONFIG_SCHEMA().get(
+                    section, {}
+                ).get(option, {}).get("type"):
                     if not cast(bool, self.configuration.get(section, option)):
                         long_name = "--no%s" % long_name[1:]
                     config_args.append(long_name)

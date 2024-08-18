@@ -26,8 +26,8 @@ from typing import Callable, Iterable, Iterator, List, Optional, Sequence, Tuple
 
 import vobject
 
-from . import item, xmlutils
-from .log import logger
+from .. import item, xmlutils
+from ..log import logger
 
 DAY: timedelta = timedelta(days=1)
 SECOND: timedelta = timedelta(seconds=1)

@@ -19,7 +19,7 @@ Test web plugin.
 
 """
 
-from .tests import BaseTest
+from fireset.tests.BaseTest import BaseTest
 
 
 class TestBaseWebRequests(BaseTest):

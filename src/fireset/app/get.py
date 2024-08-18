@@ -21,9 +21,9 @@ import posixpath
 from http import client
 from urllib.parse import quote
 
-from . import httputils, pathutils, storage, types, xmlutils
-from .app.base import Access, ApplicationBase
-from .log import logger
+from .. import httputils, pathutils, storage, types, xmlutils
+from .base import Access, ApplicationBase
+from ..log import logger
 
 
 def propose_filename(collection: storage.BaseCollection) -> str:

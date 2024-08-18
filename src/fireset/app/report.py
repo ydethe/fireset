@@ -41,8 +41,8 @@ import vobject.base
 from vobject.base import ContentLine
 
 from .. import item as radicale_item
-from . import httputils, pathutils, storage, types, xmlutils
-from ..app.base import Access, ApplicationBase
+from .. import httputils, pathutils, storage, types, xmlutils
+from .base import Access, ApplicationBase
 from ..item import filter as radicale_filter
 from ..log import logger
 
