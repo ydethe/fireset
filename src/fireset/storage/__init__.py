@@ -26,46 +26,60 @@ Take a look at the class ``BaseCollection`` if you want to implement your own.
 import json
 import xml.etree.ElementTree as ET
 from hashlib import sha256
-from typing import (Iterable, Iterator, Mapping, Optional, Sequence, Set,
-                    Tuple, Union, overload)
+from typing import (
+    Iterable,
+    Iterator,
+    Mapping,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    Union,
+    overload,
+)
 
 import vobject
 
-from radicale import config
-from radicale import item as radicale_item
-from radicale import types, utils
-from radicale.item import filter as radicale_filter
+from . import config
+from . import item as radicale_item
+from . import types, utils
+from .item import filter as radicale_filter
 
-INTERNAL_TYPES: Sequence[str] = ("multifilesystem", "multifilesystem_nolock",)
+INTERNAL_TYPES: Sequence[str] = (
+    "multifilesystem",
+    "multifilesystem_nolock",
+)
 
-CACHE_DEPS: Sequence[str] = ("radicale", "vobject", "python-dateutil",)
+CACHE_DEPS: Sequence[str] = (
+    "",
+    "vobject",
+    "python-dateutil",
+)
 CACHE_VERSION: bytes = "".join(
-    "%s=%s;" % (pkg, utils.package_version(pkg))
-    for pkg in CACHE_DEPS).encode()
+    "%s=%s;" % (pkg, utils.package_version(pkg)) for pkg in CACHE_DEPS
+).encode()
 
 
 def load(configuration: "config.Configuration") -> "BaseStorage":
     """Load the storage module chosen in configuration."""
-    return utils.load_plugin(INTERNAL_TYPES, "storage", "Storage", BaseStorage,
-                             configuration)
+    return utils.load_plugin(
+        INTERNAL_TYPES, "storage", "Storage", BaseStorage, configuration
+    )
 
 
 class ComponentExistsError(ValueError):
-
     def __init__(self, path: str) -> None:
         message = "Component already exists: %r" % path
         super().__init__(message)
 
 
 class ComponentNotFoundError(ValueError):
-
     def __init__(self, path: str) -> None:
         message = "Component doesn't exist: %r" % path
         super().__init__(message)
 
 
 class BaseCollection:
-
     @property
     def path(self) -> str:
         """The sanitized path of the collection without leading or
@@ -108,17 +122,20 @@ class BaseCollection:
                  invalid.
 
         """
+
         def hrefs_iter() -> Iterator[str]:
             for item in self.get_all():
                 assert item.href
                 yield item.href
-        token = "http://radicale.org/ns/sync/%s" % self.etag.strip("\"")
+
+        token = "http://.org/ns/sync/%s" % self.etag.strip('"')
         if old_token:
             raise ValueError("Sync token are not supported")
         return token, hrefs_iter()
 
-    def get_multi(self, hrefs: Iterable[str]
-                  ) -> Iterable[Tuple[str, Optional["radicale_item.Item"]]]:
+    def get_multi(
+        self, hrefs: Iterable[str]
+    ) -> Iterable[Tuple[str, Optional["radicale_item.Item"]]]:
         """Fetch multiple items.
 
         It's not required to return the requested items in the correct order.
@@ -134,8 +151,9 @@ class BaseCollection:
         """Fetch all items."""
         raise NotImplementedError
 
-    def get_filtered(self, filters: Iterable[ET.Element]
-                     ) -> Iterable[Tuple["radicale_item.Item", bool]]:
+    def get_filtered(
+        self, filters: Iterable[ET.Element]
+    ) -> Iterable[Tuple["radicale_item.Item", bool]]:
         """Fetch all items with optional filtering.
 
         This can largely improve performance of reports depending on
@@ -148,8 +166,7 @@ class BaseCollection:
         """
         if not self.tag:
             return
-        tag, start, end, simple = radicale_filter.simplify_prefilters(
-            filters, self.tag)
+        tag, start, end, simple = radicale_filter.simplify_prefilters(filters, self.tag)
         for item in self.get_all():
             if tag is not None and tag != item.component_name:
                 continue
@@ -165,8 +182,7 @@ class BaseCollection:
                 return True
         return False
 
-    def upload(self, href: str, item: "radicale_item.Item") -> (
-            "radicale_item.Item"):
+    def upload(self, href: str, item: "radicale_item.Item") -> ("radicale_item.Item"):
         """Upload a new or replace an existing item."""
         raise NotImplementedError
 
@@ -179,13 +195,16 @@ class BaseCollection:
         raise NotImplementedError
 
     @overload
-    def get_meta(self, key: None = None) -> Mapping[str, str]: ...
+    def get_meta(self, key: None = None) -> Mapping[str, str]:
+        ...
 
     @overload
-    def get_meta(self, key: str) -> Optional[str]: ...
+    def get_meta(self, key: str) -> Optional[str]:
+        ...
 
-    def get_meta(self, key: Optional[str] = None
-                 ) -> Union[Mapping[str, str], Optional[str]]:
+    def get_meta(
+        self, key: Optional[str] = None
+    ) -> Union[Mapping[str, str], Optional[str]]:
         """Get metadata value for collection.
 
         Return the value of the property ``key``. If ``key`` is ``None`` return
@@ -236,7 +255,7 @@ class BaseCollection:
                         elif vtimezone:
                             vtimezone.append(line + "\r\n")
                             if depth == 2 and line.startswith("TZID:"):
-                                tzid = line[len("TZID:"):]
+                                tzid = line[len("TZID:") :]
                             elif depth == 2 and line.startswith("END:"):
                                 if tzid is None or tzid not in included_tzids:
                                     vtimezones += "".join(vtimezone)
@@ -262,28 +281,31 @@ class BaseCollection:
             template = template.serialize()
             template_insert_pos = template.find("\r\nEND:VCALENDAR\r\n") + 2
             assert template_insert_pos != -1
-            return (template[:template_insert_pos] +
-                    vtimezones + components +
-                    template[template_insert_pos:])
+            return (
+                template[:template_insert_pos]
+                + vtimezones
+                + components
+                + template[template_insert_pos:]
+            )
         if self.tag == "VADDRESSBOOK":
             return "".join((item.serialize() for item in self.get_all()))
         return ""
 
 
 class BaseStorage:
-
     def __init__(self, configuration: "config.Configuration") -> None:
         """Initialize BaseStorage.
 
-        ``configuration`` see ``radicale.config`` module.
+        ``configuration`` see ``.config`` module.
         The ``configuration`` must not change during the lifetime of
         this object, it is kept as an internal reference.
 
         """
         self.configuration = configuration
 
-    def discover(self, path: str, depth: str = "0") -> Iterable[
-            "types.CollectionOrItem"]:
+    def discover(
+        self, path: str, depth: str = "0"
+    ) -> Iterable["types.CollectionOrItem"]:
         """Discover a list of collections under the given ``path``.
 
         ``path`` is sanitized.
@@ -299,8 +321,9 @@ class BaseStorage:
         """
         raise NotImplementedError
 
-    def move(self, item: "radicale_item.Item", to_collection: BaseCollection,
-             to_href: str) -> None:
+    def move(
+        self, item: "radicale_item.Item", to_collection: BaseCollection, to_href: str
+    ) -> None:
         """Move an object.
 
         ``item`` is the item to move.
@@ -314,9 +337,11 @@ class BaseStorage:
         raise NotImplementedError
 
     def create_collection(
-            self, href: str,
-            items: Optional[Iterable["radicale_item.Item"]] = None,
-            props: Optional[Mapping[str, str]] = None) -> BaseCollection:
+        self,
+        href: str,
+        items: Optional[Iterable["radicale_item.Item"]] = None,
+        props: Optional[Mapping[str, str]] = None,
+    ) -> BaseCollection:
         """Create a collection.
 
         ``href`` is the sanitized path.

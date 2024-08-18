@@ -26,7 +26,7 @@ This module offers helpers to use in tests.
 
 import os
 
-from radicale import config, types
+from . import config, types
 
 EXAMPLES_FOLDER: str = os.path.join(os.path.dirname(__file__), "static")
 
@@ -42,8 +42,12 @@ def get_file_content(file_name: str) -> str:
 
 def configuration_to_dict(configuration: config.Configuration) -> types.CONFIG:
     """Convert configuration to a dict with raw values."""
-    return {section: {option: configuration.get_raw(section, option)
-                      for option in configuration.options(section)
-                      if not option.startswith("_")}
-            for section in configuration.sections()
-            if not section.startswith("_")}
+    return {
+        section: {
+            option: configuration.get_raw(section, option)
+            for option in configuration.options(section)
+            if not option.startswith("_")
+        }
+        for section in configuration.sections()
+        if not section.startswith("_")
+    }

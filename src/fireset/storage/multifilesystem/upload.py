@@ -22,26 +22,26 @@ import pickle
 import sys
 from typing import Iterable, Iterator, TextIO, cast
 
-import radicale.item as radicale_item
-from radicale import pathutils
-from radicale.storage.multifilesystem.base import CollectionBase
-from radicale.storage.multifilesystem.cache import CollectionPartCache
-from radicale.storage.multifilesystem.get import CollectionPartGet
-from radicale.storage.multifilesystem.history import CollectionPartHistory
+from .. import item as radicale_item
+from . import pathutils
+from .base import CollectionBase
+from .cache import CollectionPartCache
+from .get import CollectionPartGet
+from .history import CollectionPartHistory
 
 
-class CollectionPartUpload(CollectionPartGet, CollectionPartCache,
-                           CollectionPartHistory, CollectionBase):
-
-    def upload(self, href: str, item: radicale_item.Item
-               ) -> radicale_item.Item:
+class CollectionPartUpload(
+    CollectionPartGet, CollectionPartCache, CollectionPartHistory, CollectionBase
+):
+    def upload(self, href: str, item: radicale_item.Item) -> radicale_item.Item:
         if not pathutils.is_safe_filesystem_path_component(href):
             raise pathutils.UnsafePathError(href)
         try:
             self._store_item_cache(href, item)
         except Exception as e:
-            raise ValueError("Failed to store item %r in collection %r: %s" %
-                             (href, self.path, e)) from e
+            raise ValueError(
+                "Failed to store item %r in collection %r: %s" % (href, self.path, e)
+            ) from e
         path = pathutils.path_to_filesystem(self._filesystem_path, href)
         # TODO: better fix for "mypy"
         with self._atomic_write(path, newline="") as fo:  # type: ignore
@@ -58,25 +58,28 @@ class CollectionPartUpload(CollectionPartGet, CollectionPartCache,
             raise RuntimeError("Storage modified externally")
         return uploaded_item
 
-    def _upload_all_nonatomic(self, items: Iterable[radicale_item.Item],
-                              suffix: str = "") -> None:
+    def _upload_all_nonatomic(
+        self, items: Iterable[radicale_item.Item], suffix: str = ""
+    ) -> None:
         """Upload a new set of items non-atomic"""
+
         def is_safe_free_href(href: str) -> bool:
-            return (pathutils.is_safe_filesystem_path_component(href) and
-                    not os.path.lexists(
-                        os.path.join(self._filesystem_path, href)))
+            return pathutils.is_safe_filesystem_path_component(
+                href
+            ) and not os.path.lexists(os.path.join(self._filesystem_path, href))
 
         def get_safe_free_hrefs(uid: str) -> Iterator[str]:
-            for href in [uid if uid.lower().endswith(suffix.lower())
-                         else uid + suffix,
-                         radicale_item.get_etag(uid).strip('"') + suffix]:
+            for href in [
+                uid if uid.lower().endswith(suffix.lower()) else uid + suffix,
+                radicale_item.get_etag(uid).strip('"') + suffix,
+            ]:
                 if is_safe_free_href(href):
                     yield href
             yield radicale_item.find_available_uid(
-                lambda href: not is_safe_free_href(href), suffix)
+                lambda href: not is_safe_free_href(href), suffix
+            )
 
-        cache_folder = os.path.join(self._filesystem_path,
-                                    ".Radicale.cache", "item")
+        cache_folder = os.path.join(self._filesystem_path, ".Radicale.cache", "item")
         self._storage._makedirs_synced(cache_folder)
         for item in items:
             uid = item.uid
@@ -84,22 +87,33 @@ class CollectionPartUpload(CollectionPartGet, CollectionPartCache,
                 cache_content = self._item_cache_content(item)
             except Exception as e:
                 raise ValueError(
-                    "Failed to store item %r in temporary collection %r: %s" %
-                    (uid, self.path, e)) from e
+                    "Failed to store item %r in temporary collection %r: %s"
+                    % (uid, self.path, e)
+                ) from e
             for href in get_safe_free_hrefs(uid):
                 try:
-                    f = open(os.path.join(self._filesystem_path, href),
-                             "w", newline="", encoding=self._encoding)
+                    f = open(
+                        os.path.join(self._filesystem_path, href),
+                        "w",
+                        newline="",
+                        encoding=self._encoding,
+                    )
                 except OSError as e:
-                    if (sys.platform != "win32" and e.errno == errno.EINVAL or
-                            sys.platform == "win32" and e.errno == 123):
+                    if (
+                        sys.platform != "win32"
+                        and e.errno == errno.EINVAL
+                        or sys.platform == "win32"
+                        and e.errno == 123
+                    ):
                         # not a valid filename
                         continue
                     raise
                 break
             else:
-                raise RuntimeError("No href found for item %r in temporary "
-                                   "collection %r" % (uid, self.path))
+                raise RuntimeError(
+                    "No href found for item %r in temporary "
+                    "collection %r" % (uid, self.path)
+                )
             with f:
                 f.write(item.serialize())
                 f.flush()

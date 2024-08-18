@@ -24,11 +24,10 @@ Just check username for testing
 
 """
 
-from radicale import auth
+from . import auth
 
 
 class Auth(auth.BaseAuth):
-
     def login(self, login: str, password: str) -> str:
         if login == "tmp":
             return login

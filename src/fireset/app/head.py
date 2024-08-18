@@ -17,15 +17,15 @@
 # You should have received a copy of the GNU General Public License
 # along with Radicale.  If not, see <http://www.gnu.org/licenses/>.
 
-from radicale import types
-from radicale.app.base import ApplicationBase
-from radicale.app.get import ApplicationPartGet
+from . import types
+from .app.base import ApplicationBase
+from .app.get import ApplicationPartGet
 
 
 class ApplicationPartHead(ApplicationPartGet, ApplicationBase):
-
-    def do_HEAD(self, environ: types.WSGIEnviron, base_prefix: str, path: str,
-                user: str) -> types.WSGIResponse:
+    def do_HEAD(
+        self, environ: types.WSGIEnviron, base_prefix: str, path: str, user: str
+    ) -> types.WSGIResponse:
         """Manage HEAD request."""
         # Body is dropped in `Application.__call__` for HEAD requests
         return self.do_GET(environ, base_prefix, path, user)

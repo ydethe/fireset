@@ -27,12 +27,12 @@ It's intended for use with an external WSGI server.
 
 from typing import Tuple, Union
 
-from radicale import types
-from radicale.auth import none
+from . import types
+from .auth import none
 
 
 class Auth(none.Auth):
-
-    def get_external_login(self, environ: types.WSGIEnviron
-                           ) -> Union[Tuple[()], Tuple[str, str]]:
+    def get_external_login(
+        self, environ: types.WSGIEnviron
+    ) -> Union[Tuple[()], Tuple[str, str]]:
         return environ.get("REMOTE_USER", ""), ""

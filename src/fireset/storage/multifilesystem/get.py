@@ -22,22 +22,25 @@ import sys
 import time
 from typing import Iterable, Iterator, Optional, Tuple
 
-import radicale.item as radicale_item
-from radicale import pathutils
-from radicale.log import logger
-from radicale.storage import multifilesystem
-from radicale.storage.multifilesystem.base import CollectionBase
-from radicale.storage.multifilesystem.cache import CollectionPartCache
-from radicale.storage.multifilesystem.lock import CollectionPartLock
+from .. import item as radicale_item
+from . import pathutils
+from ...log import logger
+from .. import multifilesystem
+from .base import CollectionBase
+from .cache import CollectionPartCache
+from .lock import CollectionPartLock
 
 
-class CollectionPartGet(CollectionPartCache, CollectionPartLock,
-                        CollectionBase):
+class CollectionPartGet(CollectionPartCache, CollectionPartLock, CollectionBase):
 
     _item_cache_cleaned: bool
 
-    def __init__(self, storage_: "multifilesystem.Storage", path: str,
-                 filesystem_path: Optional[str] = None) -> None:
+    def __init__(
+        self,
+        storage_: "multifilesystem.Storage",
+        path: str,
+        filesystem_path: Optional[str] = None,
+    ) -> None:
         super().__init__(storage_, path, filesystem_path)
         self._item_cache_cleaned = False
 
@@ -52,18 +55,20 @@ class CollectionPartGet(CollectionPartCache, CollectionPartLock,
                 continue
             yield href
 
-    def _get(self, href: str, verify_href: bool = True
-             ) -> Optional[radicale_item.Item]:
+    def _get(self, href: str, verify_href: bool = True) -> Optional[radicale_item.Item]:
         if verify_href:
             try:
                 if not pathutils.is_safe_filesystem_path_component(href):
                     raise pathutils.UnsafePathError(href)
-                path = pathutils.path_to_filesystem(self._filesystem_path,
-                                                    href)
+                path = pathutils.path_to_filesystem(self._filesystem_path, href)
             except ValueError as e:
                 logger.debug(
                     "Can't translate name %r safely to filesystem in %r: %s",
-                    href, self.path, e, exc_info=True)
+                    href,
+                    self.path,
+                    e,
+                    exc_info=True,
+                )
                 return None
         else:
             path = os.path.join(self._filesystem_path, href)
@@ -74,8 +79,11 @@ class CollectionPartGet(CollectionPartCache, CollectionPartLock,
             return None
         except PermissionError:
             # Windows raises ``PermissionError`` when ``path`` is a directory
-            if (sys.platform == "win32" and
-                    os.path.isdir(path) and os.access(path, os.R_OK)):
+            if (
+                sys.platform == "win32"
+                and os.path.isdir(path)
+                and os.access(path, os.R_OK)
+            ):
                 return None
             raise
         # The hash of the component in the file system. This is used to check,
@@ -93,40 +101,54 @@ class CollectionPartGet(CollectionPartCache, CollectionPartLock,
                 if cache_content is None:
                     try:
                         vobject_items = radicale_item.read_components(
-                            raw_text.decode(self._encoding))
+                            raw_text.decode(self._encoding)
+                        )
                         radicale_item.check_and_sanitize_items(
-                            vobject_items, tag=self.tag)
-                        vobject_item, = vobject_items
+                            vobject_items, tag=self.tag
+                        )
+                        (vobject_item,) = vobject_items
                         temp_item = radicale_item.Item(
-                            collection=self, vobject_item=vobject_item)
+                            collection=self, vobject_item=vobject_item
+                        )
                         cache_content = self._store_item_cache(
-                            href, temp_item, cache_hash)
+                            href, temp_item, cache_hash
+                        )
                     except Exception as e:
                         if self._skip_broken_item:
-                            logger.warning("Skip broken item %r in %r: %s", href, self.path, e)
+                            logger.warning(
+                                "Skip broken item %r in %r: %s", href, self.path, e
+                            )
                             return None
                         else:
-                            raise RuntimeError("Failed to load item %r in %r: %s" %
-                                               (href, self.path, e)) from e
+                            raise RuntimeError(
+                                "Failed to load item %r in %r: %s"
+                                % (href, self.path, e)
+                            ) from e
                     # Clean cache entries once after the data in the file
                     # system was edited externally.
                     if not self._item_cache_cleaned:
                         self._item_cache_cleaned = True
                         self._clean_item_cache()
         last_modified = time.strftime(
-            "%a, %d %b %Y %H:%M:%S GMT",
-            time.gmtime(os.path.getmtime(path)))
+            "%a, %d %b %Y %H:%M:%S GMT", time.gmtime(os.path.getmtime(path))
+        )
         # Don't keep reference to ``vobject_item``, because it requires a lot
         # of memory.
         return radicale_item.Item(
-            collection=self, href=href, last_modified=last_modified,
-            etag=cache_content.etag, text=cache_content.text,
-            uid=cache_content.uid, name=cache_content.name,
+            collection=self,
+            href=href,
+            last_modified=last_modified,
+            etag=cache_content.etag,
+            text=cache_content.text,
+            uid=cache_content.uid,
+            name=cache_content.name,
             component_name=cache_content.tag,
-            time_range=(cache_content.start, cache_content.end))
+            time_range=(cache_content.start, cache_content.end),
+        )
 
-    def get_multi(self, hrefs: Iterable[str]
-                  ) -> Iterator[Tuple[str, Optional[radicale_item.Item]]]:
+    def get_multi(
+        self, hrefs: Iterable[str]
+    ) -> Iterator[Tuple[str, Optional[radicale_item.Item]]]:
         # It's faster to check for file name collisions here, because
         # we only need to call os.listdir once.
         files = None
@@ -136,10 +158,12 @@ class CollectionPartGet(CollectionPartCache, CollectionPartLock,
                 # empty and the for-loop is never executed.
                 files = os.listdir(self._filesystem_path)
             path = os.path.join(self._filesystem_path, href)
-            if (not pathutils.is_safe_filesystem_path_component(href) or
-                    href not in files and os.path.lexists(path)):
-                logger.debug("Can't translate name safely to filesystem: %r",
-                             href)
+            if (
+                not pathutils.is_safe_filesystem_path_component(href)
+                or href not in files
+                and os.path.lexists(path)
+            ):
+                logger.debug("Can't translate name safely to filesystem: %r", href)
                 yield (href, None)
             else:
                 yield (href, self._get(href, verify_href=False))

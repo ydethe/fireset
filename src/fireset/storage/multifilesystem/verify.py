@@ -19,20 +19,18 @@
 
 from typing import Iterator, Optional, Set
 
-from radicale import pathutils, storage, types
-from radicale.log import logger
-from radicale.storage.multifilesystem.base import StorageBase
-from radicale.storage.multifilesystem.discover import StoragePartDiscover
+from . import pathutils, storage, types
+from .log import logger
+from .storage.multifilesystem.base import StorageBase
+from .storage.multifilesystem.discover import StoragePartDiscover
 
 
 class StoragePartVerify(StoragePartDiscover, StorageBase):
-
     def verify(self) -> bool:
         item_errors = collection_errors = 0
 
         @types.contextmanager
-        def exception_cm(sane_path: str, href: Optional[str]
-                         ) -> Iterator[None]:
+        def exception_cm(sane_path: str, href: Optional[str]) -> Iterator[None]:
             nonlocal item_errors, collection_errors
             try:
                 yield
@@ -70,21 +68,26 @@ class StoragePartVerify(StoragePartDiscover, StorageBase):
                         has_child_collections = True
                         remaining_sane_paths.append(item.path)
                     elif item.uid in uids:
-                        logger.error("Invalid item %r in %r: UID conflict %r",
-                                     item.href, sane_path, item.uid)
+                        logger.error(
+                            "Invalid item %r in %r: UID conflict %r",
+                            item.href,
+                            sane_path,
+                            item.uid,
+                        )
                     else:
                         uids.add(item.uid)
                         count += 1
-                        logger.debug("Verified in %r item %r",
-                                     sane_path, item.href)
+                        logger.debug("Verified in %r item %r", sane_path, item.href)
                 assert collection
                 if item_errors == saved_item_errors:
                     if is_collection:
                         collection.sync()
                 if has_child_collections and collection.tag:
-                    logger.error("Invalid collection %r: %r must not have "
-                                 "child collections", sane_path,
-                                 collection.tag)
+                    logger.error(
+                        "Invalid collection %r: %r must not have " "child collections",
+                        sane_path,
+                        collection.tag,
+                    )
             if is_collection:
                 logger.info("Verified collect %r (items: %d)", sane_path, count)
         return item_errors == 0 and collection_errors == 0

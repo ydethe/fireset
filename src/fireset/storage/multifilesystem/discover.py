@@ -20,24 +20,26 @@ import os
 import posixpath
 from typing import Callable, ContextManager, Iterator, Optional, cast
 
-from radicale import pathutils, types
-from radicale.log import logger
-from radicale.storage import multifilesystem
-from radicale.storage.multifilesystem.base import StorageBase
+from . import pathutils, types
+from .log import logger
+from .storage import multifilesystem
+from .storage.multifilesystem.base import StorageBase
 
 
 @types.contextmanager
-def _null_child_context_manager(path: str,
-                                href: Optional[str]) -> Iterator[None]:
+def _null_child_context_manager(path: str, href: Optional[str]) -> Iterator[None]:
     yield
 
 
 class StoragePartDiscover(StorageBase):
-
     def discover(
-            self, path: str, depth: str = "0", child_context_manager: Optional[
-                Callable[[str, Optional[str]], ContextManager[None]]] = None
-            ) -> Iterator[types.CollectionOrItem]:
+        self,
+        path: str,
+        depth: str = "0",
+        child_context_manager: Optional[
+            Callable[[str, Optional[str]], ContextManager[None]]
+        ] = None,
+    ) -> Iterator[types.CollectionOrItem]:
         # assert isinstance(self, multifilesystem.Storage)
         if child_context_manager is None:
             child_context_manager = _null_child_context_manager
@@ -52,8 +54,9 @@ class StoragePartDiscover(StorageBase):
             filesystem_path = pathutils.path_to_filesystem(folder, sane_path)
         except ValueError as e:
             # Path is unsafe
-            logger.debug("Unsafe path %r requested from storage: %s",
-                         sane_path, e, exc_info=True)
+            logger.debug(
+                "Unsafe path %r requested from storage: %s", sane_path, e, exc_info=True
+            )
             return
 
         # Check if the path exists and if it leads to a collection or an item
@@ -68,8 +71,8 @@ class StoragePartDiscover(StorageBase):
 
         sane_path = "/".join(attributes)
         collection = self._collection_class(
-            cast(multifilesystem.Storage, self),
-            pathutils.unstrip_path(sane_path, True))
+            cast(multifilesystem.Storage, self), pathutils.unstrip_path(sane_path, True)
+        )
 
         if href:
             item = collection._get(href)
@@ -94,11 +97,11 @@ class StoragePartDiscover(StorageBase):
             href = entry.name
             if not pathutils.is_safe_filesystem_path_component(href):
                 if not href.startswith(".Radicale"):
-                    logger.debug("Skipping collection %r in %r",
-                                 href, sane_path)
+                    logger.debug("Skipping collection %r in %r", href, sane_path)
                 continue
             sane_child_path = posixpath.join(sane_path, href)
             child_path = pathutils.unstrip_path(sane_child_path, True)
             with child_context_manager(sane_child_path, None):
                 yield self._collection_class(
-                    cast(multifilesystem.Storage, self), child_path)
+                    cast(multifilesystem.Storage, self), child_path
+                )

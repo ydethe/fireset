@@ -2,8 +2,8 @@ import json
 from enum import Enum
 from typing import Sequence
 
-from radicale import pathutils, utils
-from radicale.log import logger
+from . import pathutils, utils
+from .log import logger
 
 INTERNAL_TYPES: Sequence[str] = ("none", "rabbitmq")
 
@@ -12,21 +12,26 @@ def load(configuration):
     """Load the storage module chosen in configuration."""
     try:
         return utils.load_plugin(
-            INTERNAL_TYPES, "hook", "Hook", BaseHook, configuration)
+            INTERNAL_TYPES, "hook", "Hook", BaseHook, configuration
+        )
     except Exception as e:
         logger.warn(e)
-        logger.warn("Hook \"%s\" failed to load, falling back to \"none\"." % configuration.get("hook", "type"))
+        logger.warn(
+            'Hook "%s" failed to load, falling back to "none".'
+            % configuration.get("hook", "type")
+        )
         configuration = configuration.copy()
         configuration.update({"hook": {"type": "none"}}, "hook", privileged=True)
         return utils.load_plugin(
-            INTERNAL_TYPES, "hook", "Hook", BaseHook, configuration)
+            INTERNAL_TYPES, "hook", "Hook", BaseHook, configuration
+        )
 
 
 class BaseHook:
     def __init__(self, configuration):
         """Initialize BaseHook.
 
-        ``configuration`` see ``radicale.config`` module.
+        ``configuration`` see ``.config`` module.
         The ``configuration`` must not change during the lifetime of
         this object, it is kept as an internal reference.
 
@@ -54,16 +59,10 @@ def _cleanup(path):
 
 
 class HookNotificationItem:
-
     def __init__(self, notification_item_type, path, content):
         self.type = notification_item_type.value
         self.point = _cleanup(path)
         self.content = content
 
     def to_json(self):
-        return json.dumps(
-            self,
-            default=lambda o: o.__dict__,
-            sort_keys=True,
-            indent=4
-        )
+        return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)

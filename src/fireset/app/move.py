@@ -22,9 +22,9 @@ import re
 from http import client
 from urllib.parse import urlparse
 
-from radicale import httputils, pathutils, storage, types
-from radicale.app.base import Access, ApplicationBase
-from radicale.log import logger
+from . import httputils, pathutils, storage, types
+from .app.base import Access, ApplicationBase
+from .log import logger
 
 
 def get_server_netloc(environ: types.WSGIEnviron, force_port: bool = False):
@@ -37,23 +37,25 @@ def get_server_netloc(environ: types.WSGIEnviron, force_port: bool = False):
         host = environ.get("HTTP_HOST") or environ["SERVER_NAME"]
         proto = environ["wsgi.url_scheme"]
         port = environ["SERVER_PORT"]
-    if (not force_port and port == ("443" if proto == "https" else "80") or
-            re.search(r":\d+$", host)):
+    if (
+        not force_port
+        and port == ("443" if proto == "https" else "80")
+        or re.search(r":\d+$", host)
+    ):
         return host
     return host + ":" + port
 
 
 class ApplicationPartMove(ApplicationBase):
-
-    def do_MOVE(self, environ: types.WSGIEnviron, base_prefix: str,
-                path: str, user: str) -> types.WSGIResponse:
+    def do_MOVE(
+        self, environ: types.WSGIEnviron, base_prefix: str, path: str, user: str
+    ) -> types.WSGIResponse:
         """Manage MOVE request."""
         raw_dest = environ.get("HTTP_DESTINATION", "")
         to_url = urlparse(raw_dest)
         to_netloc_with_port = to_url.netloc
         if to_url.port is None:
-            to_netloc_with_port += (":443" if to_url.scheme == "https"
-                                    else ":80")
+            to_netloc_with_port += ":443" if to_url.scheme == "https" else ":80"
         if to_netloc_with_port != get_server_netloc(environ, force_port=True):
             logger.info("Unsupported destination address: %r", raw_dest)
             # Remote destination server, not supported
@@ -63,10 +65,14 @@ class ApplicationPartMove(ApplicationBase):
             return httputils.NOT_ALLOWED
         to_path = pathutils.sanitize_path(to_url.path)
         if not (to_path + "/").startswith(base_prefix + "/"):
-            logger.warning("Destination %r from MOVE request on %r doesn't "
-                           "start with base prefix", to_path, path)
+            logger.warning(
+                "Destination %r from MOVE request on %r doesn't "
+                "start with base prefix",
+                to_path,
+                path,
+            )
             return httputils.NOT_ALLOWED
-        to_path = to_path[len(base_prefix):]
+        to_path = to_path[len(base_prefix) :]
         to_access = Access(self._rights, user, to_path)
         if not to_access.check("w"):
             return httputils.NOT_ALLOWED
@@ -75,8 +81,7 @@ class ApplicationPartMove(ApplicationBase):
             item = next(iter(self._storage.discover(path)), None)
             if not item:
                 return httputils.NOT_FOUND
-            if (not access.check("w", item) or
-                    not to_access.check("w", item)):
+            if not access.check("w", item) or not to_access.check("w", item):
                 return httputils.NOT_ALLOWED
             if isinstance(item, storage.BaseCollection):
                 # TODO: support moving collections
@@ -86,9 +91,9 @@ class ApplicationPartMove(ApplicationBase):
             if isinstance(to_item, storage.BaseCollection):
                 return httputils.FORBIDDEN
             to_parent_path = pathutils.unstrip_path(
-                posixpath.dirname(pathutils.strip_path(to_path)), True)
-            to_collection = next(iter(
-                self._storage.discover(to_parent_path)), None)
+                posixpath.dirname(pathutils.strip_path(to_path)), True
+            )
+            to_collection = next(iter(self._storage.discover(to_parent_path)), None)
             if not to_collection:
                 return httputils.CONFLICT
             assert isinstance(to_collection, storage.BaseCollection)
@@ -98,18 +103,22 @@ class ApplicationPartMove(ApplicationBase):
                 return httputils.FORBIDDEN
             if to_item and environ.get("HTTP_OVERWRITE", "F") != "T":
                 return httputils.PRECONDITION_FAILED
-            if (to_item and item.uid != to_item.uid or
-                    not to_item and
-                    to_collection.path != item.collection.path and
-                    to_collection.has_uid(item.uid)):
+            if (
+                to_item
+                and item.uid != to_item.uid
+                or not to_item
+                and to_collection.path != item.collection.path
+                and to_collection.has_uid(item.uid)
+            ):
                 return self._webdav_error_response(
-                    client.CONFLICT, "%s:no-uid-conflict" % (
-                        "C" if collection_tag == "VCALENDAR" else "CR"))
+                    client.CONFLICT,
+                    "%s:no-uid-conflict"
+                    % ("C" if collection_tag == "VCALENDAR" else "CR"),
+                )
             to_href = posixpath.basename(pathutils.strip_path(to_path))
             try:
                 self._storage.move(item, to_collection, to_href)
             except ValueError as e:
-                logger.warning(
-                    "Bad MOVE request on %r: %s", path, e, exc_info=True)
+                logger.warning("Bad MOVE request on %r: %s", path, e, exc_info=True)
                 return httputils.BAD_REQUEST
             return client.NO_CONTENT if to_item else client.CREATED, {}, None

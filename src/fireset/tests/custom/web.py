@@ -21,16 +21,17 @@ Custom web plugin.
 
 from http import client
 
-from radicale import httputils, types, web
+from . import httputils, types, web
 
 
 class Web(web.BaseWeb):
-
-    def get(self, environ: types.WSGIEnviron, base_prefix: str, path: str,
-            user: str) -> types.WSGIResponse:
+    def get(
+        self, environ: types.WSGIEnviron, base_prefix: str, path: str, user: str
+    ) -> types.WSGIResponse:
         return client.OK, {"Content-Type": "text/plain"}, "custom"
 
-    def post(self, environ: types.WSGIEnviron, base_prefix: str, path: str,
-             user: str) -> types.WSGIResponse:
+    def post(
+        self, environ: types.WSGIEnviron, base_prefix: str, path: str, user: str
+    ) -> types.WSGIResponse:
         content = httputils.read_request_body(self.configuration, environ)
         return client.OK, {"Content-Type": "text/plain"}, "echo:" + content

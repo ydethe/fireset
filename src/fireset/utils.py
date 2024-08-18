@@ -20,8 +20,8 @@ import sys
 from importlib import import_module
 from typing import Callable, Sequence, Type, TypeVar, Union
 
-from radicale import config
-from radicale.log import logger
+from . import config
+from .log import logger
 
 if sys.version_info < (3, 8):
     import pkg_resources
@@ -31,22 +31,27 @@ else:
 _T_co = TypeVar("_T_co", covariant=True)
 
 
-def load_plugin(internal_types: Sequence[str], module_name: str,
-                class_name: str, base_class: Type[_T_co],
-                configuration: "config.Configuration") -> _T_co:
+def load_plugin(
+    internal_types: Sequence[str],
+    module_name: str,
+    class_name: str,
+    base_class: Type[_T_co],
+    configuration: "config.Configuration",
+) -> _T_co:
     type_: Union[str, Callable] = configuration.get(module_name, "type")
     if callable(type_):
         logger.info("%s type is %r", module_name, type_)
         return type_(configuration)
     if type_ in internal_types:
-        module = "radicale.%s.%s" % (module_name, type_)
+        module = ".%s.%s" % (module_name, type_)
     else:
         module = type_
     try:
         class_ = getattr(import_module(module), class_name)
     except Exception as e:
-        raise RuntimeError("Failed to load %s module %r: %s" %
-                           (module_name, module, e)) from e
+        raise RuntimeError(
+            "Failed to load %s module %r: %s" % (module_name, module, e)
+        ) from e
     logger.info("%s type is %r", module_name, module)
     return class_(configuration)
 

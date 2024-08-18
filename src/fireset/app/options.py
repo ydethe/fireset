@@ -19,17 +19,19 @@
 
 from http import client
 
-from radicale import httputils, types
-from radicale.app.base import ApplicationBase
+from . import httputils, types
+from .app.base import ApplicationBase
 
 
 class ApplicationPartOptions(ApplicationBase):
-
-    def do_OPTIONS(self, environ: types.WSGIEnviron, base_prefix: str,
-                   path: str, user: str) -> types.WSGIResponse:
+    def do_OPTIONS(
+        self, environ: types.WSGIEnviron, base_prefix: str, path: str, user: str
+    ) -> types.WSGIResponse:
         """Manage OPTIONS request."""
         headers = {
             "Allow": ", ".join(
-                name[3:] for name in dir(self) if name.startswith("do_")),
-            "DAV": httputils.DAV_HEADERS}
+                name[3:] for name in dir(self) if name.startswith("do_")
+            ),
+            "DAV": httputils.DAV_HEADERS,
+        }
         return client.OK, headers, None

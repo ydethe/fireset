@@ -29,7 +29,7 @@ import threading
 from tempfile import TemporaryDirectory
 from typing import Iterator, Type, Union
 
-from radicale import storage, types
+from . import storage, types
 
 if sys.platform == "win32":
     import ctypes
@@ -49,7 +49,8 @@ if sys.platform == "win32":
             ("internal_high", ULONG_PTR),
             ("offset", ctypes.wintypes.DWORD),
             ("offset_high", ctypes.wintypes.DWORD),
-            ("h_event", ctypes.wintypes.HANDLE)]
+            ("h_event", ctypes.wintypes.HANDLE),
+        ]
 
     kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
     lock_file_ex = kernel32.LockFileEx
@@ -59,7 +60,8 @@ if sys.platform == "win32":
         ctypes.wintypes.DWORD,
         ctypes.wintypes.DWORD,
         ctypes.wintypes.DWORD,
-        ctypes.POINTER(Overlapped)]
+        ctypes.POINTER(Overlapped),
+    ]
     lock_file_ex.restype = ctypes.wintypes.BOOL
     unlock_file_ex = kernel32.UnlockFileEx
     unlock_file_ex.argtypes = [
@@ -67,7 +69,8 @@ if sys.platform == "win32":
         ctypes.wintypes.DWORD,
         ctypes.wintypes.DWORD,
         ctypes.wintypes.DWORD,
-        ctypes.POINTER(Overlapped)]
+        ctypes.POINTER(Overlapped),
+    ]
     unlock_file_ex.restype = ctypes.wintypes.BOOL
 else:
     import fcntl
@@ -83,9 +86,12 @@ if sys.platform == "linux":
         pass
     else:
         renameat2.argtypes = [
-            ctypes.c_int, ctypes.c_char_p,
-            ctypes.c_int, ctypes.c_char_p,
-            ctypes.c_uint]
+            ctypes.c_int,
+            ctypes.c_char_p,
+            ctypes.c_int,
+            ctypes.c_char_p,
+            ctypes.c_uint,
+        ]
         renameat2.restype = ctypes.c_int
 
 if sys.platform == "darwin":
@@ -129,19 +135,18 @@ class RwLock:
                     if not lock_file_ex(handle, flags, 0, 1, 0, overlapped):
                         raise ctypes.WinError()
                 except OSError as e:
-                    raise RuntimeError("Locking the storage failed: %s" % e
-                                       ) from e
+                    raise RuntimeError("Locking the storage failed: %s" % e) from e
             else:
                 _cmd = fcntl.LOCK_EX if mode == "w" else fcntl.LOCK_SH
                 try:
                     fcntl.flock(lock_file.fileno(), _cmd)
                 except OSError as e:
-                    raise RuntimeError("Locking the storage failed: %s" % e
-                                       ) from e
+                    raise RuntimeError("Locking the storage failed: %s" % e) from e
             with self._lock:
                 if self._writer or mode == "w" and self._readers != 0:
-                    raise RuntimeError("Locking the storage failed: "
-                                       "Guarantees failed")
+                    raise RuntimeError(
+                        "Locking the storage failed: " "Guarantees failed"
+                    )
                 if mode == "r":
                     self._readers += 1
                 else:
@@ -177,9 +182,16 @@ def rename_exchange(src: str, dst: str) -> None:
         try:
             dst_dir_fd = os.open(dst_dir, 0)
             try:
-                if renameat2(src_dir_fd, src_base_bytes,
-                             dst_dir_fd, dst_base_bytes,
-                             RENAME_EXCHANGE) == 0:
+                if (
+                    renameat2(
+                        src_dir_fd,
+                        src_base_bytes,
+                        dst_dir_fd,
+                        dst_base_bytes,
+                        RENAME_EXCHANGE,
+                    )
+                    == 0
+                ):
                     return
                 errno_ = ctypes.get_errno()
                 # Fallback if RENAME_EXCHANGE not supported by filesystem
@@ -189,8 +201,7 @@ def rename_exchange(src: str, dst: str) -> None:
                 os.close(dst_dir_fd)
         finally:
             os.close(src_dir_fd)
-    with TemporaryDirectory(prefix=".Radicale.tmp-", dir=src_dir
-                            ) as tmp_dir:
+    with TemporaryDirectory(prefix=".Radicale.tmp-", dir=src_dir) as tmp_dir:
         os.rename(dst, os.path.join(tmp_dir, "interim"))
         os.rename(src, dst)
         os.rename(os.path.join(tmp_dir, "interim"), src)
@@ -256,11 +267,15 @@ def is_safe_filesystem_path_component(path: str) -> bool:
 
     """
     return (
-        bool(path) and not os.path.splitdrive(path)[0] and
-        (sys.platform != "win32" or ":" not in path) and  # Block NTFS-ADS
-        not os.path.split(path)[0] and path not in (os.curdir, os.pardir) and
-        not path.startswith(".") and not path.endswith("~") and
-        is_safe_path_component(path))
+        bool(path)
+        and not os.path.splitdrive(path)[0]
+        and (sys.platform != "win32" or ":" not in path)
+        and not os.path.split(path)[0]  # Block NTFS-ADS
+        and path not in (os.curdir, os.pardir)
+        and not path.startswith(".")
+        and not path.endswith("~")
+        and is_safe_path_component(path)
+    )
 
 
 def path_to_filesystem(root: str, sane_path: str) -> str:
@@ -284,21 +299,19 @@ def path_to_filesystem(root: str, sane_path: str) -> str:
         safe_path = os.path.join(safe_path, part)
         # Check for conflicting files (e.g. case-insensitive file systems
         # or short names on Windows file systems)
-        if (os.path.lexists(safe_path) and
-                part not in (e.name for e in os.scandir(safe_path_parent))):
+        if os.path.lexists(safe_path) and part not in (
+            e.name for e in os.scandir(safe_path_parent)
+        ):
             raise CollidingPathError(part)
     return safe_path
 
 
 class UnsafePathError(ValueError):
-
     def __init__(self, path: str) -> None:
-        super().__init__("Can't translate name safely to filesystem: %r" %
-                         path)
+        super().__init__("Can't translate name safely to filesystem: %r" % path)
 
 
 class CollidingPathError(ValueError):
-
     def __init__(self, path: str) -> None:
         super().__init__("File name collision: %r" % path)
 
@@ -309,8 +322,9 @@ def name_from_path(path: str, collection: "storage.BaseCollection") -> str:
     start = unstrip_path(collection.path, True)
     if not (path + "/").startswith(start):
         raise ValueError("%r doesn't start with %r" % (path, start))
-    name = path[len(start):]
+    name = path[len(start) :]
     if name and not is_safe_path_component(name):
-        raise ValueError("%r is not a component in collection %r" %
-                         (name, collection.path))
+        raise ValueError(
+            "%r is not a component in collection %r" % (name, collection.path)
+        )
     return name

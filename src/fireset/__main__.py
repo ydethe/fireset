@@ -19,7 +19,7 @@
 """
 Radicale executable module.
 
-This module can be executed from a command line with ``$python -m radicale``.
+This module can be executed from a command line with ``$python -m ``.
 Uses the built-in WSGI server.
 
 """
@@ -33,8 +33,8 @@ import sys
 from types import FrameType
 from typing import List, Optional, cast
 
-from radicale import VERSION, config, log, server, storage, types
-from radicale.log import logger
+from . import VERSION, config, log, server, storage, types
+from .log import logger
 
 
 def run() -> None:
@@ -49,9 +49,11 @@ def run() -> None:
     # Raise SystemExit when signal arrives to run cleanup code
     # (like destructors, try-finish etc.), otherwise the process exits
     # without running any of them
-    def exit_signal_handler(signal_number: int,
-                            stack_frame: Optional[FrameType]) -> None:
+    def exit_signal_handler(
+        signal_number: int, stack_frame: Optional[FrameType]
+    ) -> None:
         sys.exit(1)
+
     for signal_number in exit_signal_numbers:
         signal.signal(signal_number, exit_signal_handler)
 
@@ -60,16 +62,27 @@ def run() -> None:
     # Get command-line arguments
     # Configuration options are stored in dest with format "c:SECTION:OPTION"
     parser = argparse.ArgumentParser(
-        prog="radicale", usage="%(prog)s [OPTIONS]", allow_abbrev=False)
+        prog="", usage="%(prog)s [OPTIONS]", allow_abbrev=False
+    )
 
     parser.add_argument("--version", action="version", version=VERSION)
-    parser.add_argument("--verify-storage", action="store_true",
-                        help="check the storage for errors and exit")
-    parser.add_argument("-C", "--config",
-                        help="use specific configuration files", nargs="*")
-    parser.add_argument("-D", "--debug", action="store_const", const="debug",
-                        dest="c:logging:level", default=argparse.SUPPRESS,
-                        help="print debug information")
+    parser.add_argument(
+        "--verify-storage",
+        action="store_true",
+        help="check the storage for errors and exit",
+    )
+    parser.add_argument(
+        "-C", "--config", help="use specific configuration files", nargs="*"
+    )
+    parser.add_argument(
+        "-D",
+        "--debug",
+        action="store_const",
+        const="debug",
+        dest="c:logging:level",
+        default=argparse.SUPPRESS,
+        help="print debug information",
+    )
 
     for section, section_data in config.DEFAULT_CONFIG_SCHEMA.items():
         if section.startswith("_"):
@@ -105,9 +118,12 @@ def run() -> None:
                 group.add_argument(*args, nargs="?", const="True", **kwargs)
                 # Opposite argument
                 kwargs["help"] = "do not %s (opposite of %s)" % (
-                    kwargs["help"], long_name)
-                group.add_argument(*opposite_args, action="store_const",
-                                   const="False", **kwargs)
+                    kwargs["help"],
+                    long_name,
+                )
+                group.add_argument(
+                    *opposite_args, action="store_const", const="False", **kwargs
+                )
             else:
                 del kwargs["type"]
                 group.add_argument(*args, **kwargs)
@@ -121,7 +137,7 @@ def run() -> None:
                 continue
             prefix = "--%s-" % section
             if arg.startswith(prefix):
-                arg = arg[len(prefix):]
+                arg = arg[len(prefix) :]
                 break
         else:
             unrecognized_args.append(arg)
@@ -136,13 +152,16 @@ def run() -> None:
             option = option.replace("-", "_")
         vars(args_ns)["c:%s:%s" % (section, option)] = value
     if unrecognized_args:
-        parser.error("unrecognized arguments: %s" %
-                     " ".join(unrecognized_args))
+        parser.error("unrecognized arguments: %s" % " ".join(unrecognized_args))
 
     # Preliminary configure logging
     with contextlib.suppress(ValueError):
-        log.set_level(config.DEFAULT_CONFIG_SCHEMA["logging"]["level"]["type"](
-            vars(args_ns).get("c:logging:level", "")), True)
+        log.set_level(
+            config.DEFAULT_CONFIG_SCHEMA["logging"]["level"]["type"](
+                vars(args_ns).get("c:logging:level", "")
+            ),
+            True,
+        )
 
     # Update Radicale configuration according to arguments
     arguments_config: types.MUTABLE_CONFIG = {}
@@ -153,11 +172,13 @@ def run() -> None:
             arguments_config[section][option] = value
 
     try:
-        configuration = config.load(config.parse_compound_paths(
-            config.DEFAULT_CONFIG_PATH,
-            os.environ.get("RADICALE_CONFIG"),
-            os.pathsep.join(args_ns.config) if args_ns.config is not None
-            else None))
+        configuration = config.load(
+            config.parse_compound_paths(
+                config.DEFAULT_CONFIG_PATH,
+                os.environ.get("RADICALE_CONFIG"),
+                os.pathsep.join(args_ns.config) if args_ns.config is not None else None,
+            )
+        )
         if arguments_config:
             configuration.update(arguments_config, "command line arguments")
     except Exception as e:
@@ -165,7 +186,10 @@ def run() -> None:
         sys.exit(1)
 
     # Configure logging
-    log.set_level(cast(str, configuration.get("logging", "level")), configuration.get("logging", "backtrace_on_debug"))
+    log.set_level(
+        cast(str, configuration.get("logging", "level")),
+        configuration.get("logging", "backtrace_on_debug"),
+    )
 
     # Log configuration after logger is configured
     default_config_active = True
@@ -175,7 +199,9 @@ def run() -> None:
             default_config_active = False
 
     if default_config_active:
-        logger.warning("%s", "No config file found/readable - only default config is active")
+        logger.warning(
+            "%s", "No config file found/readable - only default config is active"
+        )
 
     if args_ns.verify_storage:
         logger.info("Verifying storage")
@@ -186,8 +212,11 @@ def run() -> None:
                     logger.critical("Storage verification failed")
                     sys.exit(1)
         except Exception as e:
-            logger.critical("An exception occurred during storage "
-                            "verification: %s", e, exc_info=True)
+            logger.critical(
+                "An exception occurred during storage " "verification: %s",
+                e,
+                exc_info=True,
+            )
             sys.exit(1)
         return
 
@@ -195,17 +224,20 @@ def run() -> None:
     shutdown_socket, shutdown_socket_out = socket.socketpair()
 
     # Shutdown server when signal arrives
-    def shutdown_signal_handler(signal_number: int,
-                                stack_frame: Optional[FrameType]) -> None:
+    def shutdown_signal_handler(
+        signal_number: int, stack_frame: Optional[FrameType]
+    ) -> None:
         shutdown_socket.close()
+
     for signal_number in exit_signal_numbers:
         signal.signal(signal_number, shutdown_signal_handler)
 
     try:
         server.serve(configuration, shutdown_socket_out)
     except Exception as e:
-        logger.critical("An exception occurred during server startup: %s", e,
-                        exc_info=False)
+        logger.critical(
+            "An exception occurred during server startup: %s", e, exc_info=False
+        )
         sys.exit(1)
 
 

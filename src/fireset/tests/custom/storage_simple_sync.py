@@ -23,7 +23,7 @@ implementation for testing.
 
 """
 
-from radicale.storage import BaseCollection, multifilesystem
+from .storage import BaseCollection, multifilesystem
 
 
 class Collection(multifilesystem.Collection):

@@ -18,37 +18,44 @@
 
 import os
 
-from radicale import item as radicale_item
-from radicale import pathutils, storage
-from radicale.storage import multifilesystem
-from radicale.storage.multifilesystem.base import StorageBase
+from . import item as radicale_item
+from . import pathutils, storage
+from .storage import multifilesystem
+from .storage.multifilesystem.base import StorageBase
 
 
 class StoragePartMove(StorageBase):
-
-    def move(self, item: radicale_item.Item,
-             to_collection: storage.BaseCollection, to_href: str) -> None:
+    def move(
+        self,
+        item: radicale_item.Item,
+        to_collection: storage.BaseCollection,
+        to_href: str,
+    ) -> None:
         if not pathutils.is_safe_filesystem_path_component(to_href):
             raise pathutils.UnsafePathError(to_href)
         assert isinstance(to_collection, multifilesystem.Collection)
         assert isinstance(item.collection, multifilesystem.Collection)
         assert item.href
-        os.replace(pathutils.path_to_filesystem(
-                       item.collection._filesystem_path, item.href),
-                   pathutils.path_to_filesystem(
-                       to_collection._filesystem_path, to_href))
+        os.replace(
+            pathutils.path_to_filesystem(item.collection._filesystem_path, item.href),
+            pathutils.path_to_filesystem(to_collection._filesystem_path, to_href),
+        )
         self._sync_directory(to_collection._filesystem_path)
         if item.collection._filesystem_path != to_collection._filesystem_path:
             self._sync_directory(item.collection._filesystem_path)
         # Move the item cache entry
-        cache_folder = os.path.join(item.collection._filesystem_path,
-                                    ".Radicale.cache", "item")
-        to_cache_folder = os.path.join(to_collection._filesystem_path,
-                                       ".Radicale.cache", "item")
+        cache_folder = os.path.join(
+            item.collection._filesystem_path, ".Radicale.cache", "item"
+        )
+        to_cache_folder = os.path.join(
+            to_collection._filesystem_path, ".Radicale.cache", "item"
+        )
         self._makedirs_synced(to_cache_folder)
         try:
-            os.replace(os.path.join(cache_folder, item.href),
-                       os.path.join(to_cache_folder, to_href))
+            os.replace(
+                os.path.join(cache_folder, item.href),
+                os.path.join(to_cache_folder, to_href),
+            )
         except FileNotFoundError:
             pass
         else:

@@ -23,22 +23,28 @@ import time
 from hashlib import sha256
 from typing import BinaryIO, Iterable, NamedTuple, Optional, cast
 
-import radicale.item as radicale_item
-from radicale import pathutils, storage
-from radicale.log import logger
-from radicale.storage.multifilesystem.base import CollectionBase
+from .. import item as radicale_item
+from . import pathutils, storage
+from ..log import logger
+from ..storage.multifilesystem.base import CollectionBase
 
-CacheContent = NamedTuple("CacheContent", [
-    ("uid", str), ("etag", str), ("text", str), ("name", str), ("tag", str),
-    ("start", int), ("end", int)])
+CacheContent = NamedTuple(
+    "CacheContent",
+    [
+        ("uid", str),
+        ("etag", str),
+        ("text", str),
+        ("name", str),
+        ("tag", str),
+        ("start", int),
+        ("end", int),
+    ],
+)
 
 
 class CollectionPartCache(CollectionBase):
-
-    def _clean_cache(self, folder: str, names: Iterable[str],
-                     max_age: int = 0) -> None:
-        """Delete all ``names`` in ``folder`` that are older than ``max_age``.
-        """
+    def _clean_cache(self, folder: str, names: Iterable[str], max_age: int = 0) -> None:
+        """Delete all ``names`` in ``folder`` that are older than ``max_age``."""
         age_limit: Optional[float] = None
         if max_age is not None and max_age > 0:
             age_limit = time.time() - max_age
@@ -73,30 +79,34 @@ class CollectionPartCache(CollectionBase):
         return _hash.hexdigest()
 
     def _item_cache_content(self, item: radicale_item.Item) -> CacheContent:
-        return CacheContent(item.uid, item.etag, item.serialize(), item.name,
-                            item.component_name, *item.time_range)
+        return CacheContent(
+            item.uid,
+            item.etag,
+            item.serialize(),
+            item.name,
+            item.component_name,
+            *item.time_range
+        )
 
-    def _store_item_cache(self, href: str, item: radicale_item.Item,
-                          cache_hash: str = "") -> CacheContent:
+    def _store_item_cache(
+        self, href: str, item: radicale_item.Item, cache_hash: str = ""
+    ) -> CacheContent:
         if not cache_hash:
-            cache_hash = self._item_cache_hash(
-                item.serialize().encode(self._encoding))
-        cache_folder = os.path.join(self._filesystem_path, ".Radicale.cache",
-                                    "item")
+            cache_hash = self._item_cache_hash(item.serialize().encode(self._encoding))
+        cache_folder = os.path.join(self._filesystem_path, ".Radicale.cache", "item")
         content = self._item_cache_content(item)
         self._storage._makedirs_synced(cache_folder)
         # Race: Other processes might have created and locked the file.
         # TODO: better fix for "mypy"
         with contextlib.suppress(PermissionError), self._atomic_write(  # type: ignore
-                os.path.join(cache_folder, href), "wb") as fo:
+            os.path.join(cache_folder, href), "wb"
+        ) as fo:
             fb = cast(BinaryIO, fo)
             pickle.dump((cache_hash, *content), fb)
         return content
 
-    def _load_item_cache(self, href: str, cache_hash: str
-                         ) -> Optional[CacheContent]:
-        cache_folder = os.path.join(self._filesystem_path, ".Radicale.cache",
-                                    "item")
+    def _load_item_cache(self, href: str, cache_hash: str) -> Optional[CacheContent]:
+        cache_folder = os.path.join(self._filesystem_path, ".Radicale.cache", "item")
         try:
             with open(os.path.join(cache_folder, href), "rb") as f:
                 hash_, *remainder = pickle.load(f)
@@ -105,13 +115,22 @@ class CollectionPartCache(CollectionBase):
         except FileNotFoundError:
             pass
         except (pickle.UnpicklingError, ValueError) as e:
-            logger.warning("Failed to load item cache entry %r in %r: %s",
-                           href, self.path, e, exc_info=True)
+            logger.warning(
+                "Failed to load item cache entry %r in %r: %s",
+                href,
+                self.path,
+                e,
+                exc_info=True,
+            )
         return None
 
     def _clean_item_cache(self) -> None:
-        cache_folder = os.path.join(self._filesystem_path, ".Radicale.cache",
-                                    "item")
-        self._clean_cache(cache_folder, (
-            e.name for e in os.scandir(cache_folder) if not
-            os.path.isfile(os.path.join(self._filesystem_path, e.name))))
+        cache_folder = os.path.join(self._filesystem_path, ".Radicale.cache", "item")
+        self._clean_cache(
+            cache_folder,
+            (
+                e.name
+                for e in os.scandir(cache_folder)
+                if not os.path.isfile(os.path.join(self._filesystem_path, e.name))
+            ),
+        )

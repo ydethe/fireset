@@ -25,15 +25,19 @@ import xml.etree.ElementTree as ET
 from http import client
 from typing import Dict, Iterable, Iterator, List, Optional, Sequence, Tuple
 
-from radicale import httputils, pathutils, rights, storage, types, xmlutils
-from radicale.app.base import Access, ApplicationBase
-from radicale.log import logger
+from . import httputils, pathutils, rights, storage, types, xmlutils
+from .app.base import Access, ApplicationBase
+from .log import logger
 
 
-def xml_propfind(base_prefix: str, path: str,
-                 xml_request: Optional[ET.Element],
-                 allowed_items: Iterable[Tuple[types.CollectionOrItem, str]],
-                 user: str, encoding: str) -> Optional[ET.Element]:
+def xml_propfind(
+    base_prefix: str,
+    path: str,
+    xml_request: Optional[ET.Element],
+    allowed_items: Iterable[Tuple[types.CollectionOrItem, str]],
+    user: str,
+    encoding: str,
+) -> Optional[ET.Element]:
     """Read and answer PROPFIND requests.
 
     Read rfc4918-9.1 for info.
@@ -44,8 +48,11 @@ def xml_propfind(base_prefix: str, path: str,
     """
     # A client may choose not to submit a request body.  An empty PROPFIND
     # request body MUST be treated as if it were an 'allprop' request.
-    top_element = (xml_request[0] if xml_request is not None else
-                   ET.Element(xmlutils.make_clark("D:allprop")))
+    top_element = (
+        xml_request[0]
+        if xml_request is not None
+        else ET.Element(xmlutils.make_clark("D:allprop"))
+    )
 
     props: List[str] = []
     allprop = False
@@ -68,17 +75,34 @@ def xml_propfind(base_prefix: str, path: str,
 
     for item, permission in allowed_items:
         write = permission == "w"
-        multistatus.append(xml_propfind_response(
-            base_prefix, path, item, props, user, encoding, write=write,
-            allprop=allprop, propname=propname))
+        multistatus.append(
+            xml_propfind_response(
+                base_prefix,
+                path,
+                item,
+                props,
+                user,
+                encoding,
+                write=write,
+                allprop=allprop,
+                propname=propname,
+            )
+        )
 
     return multistatus
 
 
 def xml_propfind_response(
-        base_prefix: str, path: str, item: types.CollectionOrItem,
-        props: Sequence[str], user: str, encoding: str, write: bool = False,
-        propname: bool = False, allprop: bool = False) -> ET.Element:
+    base_prefix: str,
+    path: str,
+    item: types.CollectionOrItem,
+    props: Sequence[str],
+    user: str,
+    encoding: str,
+    write: bool = False,
+    propname: bool = False,
+    allprop: bool = False,
+) -> ET.Element:
     """Build and return a PROPFIND response."""
     if propname and allprop or (props and (propname or allprop)):
         raise ValueError("Only use one of props, propname and allprops")
@@ -94,8 +118,7 @@ def xml_propfind_response(
         assert item.collection is not None
         assert item.href
         collection = item.collection
-        uri = pathutils.unstrip_path(posixpath.join(
-            collection.path, item.href))
+        uri = pathutils.unstrip_path(posixpath.join(collection.path, item.href))
     response = ET.Element(xmlutils.make_clark("D:response"))
     href = ET.Element(xmlutils.make_clark("D:href"))
     href.text = xmlutils.make_href(base_prefix, uri)
@@ -129,8 +152,7 @@ def xml_propfind_response(
                 props.append(xmlutils.make_clark("D:sync-token"))
             if collection.tag == "VCALENDAR":
                 props.append(xmlutils.make_clark("CS:getctag"))
-                props.append(
-                    xmlutils.make_clark("C:supported-calendar-component-set"))
+                props.append(xmlutils.make_clark("C:supported-calendar-component-set"))
 
             meta = collection.get_meta()
             for tag in meta:
@@ -162,11 +184,17 @@ def xml_propfind_response(
             child_element = ET.Element(xmlutils.make_clark("D:href"))
             child_element.text = xmlutils.make_href(base_prefix, "/")
             element.append(child_element)
-        elif (tag in (xmlutils.make_clark("C:calendar-user-address-set"),
-                      xmlutils.make_clark("D:principal-URL"),
-                      xmlutils.make_clark("CR:addressbook-home-set"),
-                      xmlutils.make_clark("C:calendar-home-set")) and
-              is_collection and collection.is_principal):
+        elif (
+            tag
+            in (
+                xmlutils.make_clark("C:calendar-user-address-set"),
+                xmlutils.make_clark("D:principal-URL"),
+                xmlutils.make_clark("CR:addressbook-home-set"),
+                xmlutils.make_clark("C:calendar-home-set"),
+            )
+            and is_collection
+            and collection.is_principal
+        ):
             child_element = ET.Element(xmlutils.make_clark("D:href"))
             child_element.text = xmlutils.make_href(base_prefix, path)
             element.append(child_element)
@@ -187,12 +215,10 @@ def xml_propfind_response(
         elif tag == xmlutils.make_clark("D:current-user-principal"):
             if user:
                 child_element = ET.Element(xmlutils.make_clark("D:href"))
-                child_element.text = xmlutils.make_href(
-                    base_prefix, "/%s/" % user)
+                child_element.text = xmlutils.make_href(base_prefix, "/%s/" % user)
                 element.append(child_element)
             else:
-                element.append(ET.Element(
-                    xmlutils.make_clark("D:unauthenticated")))
+                element.append(ET.Element(xmlutils.make_clark("D:unauthenticated")))
         elif tag == xmlutils.make_clark("D:current-user-privilege-set"):
             privileges = ["D:read"]
             if write:
@@ -202,14 +228,15 @@ def xml_propfind_response(
                 privileges.append("D:write-content")
             for human_tag in privileges:
                 privilege = ET.Element(xmlutils.make_clark("D:privilege"))
-                privilege.append(ET.Element(
-                    xmlutils.make_clark(human_tag)))
+                privilege.append(ET.Element(xmlutils.make_clark(human_tag)))
                 element.append(privilege)
         elif tag == xmlutils.make_clark("D:supported-report-set"):
             # These 3 reports are not implemented
-            reports = ["D:expand-property",
-                       "D:principal-search-property-set",
-                       "D:principal-property-search"]
+            reports = [
+                "D:expand-property",
+                "D:principal-search-property-set",
+                "D:principal-property-search",
+            ]
             if is_collection and is_leaf:
                 reports.append("D:sync-collection")
                 if collection.tag == "VADDRESSBOOK":
@@ -219,11 +246,9 @@ def xml_propfind_response(
                     reports.append("C:calendar-multiget")
                     reports.append("C:calendar-query")
             for human_tag in reports:
-                supported_report = ET.Element(
-                    xmlutils.make_clark("D:supported-report"))
+                supported_report = ET.Element(xmlutils.make_clark("D:supported-report"))
                 report_element = ET.Element(xmlutils.make_clark("D:report"))
-                report_element.append(
-                    ET.Element(xmlutils.make_clark(human_tag)))
+                report_element.append(ET.Element(xmlutils.make_clark(human_tag)))
                 supported_report.append(report_element)
                 element.append(supported_report)
         elif tag == xmlutils.make_clark("D:getcontentlength"):
@@ -236,32 +261,30 @@ def xml_propfind_response(
             if collection.owner:
                 child_element = ET.Element(xmlutils.make_clark("D:href"))
                 child_element.text = xmlutils.make_href(
-                    base_prefix, "/%s/" % collection.owner)
+                    base_prefix, "/%s/" % collection.owner
+                )
                 element.append(child_element)
         elif is_collection:
             if tag == xmlutils.make_clark("D:getcontenttype"):
                 if is_leaf:
-                    element.text = xmlutils.MIMETYPES[
-                        collection.tag]
+                    element.text = xmlutils.MIMETYPES[collection.tag]
                 else:
                     is404 = True
             elif tag == xmlutils.make_clark("D:resourcetype"):
                 if collection.is_principal:
-                    child_element = ET.Element(
-                        xmlutils.make_clark("D:principal"))
+                    child_element = ET.Element(xmlutils.make_clark("D:principal"))
                     element.append(child_element)
                 if is_leaf:
                     if collection.tag == "VADDRESSBOOK":
                         child_element = ET.Element(
-                            xmlutils.make_clark("CR:addressbook"))
+                            xmlutils.make_clark("CR:addressbook")
+                        )
                         element.append(child_element)
                     elif collection.tag == "VCALENDAR":
-                        child_element = ET.Element(
-                            xmlutils.make_clark("C:calendar"))
+                        child_element = ET.Element(xmlutils.make_clark("C:calendar"))
                         element.append(child_element)
                     elif collection.tag == "VSUBSCRIBED":
-                        child_element = ET.Element(
-                            xmlutils.make_clark("CS:subscribed"))
+                        child_element = ET.Element(xmlutils.make_clark("CS:subscribed"))
                         element.append(child_element)
                 child_element = ET.Element(xmlutils.make_clark("D:collection"))
                 element.append(child_element)
@@ -274,7 +297,10 @@ def xml_propfind_response(
                     is404 = True
             elif tag == xmlutils.make_clark("RADICALE:getcontentcount"):
                 # Only for internal use by the web interface
-                if isinstance(item, storage.BaseCollection) and not collection.is_principal:
+                if (
+                    isinstance(item, storage.BaseCollection)
+                    and not collection.is_principal
+                ):
                     element.text = str(sum(1 for x in item.get_all()))
                 else:
                     is404 = True
@@ -299,7 +325,7 @@ def xml_propfind_response(
             elif tag == xmlutils.make_clark("CS:source"):
                 if is_leaf:
                     child_element = ET.Element(xmlutils.make_clark("D:href"))
-                    child_element.text = collection.get_meta('CS:source')
+                    child_element.text = collection.get_meta("CS:source")
                     element.append(child_element)
                 else:
                     is404 = True
@@ -338,27 +364,29 @@ def xml_propfind_response(
 
 
 class ApplicationPartPropfind(ApplicationBase):
-
     def _collect_allowed_items(
-            self, items: Iterable[types.CollectionOrItem], user: str
-            ) -> Iterator[Tuple[types.CollectionOrItem, str]]:
+        self, items: Iterable[types.CollectionOrItem], user: str
+    ) -> Iterator[Tuple[types.CollectionOrItem, str]]:
         """Get items from request that user is allowed to access."""
         for item in items:
             if isinstance(item, storage.BaseCollection):
                 path = pathutils.unstrip_path(item.path, True)
                 if item.tag:
                     permissions = rights.intersect(
-                        self._rights.authorization(user, path), "rw")
+                        self._rights.authorization(user, path), "rw"
+                    )
                     target = "collection with tag %r" % item.path
                 else:
                     permissions = rights.intersect(
-                        self._rights.authorization(user, path), "RW")
+                        self._rights.authorization(user, path), "RW"
+                    )
                     target = "collection %r" % item.path
             else:
                 assert item.collection is not None
                 path = pathutils.unstrip_path(item.collection.path, True)
                 permissions = rights.intersect(
-                    self._rights.authorization(user, path), "rw")
+                    self._rights.authorization(user, path), "rw"
+                )
                 target = "item %r from %r" % (item.href, item.collection.path)
             if rights.intersect(permissions, "Ww"):
                 permission = "w"
@@ -371,12 +399,16 @@ class ApplicationPartPropfind(ApplicationBase):
                 status = "NO"
             logger.debug(
                 "%s has %s access to %s",
-                repr(user) if user else "anonymous user", status, target)
+                repr(user) if user else "anonymous user",
+                status,
+                target,
+            )
             if permission:
                 yield item, permission
 
-    def do_PROPFIND(self, environ: types.WSGIEnviron, base_prefix: str,
-                    path: str, user: str) -> types.WSGIResponse:
+    def do_PROPFIND(
+        self, environ: types.WSGIEnviron, base_prefix: str, path: str, user: str
+    ) -> types.WSGIResponse:
         """Manage PROPFIND request."""
         access = Access(self._rights, user, path)
         if not access.check("r"):
@@ -384,15 +416,15 @@ class ApplicationPartPropfind(ApplicationBase):
         try:
             xml_content = self._read_xml_request_body(environ)
         except RuntimeError as e:
-            logger.warning(
-                "Bad PROPFIND request on %r: %s", path, e, exc_info=True)
+            logger.warning("Bad PROPFIND request on %r: %s", path, e, exc_info=True)
             return httputils.BAD_REQUEST
         except socket.timeout:
             logger.debug("Client timed out", exc_info=True)
             return httputils.REQUEST_TIMEOUT
         with self._storage.acquire_lock("r", user):
-            items_iter = iter(self._storage.discover(
-                path, environ.get("HTTP_DEPTH", "0")))
+            items_iter = iter(
+                self._storage.discover(path, environ.get("HTTP_DEPTH", "0"))
+            )
             # take root item for rights checking
             item = next(items_iter, None)
             if not item:
@@ -402,10 +434,13 @@ class ApplicationPartPropfind(ApplicationBase):
             # put item back
             items_iter = itertools.chain([item], items_iter)
             allowed_items = self._collect_allowed_items(items_iter, user)
-            headers = {"DAV": httputils.DAV_HEADERS,
-                       "Content-Type": "text/xml; charset=%s" % self._encoding}
-            xml_answer = xml_propfind(base_prefix, path, xml_content,
-                                      allowed_items, user, self._encoding)
+            headers = {
+                "DAV": httputils.DAV_HEADERS,
+                "Content-Type": "text/xml; charset=%s" % self._encoding,
+            }
+            xml_answer = xml_propfind(
+                base_prefix, path, xml_content, allowed_items, user, self._encoding
+            )
             if xml_answer is None:
                 return httputils.NOT_ALLOWED
             return client.MULTI_STATUS, headers, self._xml_response(xml_answer)

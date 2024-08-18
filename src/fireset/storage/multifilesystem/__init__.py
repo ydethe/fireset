@@ -27,33 +27,39 @@ import os
 import time
 from typing import ClassVar, Iterator, Optional, Type
 
-from radicale import config
-from radicale.storage.multifilesystem.base import CollectionBase, StorageBase
-from radicale.storage.multifilesystem.cache import CollectionPartCache
-from radicale.storage.multifilesystem.create_collection import \
-    StoragePartCreateCollection
-from radicale.storage.multifilesystem.delete import CollectionPartDelete
-from radicale.storage.multifilesystem.discover import StoragePartDiscover
-from radicale.storage.multifilesystem.get import CollectionPartGet
-from radicale.storage.multifilesystem.history import CollectionPartHistory
-from radicale.storage.multifilesystem.lock import (CollectionPartLock,
-                                                   StoragePartLock)
-from radicale.storage.multifilesystem.meta import CollectionPartMeta
-from radicale.storage.multifilesystem.move import StoragePartMove
-from radicale.storage.multifilesystem.sync import CollectionPartSync
-from radicale.storage.multifilesystem.upload import CollectionPartUpload
-from radicale.storage.multifilesystem.verify import StoragePartVerify
+from . import config
+from .storage.multifilesystem.base import CollectionBase, StorageBase
+from .storage.multifilesystem.cache import CollectionPartCache
+from .storage.multifilesystem.create_collection import StoragePartCreateCollection
+from .storage.multifilesystem.delete import CollectionPartDelete
+from .storage.multifilesystem.discover import StoragePartDiscover
+from .storage.multifilesystem.get import CollectionPartGet
+from .storage.multifilesystem.history import CollectionPartHistory
+from .storage.multifilesystem.lock import CollectionPartLock, StoragePartLock
+from .storage.multifilesystem.meta import CollectionPartMeta
+from .storage.multifilesystem.move import StoragePartMove
+from .storage.multifilesystem.sync import CollectionPartSync
+from .storage.multifilesystem.upload import CollectionPartUpload
+from .storage.multifilesystem.verify import StoragePartVerify
 
 
 class Collection(
-        CollectionPartDelete, CollectionPartMeta, CollectionPartSync,
-        CollectionPartUpload, CollectionPartGet, CollectionPartCache,
-        CollectionPartLock, CollectionPartHistory, CollectionBase):
+    CollectionPartDelete,
+    CollectionPartMeta,
+    CollectionPartSync,
+    CollectionPartUpload,
+    CollectionPartGet,
+    CollectionPartCache,
+    CollectionPartLock,
+    CollectionPartHistory,
+    CollectionBase,
+):
 
     _etag_cache: Optional[str]
 
-    def __init__(self, storage_: "Storage", path: str,
-                 filesystem_path: Optional[str] = None) -> None:
+    def __init__(
+        self, storage_: "Storage", path: str, filesystem_path: Optional[str] = None
+    ) -> None:
         super().__init__(storage_, path, filesystem_path)
         self._etag_cache = None
 
@@ -69,6 +75,7 @@ class Collection(
                 yield self._props_path
             for href in self._list():
                 yield os.path.join(self._filesystem_path, href)
+
         last = max(map(os.path.getmtime, relevant_files_iter()))
         return time.strftime("%a, %d %b %Y %H:%M:%S GMT", time.gmtime(last))
 
@@ -81,8 +88,13 @@ class Collection(
 
 
 class Storage(
-        StoragePartCreateCollection, StoragePartLock, StoragePartMove,
-        StoragePartVerify, StoragePartDiscover, StorageBase):
+    StoragePartCreateCollection,
+    StoragePartLock,
+    StoragePartMove,
+    StoragePartVerify,
+    StoragePartDiscover,
+    StorageBase,
+):
 
     _collection_class: ClassVar[Type[Collection]] = Collection
 

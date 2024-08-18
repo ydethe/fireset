@@ -20,10 +20,10 @@ dependencies = [
     "passlib",
     "pika>=1.1.0",
     "python-dateutil>=2.7.3",
-    "vobject>=0.9.6",
+    "vobject~=0.9",
     "bcrypt>=4.2.0",
 ]
-requires-python = ">=3.8.0"
+requires-python = ">=3.9"
 readme = "README.md"
 license = {text = "GNU GPL v3"}
 keywords = [
@@ -45,7 +45,6 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
@@ -123,5 +122,5 @@ doc.shell = """\
 serve = "python3 -m http.server 10124 -d htmldoc"
 
 [project.scripts]
-radicale = "radicale.__main__:run"
+fireset = "fireset.__main__:run"
 

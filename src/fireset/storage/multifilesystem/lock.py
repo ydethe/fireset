@@ -25,13 +25,12 @@ import subprocess
 import sys
 from typing import Iterator
 
-from radicale import config, pathutils, types
-from radicale.log import logger
-from radicale.storage.multifilesystem.base import CollectionBase, StorageBase
+from . import config, pathutils, types
+from .log import logger
+from .storage.multifilesystem.base import CollectionBase, StorageBase
 
 
 class CollectionPartLock(CollectionBase):
-
     @types.contextmanager
     def _acquire_cache_lock(self, ns: str = "") -> Iterator[None]:
         if self._storage._lock.locked == "w":
@@ -39,8 +38,9 @@ class CollectionPartLock(CollectionBase):
             return
         cache_folder = os.path.join(self._filesystem_path, ".Radicale.cache")
         self._storage._makedirs_synced(cache_folder)
-        lock_path = os.path.join(cache_folder,
-                                 ".Radicale.lock" + (".%s" % ns if ns else ""))
+        lock_path = os.path.join(
+            cache_folder, ".Radicale.lock" + (".%s" % ns if ns else "")
+        )
         lock = pathutils.RwLock(lock_path)
         with lock.acquire("w"):
             yield
@@ -73,15 +73,19 @@ class StoragePartLock(StorageBase):
                 else:
                     # Process group is also used to identify child processes
                     preexec_fn = os.setpgrp
-                command = self._hook % {
-                    "user": shlex.quote(user or "Anonymous")}
+                command = self._hook % {"user": shlex.quote(user or "Anonymous")}
                 logger.debug("Running storage hook")
                 p = subprocess.Popen(
-                    command, stdin=subprocess.DEVNULL,
+                    command,
+                    stdin=subprocess.DEVNULL,
                     stdout=subprocess.PIPE if debug else subprocess.DEVNULL,
                     stderr=subprocess.PIPE if debug else subprocess.DEVNULL,
-                    shell=True, universal_newlines=True, preexec_fn=preexec_fn,
-                    cwd=self._filesystem_folder, creationflags=creationflags)
+                    shell=True,
+                    universal_newlines=True,
+                    preexec_fn=preexec_fn,
+                    cwd=self._filesystem_folder,
+                    creationflags=creationflags,
+                )
                 try:
                     stdout_data, stderr_data = p.communicate()
                 except BaseException:  # e.g. KeyboardInterrupt or SystemExit

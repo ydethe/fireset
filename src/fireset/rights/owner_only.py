@@ -21,12 +21,11 @@ calendars and address books.
 
 """
 
-import radicale.rights.authenticated as authenticated
-from radicale import pathutils
+from .. import rigths
+from . import pathutils
 
 
-class Rights(authenticated.Rights):
-
+class Rights(rigths.authenticated.Rights):
     def authorization(self, user: str, path: str) -> str:
         if self._verify_user and not user:
             return ""

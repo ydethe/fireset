@@ -21,12 +21,11 @@ address books but only grants write access to their own.
 
 """
 
-import radicale.rights.authenticated as authenticated
-from radicale import pathutils
+from .. import rights
+from . import pathutils
 
 
-class Rights(authenticated.Rights):
-
+class Rights(rights.authenticated.Rights):
     def authorization(self, user: str, path: str) -> str:
         if self._verify_user and not user:
             return ""

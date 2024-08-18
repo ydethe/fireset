@@ -22,8 +22,8 @@ import threading
 from collections import deque
 from typing import ClassVar, Deque, Dict, Hashable, Iterator, Type
 
-from radicale import config, pathutils, types
-from radicale.storage import multifilesystem
+from . import config, pathutils, types
+from .storage import multifilesystem
 
 
 class RwLock(pathutils.RwLock):
@@ -39,8 +39,9 @@ class RwLock(pathutils.RwLock):
         if mode not in "rw":
             raise ValueError("Invalid mode: %r" % mode)
         with self._cond:
-            self._cond.wait_for(lambda: not self._writer and (
-                                    mode == "r" or self._readers == 0))
+            self._cond.wait_for(
+                lambda: not self._writer and (mode == "r" or self._readers == 0)
+            )
             if mode == "r":
                 self._readers += 1
             else:

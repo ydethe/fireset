@@ -54,7 +54,7 @@ from typing import Any
 
 from passlib.hash import apr_md5_crypt, sha256_crypt, sha512_crypt
 
-from radicale import auth, config, logger
+from . import auth, config, logger
 
 
 class Auth(auth.BaseAuth):
@@ -68,7 +68,9 @@ class Auth(auth.BaseAuth):
         self._encoding = configuration.get("encoding", "stock")
         encryption: str = configuration.get("auth", "htpasswd_encryption")
 
-        logger.info("auth htpasswd encryption is 'radicale.auth.htpasswd_encryption.%s'", encryption)
+        logger.info(
+            "auth htpasswd encryption is '.auth.htpasswd_encryption.%s'", encryption
+        )
 
         if encryption == "plain":
             self._verify = self._plain
@@ -84,22 +86,26 @@ class Auth(auth.BaseAuth):
             except ImportError as e:
                 raise RuntimeError(
                     "The htpasswd encryption method 'bcrypt' or 'autodetect' requires "
-                    "the bcrypt module.") from e
+                    "the bcrypt module."
+                ) from e
             if encryption == "bcrypt":
                 self._verify = functools.partial(self._bcrypt, bcrypt)
             else:
                 self._verify = self._autodetect
                 self._verify_bcrypt = functools.partial(self._bcrypt, bcrypt)
         else:
-            raise RuntimeError("The htpasswd encryption method %r is not "
-                               "supported." % encryption)
+            raise RuntimeError(
+                "The htpasswd encryption method %r is not " "supported." % encryption
+            )
 
     def _plain(self, hash_value: str, password: str) -> bool:
         """Check if ``hash_value`` and ``password`` match, plain method."""
         return hmac.compare_digest(hash_value.encode(), password.encode())
 
     def _bcrypt(self, bcrypt: Any, hash_value: str, password: str) -> bool:
-        return bcrypt.checkpw(password=password.encode('utf-8'), hashed_password=hash_value.encode())
+        return bcrypt.checkpw(
+            password=password.encode("utf-8"), hashed_password=hash_value.encode()
+        )
 
     def _md5apr1(self, hash_value: str, password: str) -> bool:
         return apr_md5_crypt.verify(password, hash_value.strip())
@@ -145,19 +151,21 @@ class Auth(auth.BaseAuth):
                     line = line.rstrip("\n")
                     if line.lstrip() and not line.lstrip().startswith("#"):
                         try:
-                            hash_login, hash_value = line.split(
-                                ":", maxsplit=1)
+                            hash_login, hash_value = line.split(":", maxsplit=1)
                             # Always compare both login and password to avoid
                             # timing attacks, see #591.
                             login_ok = hmac.compare_digest(
-                                hash_login.encode(), login.encode())
+                                hash_login.encode(), login.encode()
+                            )
                             password_ok = self._verify(hash_value, password)
                             if login_ok and password_ok:
                                 return login
                         except ValueError as e:
-                            raise RuntimeError("Invalid htpasswd file %r: %s" %
-                                               (self._filename, e)) from e
+                            raise RuntimeError(
+                                "Invalid htpasswd file %r: %s" % (self._filename, e)
+                            ) from e
         except OSError as e:
-            raise RuntimeError("Failed to load htpasswd file %r: %s" %
-                               (self._filename, e)) from e
+            raise RuntimeError(
+                "Failed to load htpasswd file %r: %s" % (self._filename, e)
+            ) from e
         return ""

@@ -22,13 +22,12 @@ import math
 import xml.etree.ElementTree as ET
 from datetime import date, datetime, timedelta, timezone
 from itertools import chain
-from typing import (Callable, Iterable, Iterator, List, Optional, Sequence,
-                    Tuple)
+from typing import Callable, Iterable, Iterator, List, Optional, Sequence, Tuple
 
 import vobject
 
-from radicale import item, xmlutils
-from radicale.log import logger
+from . import item, xmlutils
+from .log import logger
 
 DAY: timedelta = timedelta(days=1)
 SECOND: timedelta = timedelta(seconds=1)
@@ -70,8 +69,7 @@ def comp_match(item: "item.Item", filter_: ET.Element, level: int = 0) -> bool:
     elif level == 1:
         tag = item.component_name
     else:
-        logger.warning(
-            "Filters with three levels of comp-filter are not supported")
+        logger.warning("Filters with three levels of comp-filter are not supported")
         return True
     if not tag:
         return False
@@ -85,18 +83,23 @@ def comp_match(item: "item.Item", filter_: ET.Element, level: int = 0) -> bool:
             return name != tag
     if name != tag:
         return False
-    if (level == 0 and name != "VCALENDAR" or
-            level == 1 and name not in ("VTODO", "VEVENT", "VJOURNAL")):
+    if (
+        level == 0
+        and name != "VCALENDAR"
+        or level == 1
+        and name not in ("VTODO", "VEVENT", "VJOURNAL")
+    ):
         logger.warning("Filtering %s is not supported", name)
         return True
     # Point #3 and #4 of rfc4791-9.7.1
-    components = ([item.vobject_item] if level == 0
-                  else list(getattr(item.vobject_item,
-                                    "%s_list" % tag.lower())))
+    components = (
+        [item.vobject_item]
+        if level == 0
+        else list(getattr(item.vobject_item, "%s_list" % tag.lower()))
+    )
     for child in filter_:
         if child.tag == xmlutils.make_clark("C:prop-filter"):
-            if not any(prop_match(comp, child, "C")
-                       for comp in components):
+            if not any(prop_match(comp, child, "C") for comp in components):
                 return False
         elif child.tag == xmlutils.make_clark("C:time-range"):
             if not time_range_match(item.vobject_item, filter_[0], tag):
@@ -109,8 +112,9 @@ def comp_match(item: "item.Item", filter_: ET.Element, level: int = 0) -> bool:
     return True
 
 
-def prop_match(vobject_item: vobject.base.Component,
-               filter_: ET.Element, ns: str) -> bool:
+def prop_match(
+    vobject_item: vobject.base.Component, filter_: ET.Element, ns: str
+) -> bool:
     """Check whether the ``item`` matches the prop ``filter_``.
 
     See rfc4791-9.7.2 and rfc6352-10.5.1.
@@ -142,10 +146,11 @@ def prop_match(vobject_item: vobject.base.Component,
     return True
 
 
-def time_range_match(vobject_item: vobject.base.Component,
-                     filter_: ET.Element, child_name: str) -> bool:
+def time_range_match(
+    vobject_item: vobject.base.Component, filter_: ET.Element, child_name: str
+) -> bool:
     """Check whether the component/property ``child_name`` of
-       ``vobject_item`` matches the time-range ``filter_``."""
+    ``vobject_item`` matches the time-range ``filter_``."""
 
     start_text = filter_.get("start")
     end_text = filter_.get("end")
@@ -164,8 +169,9 @@ def time_range_match(vobject_item: vobject.base.Component,
 
     matched = False
 
-    def range_fn(range_start: datetime, range_end: datetime,
-                 is_recurrence: bool) -> bool:
+    def range_fn(
+        range_start: datetime, range_end: datetime, is_recurrence: bool
+    ) -> bool:
         nonlocal matched
         if start < range_end and range_start < end:
             matched = True
@@ -181,9 +187,12 @@ def time_range_match(vobject_item: vobject.base.Component,
     return matched
 
 
-def visit_time_ranges(vobject_item: vobject.base.Component, child_name: str,
-                      range_fn: Callable[[datetime, datetime, bool], bool],
-                      infinity_fn: Callable[[datetime], bool]) -> None:
+def visit_time_ranges(
+    vobject_item: vobject.base.Component,
+    child_name: str,
+    range_fn: Callable[[datetime, datetime, bool], bool],
+    infinity_fn: Callable[[datetime], bool],
+) -> None:
     """Visit all time ranges in the component/property ``child_name`` of
     `vobject_item`` with visitors ``range_fn`` and ``infinity_fn``.
 
@@ -204,12 +213,15 @@ def visit_time_ranges(vobject_item: vobject.base.Component, child_name: str,
     # recurrences too. This is not respected and client don't seem to bother
     # either.
 
-    def getrruleset(child: vobject.base.Component, ignore: Sequence[date]
-                    ) -> Tuple[Iterable[date], bool]:
+    def getrruleset(
+        child: vobject.base.Component, ignore: Sequence[date]
+    ) -> Tuple[Iterable[date], bool]:
         infinite = False
         for rrule in child.contents.get("rrule", []):
-            if (";UNTIL=" not in rrule.value.upper() and
-                    ";COUNT=" not in rrule.value.upper()):
+            if (
+                ";UNTIL=" not in rrule.value.upper()
+                and ";COUNT=" not in rrule.value.upper()
+            ):
                 infinite = True
                 break
         if infinite:
@@ -219,11 +231,16 @@ def visit_time_ranges(vobject_item: vobject.base.Component, child_name: str,
                 if infinity_fn(date_to_datetime(dtstart)):
                     return (), True
                 break
-        return filter(lambda dtstart: dtstart not in ignore,
-                      child.getrruleset(addRDate=True)), False
+        return (
+            filter(
+                lambda dtstart: dtstart not in ignore, child.getrruleset(addRDate=True)
+            ),
+            False,
+        )
 
-    def get_children(components: Iterable[vobject.base.Component]) -> Iterator[
-                         Tuple[vobject.base.Component, bool, List[date]]]:
+    def get_children(
+        components: Iterable[vobject.base.Component],
+    ) -> Iterator[Tuple[vobject.base.Component, bool, List[date]]]:
         main = None
         rec_main = None
         recurrences = []
@@ -247,8 +264,7 @@ def visit_time_ranges(vobject_item: vobject.base.Component, child_name: str,
 
     # Comments give the lines in the tables of the specification
     if child_name == "VEVENT":
-        for child, is_recurrence, recurrences in get_children(
-                vobject_item.vevent_list):
+        for child, is_recurrence, recurrences in get_children(vobject_item.vevent_list):
             # TODO: check if there's a timezone
             dtstart = child.dtstart.value
 
@@ -283,8 +299,7 @@ def visit_time_ranges(vobject_item: vobject.base.Component, child_name: str,
                         original_duration = duration.seconds
                     if duration.seconds > 0:
                         # Line 2
-                        if range_fn(dtstart, dtstart + duration,
-                                    is_recurrence):
+                        if range_fn(dtstart, dtstart + duration, is_recurrence):
                             return
                     else:
                         # Line 3
@@ -300,8 +315,7 @@ def visit_time_ranges(vobject_item: vobject.base.Component, child_name: str,
                         return
 
     elif child_name == "VTODO":
-        for child, is_recurrence, recurrences in get_children(
-                vobject_item.vtodo_list):
+        for child, is_recurrence, recurrences in get_children(vobject_item.vtodo_list):
             dtstart = getattr(child, "dtstart", None)
             duration = getattr(child, "duration", None)
             due = getattr(child, "due", None)
@@ -348,51 +362,66 @@ def visit_time_ranges(vobject_item: vobject.base.Component, child_name: str,
 
                 if dtstart is not None and duration is not None:
                     # Line 1
-                    if range_fn(reference_date,
-                                reference_date + duration + SECOND,
-                                is_recurrence):
+                    if range_fn(
+                        reference_date,
+                        reference_date + duration + SECOND,
+                        is_recurrence,
+                    ):
                         return
-                    if range_fn(reference_date + duration - SECOND,
-                                reference_date + duration + SECOND,
-                                is_recurrence):
+                    if range_fn(
+                        reference_date + duration - SECOND,
+                        reference_date + duration + SECOND,
+                        is_recurrence,
+                    ):
                         return
                 elif dtstart is not None and due is not None:
                     # Line 2
                     due = reference_date + timedelta(seconds=original_duration)
-                    if (range_fn(reference_date, due, is_recurrence) or
-                            range_fn(reference_date,
-                                     reference_date + SECOND, is_recurrence) or
-                            range_fn(due - SECOND, due, is_recurrence) or
-                            range_fn(due - SECOND, reference_date + SECOND,
-                                     is_recurrence)):
+                    if (
+                        range_fn(reference_date, due, is_recurrence)
+                        or range_fn(
+                            reference_date, reference_date + SECOND, is_recurrence
+                        )
+                        or range_fn(due - SECOND, due, is_recurrence)
+                        or range_fn(
+                            due - SECOND, reference_date + SECOND, is_recurrence
+                        )
+                    ):
                         return
                 elif dtstart is not None:
-                    if range_fn(reference_date, reference_date + SECOND,
-                                is_recurrence):
+                    if range_fn(reference_date, reference_date + SECOND, is_recurrence):
                         return
                 elif due is not None:
                     # Line 4
-                    if range_fn(reference_date - SECOND, reference_date,
-                                is_recurrence):
+                    if range_fn(reference_date - SECOND, reference_date, is_recurrence):
                         return
                 elif completed is not None and created is not None:
                     # Line 5
-                    completed = reference_date + timedelta(
-                        seconds=original_duration)
-                    if (range_fn(reference_date - SECOND,
-                                 reference_date + SECOND,
-                                 is_recurrence) or
-                            range_fn(completed - SECOND, completed + SECOND,
-                                     is_recurrence) or
-                            range_fn(reference_date - SECOND,
-                                     reference_date + SECOND, is_recurrence) or
-                            range_fn(completed - SECOND, completed + SECOND,
-                                     is_recurrence)):
+                    completed = reference_date + timedelta(seconds=original_duration)
+                    if (
+                        range_fn(
+                            reference_date - SECOND,
+                            reference_date + SECOND,
+                            is_recurrence,
+                        )
+                        or range_fn(
+                            completed - SECOND, completed + SECOND, is_recurrence
+                        )
+                        or range_fn(
+                            reference_date - SECOND,
+                            reference_date + SECOND,
+                            is_recurrence,
+                        )
+                        or range_fn(
+                            completed - SECOND, completed + SECOND, is_recurrence
+                        )
+                    ):
                         return
                 elif completed is not None:
                     # Line 6
-                    if range_fn(reference_date - SECOND,
-                                reference_date + SECOND, is_recurrence):
+                    if range_fn(
+                        reference_date - SECOND, reference_date + SECOND, is_recurrence
+                    ):
                         return
                 elif created is not None:
                     # Line 7
@@ -401,7 +430,8 @@ def visit_time_ranges(vobject_item: vobject.base.Component, child_name: str,
 
     elif child_name == "VJOURNAL":
         for child, is_recurrence, recurrences in get_children(
-                vobject_item.vjournal_list):
+            vobject_item.vjournal_list
+        ):
             dtstart = getattr(child, "dtstart", None)
 
             if dtstart is not None:
@@ -438,9 +468,13 @@ def visit_time_ranges(vobject_item: vobject.base.Component, child_name: str,
                 range_fn(child, child + DAY, False)
 
 
-def text_match(vobject_item: vobject.base.Component,
-               filter_: ET.Element, child_name: str, ns: str,
-               attrib_name: Optional[str] = None) -> bool:
+def text_match(
+    vobject_item: vobject.base.Component,
+    filter_: ET.Element,
+    child_name: str,
+    ns: str,
+    attrib_name: Optional[str] = None,
+) -> bool:
     """Check whether the ``item`` matches the text-match ``filter_``.
 
     See rfc4791-9.7.5.
@@ -469,13 +503,15 @@ def text_match(vobject_item: vobject.base.Component,
     children = getattr(vobject_item, "%s_list" % child_name, [])
     if attrib_name is not None:
         condition = any(
-            match(attrib) for child in children
-            for attrib in child.params.get(attrib_name, []))
+            match(attrib)
+            for child in children
+            for attrib in child.params.get(attrib_name, [])
+        )
     else:
         res = []
         for child in children:
             # Some filters such as CATEGORIES provide a list in child.value
-            if type(child.value) is list:
+            if isinstance(child.value, list):
                 for value in child.value:
                     res.append(match(value))
             else:
@@ -486,8 +522,9 @@ def text_match(vobject_item: vobject.base.Component,
     return condition
 
 
-def param_filter_match(vobject_item: vobject.base.Component,
-                       filter_: ET.Element, parent_name: str, ns: str) -> bool:
+def param_filter_match(
+    vobject_item: vobject.base.Component, filter_: ET.Element, parent_name: str, ns: str
+) -> bool:
     """Check whether the ``item`` matches the param-filter ``filter_``.
 
     See rfc4791-9.7.3.
@@ -499,14 +536,16 @@ def param_filter_match(vobject_item: vobject.base.Component,
     if len(filter_) > 0:
         if filter_[0].tag == xmlutils.make_clark("%s:text-match" % ns):
             return condition and text_match(
-                vobject_item, filter_[0], parent_name, ns, name)
+                vobject_item, filter_[0], parent_name, ns, name
+            )
         if filter_[0].tag == xmlutils.make_clark("%s:is-not-defined" % ns):
             return not condition
     return condition
 
 
-def simplify_prefilters(filters: Iterable[ET.Element], collection_tag: str
-                        ) -> Tuple[Optional[str], int, int, bool]:
+def simplify_prefilters(
+    filters: Iterable[ET.Element], collection_tag: str
+) -> Tuple[Optional[str], int, int, bool]:
     """Creates a simplified condition from ``filters``.
 
     Returns a tuple (``tag``, ``start``, ``end``, ``simple``) where ``tag`` is
@@ -521,8 +560,10 @@ def simplify_prefilters(filters: Iterable[ET.Element], collection_tag: str
         if collection_tag != "VCALENDAR":
             simple = False
             break
-        if (col_filter.tag != xmlutils.make_clark("C:comp-filter") or
-                col_filter.get("name", "").upper() != "VCALENDAR"):
+        if (
+            col_filter.tag != xmlutils.make_clark("C:comp-filter")
+            or col_filter.get("name", "").upper() != "VCALENDAR"
+        ):
             simple = False
             continue
         simple &= len(col_filter) <= 1
@@ -531,8 +572,7 @@ def simplify_prefilters(filters: Iterable[ET.Element], collection_tag: str
                 simple = False
                 continue
             tag = comp_filter.get("name", "").upper()
-            if comp_filter.find(
-                    xmlutils.make_clark("C:is-not-defined")) is not None:
+            if comp_filter.find(xmlutils.make_clark("C:is-not-defined")) is not None:
                 simple = False
                 continue
             simple &= len(comp_filter) <= 1
@@ -546,15 +586,19 @@ def simplify_prefilters(filters: Iterable[ET.Element], collection_tag: str
                 start_text = time_filter.get("start")
                 end_text = time_filter.get("end")
                 if start_text:
-                    start = math.floor(datetime.strptime(
-                        start_text, "%Y%m%dT%H%M%SZ").replace(
-                            tzinfo=timezone.utc).timestamp())
+                    start = math.floor(
+                        datetime.strptime(start_text, "%Y%m%dT%H%M%SZ")
+                        .replace(tzinfo=timezone.utc)
+                        .timestamp()
+                    )
                 else:
                     start = TIMESTAMP_MIN
                 if end_text:
-                    end = math.ceil(datetime.strptime(
-                        end_text, "%Y%m%dT%H%M%SZ").replace(
-                            tzinfo=timezone.utc).timestamp())
+                    end = math.ceil(
+                        datetime.strptime(end_text, "%Y%m%dT%H%M%SZ")
+                        .replace(tzinfo=timezone.utc)
+                        .timestamp()
+                    )
                 else:
                     end = TIMESTAMP_MAX
                 return tag, start, end, simple

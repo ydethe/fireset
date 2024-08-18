@@ -20,30 +20,43 @@ Radicale tests with simple requests and rights.
 
 import os
 
-from radicale.tests import BaseTest
-from radicale.tests.helpers import get_file_content
+from .tests import BaseTest
+from .tests.helpers import get_file_content
 
 
 class TestBaseRightsRequests(BaseTest):
     """Tests basic requests with rights."""
 
-    def _test_rights(self, rights_type: str, user: str, path: str, mode: str,
-                     expected_status: int, with_auth: bool = True) -> None:
+    def _test_rights(
+        self,
+        rights_type: str,
+        user: str,
+        path: str,
+        mode: str,
+        expected_status: int,
+        with_auth: bool = True,
+    ) -> None:
         assert mode in ("r", "w")
         assert user in ("", "tmp")
         htpasswd_file_path = os.path.join(self.colpath, ".htpasswd")
         with open(htpasswd_file_path, "w") as f:
             f.write("tmp:bepo\nother:bepo")
-        self.configure({
-            "rights": {"type": rights_type},
-            "auth": {"type": "htpasswd" if with_auth else "none",
-                     "htpasswd_filename": htpasswd_file_path,
-                     "htpasswd_encryption": "plain"}})
+        self.configure(
+            {
+                "rights": {"type": rights_type},
+                "auth": {
+                    "type": "htpasswd" if with_auth else "none",
+                    "htpasswd_filename": htpasswd_file_path,
+                    "htpasswd_encryption": "plain",
+                },
+            }
+        )
         for u in ("tmp", "other"):
             # Indirect creation of principal collection
             self.propfind("/%s/" % u, login="%s:bepo" % u)
         (self.propfind if mode == "r" else self.proppatch)(
-            path, check=expected_status, login="tmp:bepo" if user else None)
+            path, check=expected_status, login="tmp:bepo" if user else None
+        )
 
     def test_owner_only(self) -> None:
         self._test_rights("owner_only", "", "/", "r", 401)
@@ -102,7 +115,8 @@ class TestBaseRightsRequests(BaseTest):
     def test_from_file(self) -> None:
         rights_file_path = os.path.join(self.colpath, "rights")
         with open(rights_file_path, "w") as f:
-            f.write("""\
+            f.write(
+                """\
 [owner]
 user: .+
 collection: {user}(/.*)?
@@ -110,7 +124,8 @@ permissions: RrWw
 [custom]
 user: .*
 collection: custom(/.*)?
-permissions: Rr""")
+permissions: Rr"""
+            )
         self.configure({"rights": {"file": rights_file_path}})
         self._test_rights("from_file", "", "/other/", "r", 401)
         self._test_rights("from_file", "tmp", "/other/", "r", 403)
@@ -122,7 +137,8 @@ permissions: Rr""")
     def test_from_file_limited_get(self):
         rights_file_path = os.path.join(self.colpath, "rights")
         with open(rights_file_path, "w") as f:
-            f.write("""\
+            f.write(
+                """\
 [write-all]
 user: tmp
 collection: .*
@@ -130,9 +146,9 @@ permissions: RrWw
 [limited-public]
 user: .*
 collection: public/[^/]*
-permissions: i""")
-        self.configure({"rights": {"type": "from_file",
-                                   "file": rights_file_path}})
+permissions: i"""
+            )
+        self.configure({"rights": {"type": "from_file", "file": rights_file_path}})
         self.mkcalendar("/tmp/calendar", login="tmp:bepo")
         self.mkcol("/public", login="tmp:bepo")
         self.mkcalendar("/public/calendar", login="tmp:bepo")
@@ -143,9 +159,8 @@ permissions: i""")
 
     def test_custom(self) -> None:
         """Custom rights management."""
-        self._test_rights("radicale.tests.custom.rights", "", "/", "r", 401)
-        self._test_rights(
-            "radicale.tests.custom.rights", "", "/tmp/", "r", 207)
+        self._test_rights(".tests.custom.rights", "", "/", "r", 401)
+        self._test_rights(".tests.custom.rights", "", "/tmp/", "r", 207)
 
     def test_collections_and_items(self) -> None:
         """Test rights for creation of collections, calendars and items.

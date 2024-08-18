@@ -26,10 +26,10 @@ from typing import ClassVar, cast
 
 import pytest
 
-import radicale.tests.custom.storage_simple_sync
-from radicale.tests import BaseTest
-from radicale.tests.helpers import get_file_content
-from radicale.tests.test_base import TestBaseRequests as _TestBaseRequests
+from .custom import storage_simple_sync
+from . import BaseTest
+from .helpers import get_file_content
+from .test_base import TestBaseRequests as _TestBaseRequests
 
 
 class TestMultiFileSystem(BaseTest):
@@ -52,30 +52,48 @@ class TestMultiFileSystem(BaseTest):
 
     def test_hook(self) -> None:
         """Run hook."""
-        self.configure({"storage": {"hook": "mkdir %s" % os.path.join(
-            "collection-root", "created_by_hook")}})
+        self.configure(
+            {
+                "storage": {
+                    "hook": "mkdir %s"
+                    % os.path.join("collection-root", "created_by_hook")
+                }
+            }
+        )
         self.mkcalendar("/calendar.ics/")
         self.propfind("/created_by_hook/")
 
     def test_hook_read_access(self) -> None:
         """Verify that hook is not run for read accesses."""
-        self.configure({"storage": {"hook": "mkdir %s" % os.path.join(
-            "collection-root", "created_by_hook")}})
+        self.configure(
+            {
+                "storage": {
+                    "hook": "mkdir %s"
+                    % os.path.join("collection-root", "created_by_hook")
+                }
+            }
+        )
         self.propfind("/")
         self.propfind("/created_by_hook/", check=404)
 
-    @pytest.mark.skipif(not shutil.which("flock"),
-                        reason="flock command not found")
+    @pytest.mark.skipif(not shutil.which("flock"), reason="flock command not found")
     def test_hook_storage_locked(self) -> None:
         """Verify that the storage is locked when the hook runs."""
-        self.configure({"storage": {"hook": (
-            "flock -n .Radicale.lock || exit 0; exit 1")}})
+        self.configure(
+            {"storage": {"hook": ("flock -n .Radicale.lock || exit 0; exit 1")}}
+        )
         self.mkcalendar("/calendar.ics/")
 
     def test_hook_principal_collection_creation(self) -> None:
         """Verify that the hooks runs when a new user is created."""
-        self.configure({"storage": {"hook": "mkdir %s" % os.path.join(
-            "collection-root", "created_by_hook")}})
+        self.configure(
+            {
+                "storage": {
+                    "hook": "mkdir %s"
+                    % os.path.join("collection-root", "created_by_hook")
+                }
+            }
+        )
         self.propfind("/", login="user:")
         self.propfind("/created_by_hook/")
 
@@ -91,8 +109,9 @@ class TestMultiFileSystem(BaseTest):
         path = "/calendar.ics/event1.ics"
         self.put(path, event)
         _, answer1 = self.get(path)
-        cache_folder = os.path.join(self.colpath, "collection-root",
-                                    "calendar.ics", ".Radicale.cache", "item")
+        cache_folder = os.path.join(
+            self.colpath, "collection-root", "calendar.ics", ".Radicale.cache", "item"
+        )
         assert os.path.exists(os.path.join(cache_folder, "event1.ics"))
         shutil.rmtree(cache_folder)
         _, answer2 = self.get(path)
@@ -101,8 +120,7 @@ class TestMultiFileSystem(BaseTest):
 
     def test_put_whole_calendar_uids_used_as_file_names(self) -> None:
         """Test if UIDs are used as file names."""
-        _TestBaseRequests.test_put_whole_calendar(
-            cast(_TestBaseRequests, self))
+        _TestBaseRequests.test_put_whole_calendar(cast(_TestBaseRequests, self))
         for uid in ("todo", "event"):
             _, answer = self.get("/calendar.ics/%s.ics" % uid)
             assert "\r\nUID:%s\r\n" % uid in answer
@@ -110,13 +128,14 @@ class TestMultiFileSystem(BaseTest):
     def test_put_whole_calendar_random_uids_used_as_file_names(self) -> None:
         """Test if UIDs are used as file names."""
         _TestBaseRequests.test_put_whole_calendar_without_uids(
-            cast(_TestBaseRequests, self))
+            cast(_TestBaseRequests, self)
+        )
         _, answer = self.get("/calendar.ics")
         assert answer is not None
         uids = []
         for line in answer.split("\r\n"):
             if line.startswith("UID:"):
-                uids.append(line[len("UID:"):])
+                uids.append(line[len("UID:") :])
         for uid in uids:
             _, answer = self.get("/calendar.ics/%s.ics" % uid)
             assert answer is not None
@@ -124,23 +143,22 @@ class TestMultiFileSystem(BaseTest):
 
     def test_put_whole_addressbook_uids_used_as_file_names(self) -> None:
         """Test if UIDs are used as file names."""
-        _TestBaseRequests.test_put_whole_addressbook(
-            cast(_TestBaseRequests, self))
+        _TestBaseRequests.test_put_whole_addressbook(cast(_TestBaseRequests, self))
         for uid in ("contact1", "contact2"):
             _, answer = self.get("/contacts.vcf/%s.vcf" % uid)
             assert "\r\nUID:%s\r\n" % uid in answer
 
-    def test_put_whole_addressbook_random_uids_used_as_file_names(
-            self) -> None:
+    def test_put_whole_addressbook_random_uids_used_as_file_names(self) -> None:
         """Test if UIDs are used as file names."""
         _TestBaseRequests.test_put_whole_addressbook_without_uids(
-            cast(_TestBaseRequests, self))
+            cast(_TestBaseRequests, self)
+        )
         _, answer = self.get("/contacts.vcf")
         assert answer is not None
         uids = []
         for line in answer.split("\r\n"):
             if line.startswith("UID:"):
-                uids.append(line[len("UID:"):])
+                uids.append(line[len("UID:") :])
         for uid in uids:
             _, answer = self.get("/contacts.vcf/%s.vcf" % uid)
             assert answer is not None
@@ -163,8 +181,7 @@ class TestCustomStorageSystem(BaseTest):
 
     def setup_method(self) -> None:
         _TestBaseRequests.setup_method(cast(_TestBaseRequests, self))
-        self.configure({"storage": {
-            "type": "radicale.tests.custom.storage_simple_sync"}})
+        self.configure({"storage": {"type": ".tests.custom.storage_simple_sync"}})
 
     full_sync_token_support: ClassVar[bool] = False
 
@@ -183,7 +200,6 @@ class TestCustomStorageSystemCallable(BaseTest):
 
     def setup_method(self) -> None:
         _TestBaseRequests.setup_method(cast(_TestBaseRequests, self))
-        self.configure({"storage": {
-            "type": radicale.tests.custom.storage_simple_sync.Storage}})
+        self.configure({"storage": {"type": storage_simple_sync.Storage}})
 
     test_add_event = _TestBaseRequests.test_add_event

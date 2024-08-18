@@ -28,12 +28,12 @@ if the reverse proxy is not configured properly.
 
 from typing import Tuple, Union
 
-from radicale import types
-from radicale.auth import none
+from . import types
+from .auth import none
 
 
 class Auth(none.Auth):
-
-    def get_external_login(self, environ: types.WSGIEnviron) -> Union[
-            Tuple[()], Tuple[str, str]]:
+    def get_external_login(
+        self, environ: types.WSGIEnviron
+    ) -> Union[Tuple[()], Tuple[str, str]]:
         return environ.get("HTTP_X_REMOTE_USER", ""), ""

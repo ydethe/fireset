@@ -22,8 +22,8 @@ from typing import List, Tuple
 
 import pytest
 
-from radicale import config, types
-from radicale.tests.helpers import configuration_to_dict
+from . import config, types
+from .tests.helpers import configuration_to_dict
 
 
 class TestConfig:
@@ -53,14 +53,17 @@ class TestConfig:
         assert len(config.parse_compound_paths("config", None)) == 1
 
         assert len(config.parse_compound_paths(os.pathsep.join(["", ""]))) == 0
-        assert len(config.parse_compound_paths(os.pathsep.join([
-            "", "config", ""]))) == 1
+        assert (
+            len(config.parse_compound_paths(os.pathsep.join(["", "config", ""]))) == 1
+        )
 
-        paths = config.parse_compound_paths(os.pathsep.join([
-            "config1", "?config2", "config3"]))
+        paths = config.parse_compound_paths(
+            os.pathsep.join(["config1", "?config2", "config3"])
+        )
         assert len(paths) == 3
-        for i, (name, ignore_if_missing) in enumerate([
-                ("config1", False), ("config2", True), ("config3", False)]):
+        for i, (name, ignore_if_missing) in enumerate(
+            [("config1", False), ("config2", True), ("config3", False)]
+        ):
             assert os.path.isabs(paths[i][0])
             assert os.path.basename(paths[i][0]) == name
             assert paths[i][1] is ignore_if_missing
@@ -70,8 +73,7 @@ class TestConfig:
         config.load([(config_path, False)])
 
     def test_load_full(self) -> None:
-        config_path = self._write_config(
-            configuration_to_dict(config.load()), "config")
+        config_path = self._write_config(configuration_to_dict(config.load()), "config")
         config.load([(config_path, False)])
 
     def test_load_missing(self) -> None:
@@ -83,14 +85,14 @@ class TestConfig:
         assert "Failed to load config file %r" % config_path in str(e)
 
     def test_load_multiple(self) -> None:
-        config_path1 = self._write_config({
-            "server": {"hosts": "192.0.2.1:1111"}}, "config1")
-        config_path2 = self._write_config({
-            "server": {"max_connections": 1111}}, "config2")
-        configuration = config.load([(config_path1, False),
-                                     (config_path2, False)])
-        server_hosts: List[Tuple[str, int]] = configuration.get(
-            "server", "hosts")
+        config_path1 = self._write_config(
+            {"server": {"hosts": "192.0.2.1:1111"}}, "config1"
+        )
+        config_path2 = self._write_config(
+            {"server": {"max_connections": 1111}}, "config2"
+        )
+        configuration = config.load([(config_path1, False), (config_path2, False)])
+        server_hosts: List[Tuple[str, int]] = configuration.get("server", "hosts")
         assert len(server_hosts) == 1
         assert server_hosts[0] == ("192.0.2.1", 1111)
         assert configuration.get("server", "max_connections") == 1111
@@ -138,17 +140,18 @@ class TestConfig:
 
     def test_privileged(self) -> None:
         configuration = config.load()
-        configuration.update({"server": {"_internal_server": "True"}},
-                             "test", privileged=True)
+        configuration.update(
+            {"server": {"_internal_server": "True"}}, "test", privileged=True
+        )
         with pytest.raises(Exception) as exc_info:
-            configuration.update(
-                {"server": {"_internal_server": "True"}}, "test")
+            configuration.update({"server": {"_internal_server": "True"}}, "test")
         e = exc_info.value
         assert "Invalid option '_internal_server'" in str(e)
 
     def test_plugin_schema(self) -> None:
         plugin_schema: types.CONFIG_SCHEMA = {
-            "auth": {"new_option": {"value": "False", "type": bool}}}
+            "auth": {"new_option": {"value": "False", "type": bool}}
+        }
         configuration = config.load()
         configuration.update({"auth": {"type": "new_plugin"}}, "test")
         plugin_configuration = configuration.copy(plugin_schema)
@@ -159,7 +162,8 @@ class TestConfig:
 
     def test_plugin_schema_duplicate_option(self) -> None:
         plugin_schema: types.CONFIG_SCHEMA = {
-            "auth": {"type": {"value": "False", "type": bool}}}
+            "auth": {"type": {"value": "False", "type": bool}}
+        }
         configuration = config.load()
         with pytest.raises(Exception) as exc_info:
             configuration.copy(plugin_schema)
@@ -168,7 +172,8 @@ class TestConfig:
 
     def test_plugin_schema_invalid(self) -> None:
         plugin_schema: types.CONFIG_SCHEMA = {
-            "server": {"new_option": {"value": "False", "type": bool}}}
+            "server": {"new_option": {"value": "False", "type": bool}}
+        }
         configuration = config.load()
         with pytest.raises(Exception) as exc_info:
             configuration.copy(plugin_schema)
@@ -178,8 +183,9 @@ class TestConfig:
     def test_plugin_schema_option_invalid(self) -> None:
         plugin_schema: types.CONFIG_SCHEMA = {"auth": {}}
         configuration = config.load()
-        configuration.update({"auth": {"type": "new_plugin",
-                                       "new_option": False}}, "test")
+        configuration.update(
+            {"auth": {"type": "new_plugin", "new_option": False}}, "test"
+        )
         with pytest.raises(Exception) as exc_info:
             configuration.copy(plugin_schema)
         e = exc_info.value

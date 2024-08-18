@@ -37,8 +37,8 @@ Leading or ending slashes are trimmed from collection's path.
 import configparser
 import re
 
-from radicale import config, pathutils, rights
-from radicale.log import logger
+from . import config, pathutils, rights
+from .log import logger
 
 
 class Rights(rights.BaseRights):
@@ -59,8 +59,9 @@ class Rights(rights.BaseRights):
             with open(self._filename, "r") as f:
                 rights_config.read_file(f)
         except Exception as e:
-            raise RuntimeError("Failed to load rights file %r: %s" %
-                               (self._filename, e)) from e
+            raise RuntimeError(
+                "Failed to load rights file %r: %s" % (self._filename, e)
+            ) from e
         for section in rights_config.sections():
             try:
                 user_pattern = rights_config.get(section, "user")
@@ -69,19 +70,34 @@ class Rights(rights.BaseRights):
                 user_match = re.fullmatch(user_pattern.format(), user)
                 collection_match = user_match and re.fullmatch(
                     collection_pattern.format(
-                        *(re.escape(s) for s in user_match.groups()),
-                        user=escaped_user), sane_path)
+                        *(re.escape(s) for s in user_match.groups()), user=escaped_user
+                    ),
+                    sane_path,
+                )
             except Exception as e:
-                raise RuntimeError("Error in section %r of rights file %r: "
-                                   "%s" % (section, self._filename, e)) from e
+                raise RuntimeError(
+                    "Error in section %r of rights file %r: "
+                    "%s" % (section, self._filename, e)
+                ) from e
             if user_match and collection_match:
                 permission = rights_config.get(section, "permissions")
-                logger.debug("Rule %r:%r matches %r:%r from section %r permission %r",
-                             user, sane_path, user_pattern,
-                             collection_pattern, section, permission)
+                logger.debug(
+                    "Rule %r:%r matches %r:%r from section %r permission %r",
+                    user,
+                    sane_path,
+                    user_pattern,
+                    collection_pattern,
+                    section,
+                    permission,
+                )
                 return permission
-            logger.debug("Rule %r:%r doesn't match %r:%r from section %r",
-                         user, sane_path, user_pattern, collection_pattern,
-                         section)
+            logger.debug(
+                "Rule %r:%r doesn't match %r:%r from section %r",
+                user,
+                sane_path,
+                user_pattern,
+                collection_pattern,
+                section,
+            )
         logger.info("Rights: %r:%r doesn't match any section", user, sane_path)
         return ""

@@ -26,9 +26,9 @@ from typing import Any, Callable, ClassVar, Iterable, List, Optional, Tuple
 
 import defusedxml.ElementTree as DefusedET
 
-from radicale import storage, xmlutils
-from radicale.tests import RESPONSES, BaseTest
-from radicale.tests.helpers import get_file_content
+from . import storage, xmlutils
+from .tests import RESPONSES, BaseTest
+from .tests.helpers import get_file_content
 
 
 class TestBaseRequests(BaseTest):
@@ -41,13 +41,14 @@ class TestBaseRequests(BaseTest):
         BaseTest.setup_method(self)
         rights_file_path = os.path.join(self.colpath, "rights")
         with open(rights_file_path, "w") as f:
-            f.write("""\
+            f.write(
+                """\
 [allow all]
 user: .*
 collection: .*
-permissions: RrWw""")
-        self.configure({"rights": {"file": rights_file_path,
-                                   "type": "from_file"}})
+permissions: RrWw"""
+            )
+        self.configure({"rights": {"file": rights_file_path, "type": "from_file"}})
 
     def test_root(self) -> None:
         """GET request at "/"."""
@@ -59,52 +60,63 @@ permissions: RrWw""")
     def test_root_script_name(self) -> None:
         """GET request at "/" with SCRIPT_NAME."""
         for path in ["", "/", "//"]:
-            _, headers, _ = self.request("GET", path, check=302,
-                                         SCRIPT_NAME="/radicale")
-            assert headers.get("Location") == "/radicale/.web"
+            _, headers, _ = self.request("GET", path, check=302, SCRIPT_NAME="/")
+            assert headers.get("Location") == "//.web"
 
     def test_root_broken_script_name(self) -> None:
         """GET request at "/" with SCRIPT_NAME ending with "/"."""
         for script_name, prefix in [
-                ("/", ""), ("//", ""), ("/radicale/", "/radicale"),
-                ("radicale", None), ("radicale//", None)]:
+            ("/", ""),
+            ("//", ""),
+            ("//", "/"),
+            ("", None),
+            ("//", None),
+        ]:
             _, headers, _ = self.request(
-                "GET", "/", check=500 if prefix is None else 302,
-                SCRIPT_NAME=script_name)
-            assert (prefix is None or
-                    headers.get("Location") == prefix + "/.web")
+                "GET",
+                "/",
+                check=500 if prefix is None else 302,
+                SCRIPT_NAME=script_name,
+            )
+            assert prefix is None or headers.get("Location") == prefix + "/.web"
 
     def test_root_http_x_script_name(self) -> None:
         """GET request at "/" with HTTP_X_SCRIPT_NAME."""
         for path in ["", "/", "//"]:
-            _, headers, _ = self.request("GET", path, check=302,
-                                         HTTP_X_SCRIPT_NAME="/radicale")
-            assert headers.get("Location") == "/radicale/.web"
+            _, headers, _ = self.request("GET", path, check=302, HTTP_X_SCRIPT_NAME="/")
+            assert headers.get("Location") == "//.web"
 
     def test_root_broken_http_x_script_name(self) -> None:
         """GET request at "/" with HTTP_X_SCRIPT_NAME ending with "/"."""
         for script_name, prefix in [
-                ("/", ""), ("//", ""), ("/radicale/", "/radicale"),
-                ("radicale", None), ("radicale//", None)]:
+            ("/", ""),
+            ("//", ""),
+            ("//", "/"),
+            ("", None),
+            ("//", None),
+        ]:
             _, headers, _ = self.request(
-                "GET", "/", check=400 if prefix is None else 302,
-                HTTP_X_SCRIPT_NAME=script_name)
-            assert (prefix is None or
-                    headers.get("Location") == prefix + "/.web")
+                "GET",
+                "/",
+                check=400 if prefix is None else 302,
+                HTTP_X_SCRIPT_NAME=script_name,
+            )
+            assert prefix is None or headers.get("Location") == prefix + "/.web"
 
     def test_sanitized_path(self) -> None:
         """GET request with unsanitized paths."""
         for path, sane_path in [
-                ("//.web", "/.web"), ("//.web/", "/.web/"),
-                ("/.web//", "/.web/"), ("/.web/a//b", "/.web/a/b")]:
+            ("//.web", "/.web"),
+            ("//.web/", "/.web/"),
+            ("/.web//", "/.web/"),
+            ("/.web/a//b", "/.web/a/b"),
+        ]:
             _, headers, _ = self.request("GET", path, check=301)
             assert headers.get("Location") == sane_path
-            _, headers, _ = self.request("GET", path, check=301,
-                                         SCRIPT_NAME="/radicale")
-            assert headers.get("Location") == "/radicale%s" % sane_path
-            _, headers, _ = self.request("GET", path, check=301,
-                                         HTTP_X_SCRIPT_NAME="/radicale")
-            assert headers.get("Location") == "/radicale%s" % sane_path
+            _, headers, _ = self.request("GET", path, check=301, SCRIPT_NAME="/")
+            assert headers.get("Location") == "/%s" % sane_path
+            _, headers, _ = self.request("GET", path, check=301, HTTP_X_SCRIPT_NAME="/")
+            assert headers.get("Location") == "/%s" % sane_path
 
     def test_add_event(self) -> None:
         """Add an event."""
@@ -133,7 +145,8 @@ permissions: RrWw""")
         event = get_file_content("event1.ics")
         self.put("/calendar.ics/event1.ics", event)
         status, answer = self.put(
-            "/calendar.ics/event1-duplicate.ics", event, check=None)
+            "/calendar.ics/event1-duplicate.ics", event, check=None
+        )
         assert status in (403, 409)
         xml = DefusedET.fromstring(answer)
         assert xml.tag == xmlutils.make_clark("D:error")
@@ -181,8 +194,7 @@ permissions: RrWw""")
     def test_add_contact_without_uid(self) -> None:
         """Add a contact without UID."""
         self.create_addressbook("/contacts.vcf/")
-        contact = get_file_content("contact1.vcf").replace("UID:contact1\n",
-                                                           "")
+        contact = get_file_content("contact1.vcf").replace("UID:contact1\n", "")
         assert "\nUID" not in contact
         path = "/contacts.vcf/contact.vcf"
         self.put(path, contact, check=400)
@@ -236,11 +248,11 @@ permissions: RrWw""")
         uids = []
         for line in answer.split("\r\n"):
             if line.startswith("UID:"):
-                uids.append(line[len("UID:"):])
+                uids.append(line[len("UID:") :])
         assert len(uids) == 2
         for i, uid1 in enumerate(uids):
             assert uid1
-            for uid2 in uids[i + 1:]:
+            for uid2 in uids[i + 1 :]:
                 assert uid1 != uid2
 
     def test_put_whole_calendar_case_sensitive_uids(self) -> None:
@@ -262,19 +274,18 @@ permissions: RrWw""")
     def test_put_whole_addressbook_without_uids(self) -> None:
         """Create a whole addressbook without UID."""
         contacts = get_file_content("contact_multiple.vcf")
-        contacts = contacts.replace("UID:contact1\n", "").replace(
-            "UID:contact2\n", "")
+        contacts = contacts.replace("UID:contact1\n", "").replace("UID:contact2\n", "")
         assert "\nUID:" not in contacts
         self.put("/contacts.vcf/", contacts)
         _, answer = self.get("/contacts.vcf")
         uids = []
         for line in answer.split("\r\n"):
             if line.startswith("UID:"):
-                uids.append(line[len("UID:"):])
+                uids.append(line[len("UID:") :])
         assert len(uids) == 2
         for i, uid1 in enumerate(uids):
             assert uid1
-            for uid2 in uids[i + 1:]:
+            for uid2 in uids[i + 1 :]:
                 assert uid1 != uid2
 
     def test_verify(self) -> None:
@@ -311,8 +322,7 @@ permissions: RrWw""")
         assert status in (403, 409)
         xml = DefusedET.fromstring(answer)
         assert xml.tag == xmlutils.make_clark("D:error")
-        assert xml.find(xmlutils.make_clark(
-            "D:resource-must-be-null")) is not None
+        assert xml.find(xmlutils.make_clark("D:resource-must-be-null")) is not None
 
     def test_mkcalendar_intermediate(self) -> None:
         """Try make a calendar in a unmapped collection."""
@@ -354,8 +364,9 @@ permissions: RrWw""")
         path1 = "/calendar.ics/event1.ics"
         path2 = "/calendar.ics/event2.ics"
         self.put(path1, event)
-        self.request("MOVE", path1, check=201,
-                     HTTP_DESTINATION="http://127.0.0.1/"+path2)
+        self.request(
+            "MOVE", path1, check=201, HTTP_DESTINATION="http://127.0.0.1/" + path2
+        )
         self.get(path1, check=404)
         self.get(path2)
 
@@ -367,8 +378,9 @@ permissions: RrWw""")
         path1 = "/calendar1.ics/event1.ics"
         path2 = "/calendar2.ics/event2.ics"
         self.put(path1, event)
-        self.request("MOVE", path1, check=201,
-                     HTTP_DESTINATION="http://127.0.0.1/"+path2)
+        self.request(
+            "MOVE", path1, check=201, HTTP_DESTINATION="http://127.0.0.1/" + path2
+        )
         self.get(path1, check=404)
         self.get(path2)
 
@@ -382,7 +394,8 @@ permissions: RrWw""")
         self.put(path1, event)
         self.put("/calendar2.ics/event1.ics", event)
         status, _, answer = self.request(
-            "MOVE", path1, HTTP_DESTINATION="http://127.0.0.1/"+path2)
+            "MOVE", path1, HTTP_DESTINATION="http://127.0.0.1/" + path2
+        )
         assert status in (403, 409)
         xml = DefusedET.fromstring(answer)
         assert xml.tag == xmlutils.make_clark("D:error")
@@ -397,14 +410,20 @@ permissions: RrWw""")
         path2 = "/calendar2.ics/event1.ics"
         self.put(path1, event)
         self.put(path2, event)
-        self.request("MOVE", path1, check=412,
-                     HTTP_DESTINATION="http://127.0.0.1/"+path2)
-        self.request("MOVE", path1, check=204, HTTP_OVERWRITE="T",
-                     HTTP_DESTINATION="http://127.0.0.1/"+path2)
+        self.request(
+            "MOVE", path1, check=412, HTTP_DESTINATION="http://127.0.0.1/" + path2
+        )
+        self.request(
+            "MOVE",
+            path1,
+            check=204,
+            HTTP_OVERWRITE="T",
+            HTTP_DESTINATION="http://127.0.0.1/" + path2,
+        )
 
     def test_move_between_collections_overwrite_uid_conflict(self) -> None:
         """Move an item to a collection which already contains the item with
-           a different UID."""
+        a different UID."""
         self.mkcalendar("/calendar1.ics/")
         self.mkcalendar("/calendar2.ics/")
         event1 = get_file_content("event1.ics")
@@ -414,8 +433,11 @@ permissions: RrWw""")
         self.put(path1, event1)
         self.put(path2, event2)
         status, _, answer = self.request(
-            "MOVE", path1, HTTP_OVERWRITE="T",
-            HTTP_DESTINATION="http://127.0.0.1/"+path2)
+            "MOVE",
+            path1,
+            HTTP_OVERWRITE="T",
+            HTTP_DESTINATION="http://127.0.0.1/" + path2,
+        )
         assert status in (403, 409)
         xml = DefusedET.fromstring(answer)
         assert xml.tag == xmlutils.make_clark("D:error")
@@ -646,13 +668,16 @@ permissions: RrWw""")
     def test_put_whole_calendar_multiple_events_with_same_uid(self) -> None:
         """Add two events with the same UID."""
         self.put("/calendar.ics/", get_file_content("event2.ics"))
-        _, responses = self.report("/calendar.ics/", """\
+        _, responses = self.report(
+            "/calendar.ics/",
+            """\
 <?xml version="1.0" encoding="utf-8" ?>
 <C:calendar-query xmlns:C="urn:ietf:params:xml:ns:caldav">
     <D:prop xmlns:D="DAV:">
         <D:getetag/>
     </D:prop>
-</C:calendar-query>""")
+</C:calendar-query>""",
+        )
         assert len(responses) == 1
         response = responses["/calendar.ics/event2.ics"]
         assert not isinstance(response, int)
@@ -661,9 +686,13 @@ permissions: RrWw""")
         _, answer = self.get("/calendar.ics/")
         assert answer.count("BEGIN:VEVENT") == 2
 
-    def _test_filter(self, filters: Iterable[str], kind: str = "event",
-                     test: Optional[str] = None, items: Iterable[int] = (1,)
-                     ) -> List[str]:
+    def _test_filter(
+        self,
+        filters: Iterable[str],
+        kind: str = "event",
+        test: Optional[str] = None,
+        items: Iterable[int] = (1,),
+    ) -> List[str]:
         filter_template = "<C:filter>%s</C:filter>"
         create_collection_fn: Callable[[str], Any]
         if kind in ("event", "journal", "todo"):
@@ -682,7 +711,10 @@ permissions: RrWw""")
             report = "addressbook-query"
         else:
             raise ValueError("Unsupported kind: %r" % kind)
-        status, _, = self.delete(path, check=None)
+        (
+            status,
+            _,
+        ) = self.delete(path, check=None)
         assert status in (200, 404)
         create_collection_fn(path)
         for i in items:
@@ -690,14 +722,19 @@ permissions: RrWw""")
             event = get_file_content(filename)
             self.put(posixpath.join(path, filename), event)
         filters_text = "".join(filter_template % f for f in filters)
-        _, responses = self.report(path, """\
+        _, responses = self.report(
+            path,
+            """\
 <?xml version="1.0" encoding="utf-8" ?>
 <C:{1} xmlns:C="{0}">
     <D:prop xmlns:D="DAV:">
         <D:getetag/>
     </D:prop>
     {2}
-</C:{1}>""".format(namespace, report, filters_text))
+</C:{1}>""".format(
+                namespace, report, filters_text
+            ),
+        )
         assert responses is not None
         paths = []
         for path, props in responses.items():
@@ -711,194 +748,321 @@ permissions: RrWw""")
         self._test_filter([""], kind="contact")
 
     def test_addressbook_prop_filter(self) -> None:
-        assert "/contacts.vcf/contact1.vcf" in self._test_filter(["""\
+        assert "/contacts.vcf/contact1.vcf" in self._test_filter(
+            [
+                """\
 <C:prop-filter name="NICKNAME">
     <C:text-match collation="i;unicode-casemap" match-type="contains"
         >es</C:text-match>
-</C:prop-filter>"""], "contact")
-        assert "/contacts.vcf/contact1.vcf" in self._test_filter(["""\
+</C:prop-filter>"""
+            ],
+            "contact",
+        )
+        assert "/contacts.vcf/contact1.vcf" in self._test_filter(
+            [
+                """\
 <C:prop-filter name="NICKNAME">
     <C:text-match collation="i;unicode-casemap">es</C:text-match>
-</C:prop-filter>"""], "contact")
-        assert "/contacts.vcf/contact1.vcf" not in self._test_filter(["""\
+</C:prop-filter>"""
+            ],
+            "contact",
+        )
+        assert "/contacts.vcf/contact1.vcf" not in self._test_filter(
+            [
+                """\
 <C:prop-filter name="NICKNAME">
     <C:text-match collation="i;unicode-casemap" match-type="contains"
         >a</C:text-match>
-</C:prop-filter>"""], "contact")
-        assert "/contacts.vcf/contact1.vcf" in self._test_filter(["""\
+</C:prop-filter>"""
+            ],
+            "contact",
+        )
+        assert "/contacts.vcf/contact1.vcf" in self._test_filter(
+            [
+                """\
 <C:prop-filter name="NICKNAME">
     <C:text-match collation="i;unicode-casemap" match-type="equals"
         >test</C:text-match>
-</C:prop-filter>"""], "contact")
-        assert "/contacts.vcf/contact1.vcf" not in self._test_filter(["""\
+</C:prop-filter>"""
+            ],
+            "contact",
+        )
+        assert "/contacts.vcf/contact1.vcf" not in self._test_filter(
+            [
+                """\
 <C:prop-filter name="NICKNAME">
     <C:text-match collation="i;unicode-casemap" match-type="equals"
         >tes</C:text-match>
-</C:prop-filter>"""], "contact")
-        assert "/contacts.vcf/contact1.vcf" not in self._test_filter(["""\
+</C:prop-filter>"""
+            ],
+            "contact",
+        )
+        assert "/contacts.vcf/contact1.vcf" not in self._test_filter(
+            [
+                """\
 <C:prop-filter name="NICKNAME">
     <C:text-match collation="i;unicode-casemap" match-type="equals"
         >est</C:text-match>
-</C:prop-filter>"""], "contact")
-        assert "/contacts.vcf/contact1.vcf" in self._test_filter(["""\
+</C:prop-filter>"""
+            ],
+            "contact",
+        )
+        assert "/contacts.vcf/contact1.vcf" in self._test_filter(
+            [
+                """\
 <C:prop-filter name="NICKNAME">
     <C:text-match collation="i;unicode-casemap" match-type="starts-with"
         >tes</C:text-match>
-</C:prop-filter>"""], "contact")
-        assert "/contacts.vcf/contact1.vcf" not in self._test_filter(["""\
+</C:prop-filter>"""
+            ],
+            "contact",
+        )
+        assert "/contacts.vcf/contact1.vcf" not in self._test_filter(
+            [
+                """\
 <C:prop-filter name="NICKNAME">
     <C:text-match collation="i;unicode-casemap" match-type="starts-with"
         >est</C:text-match>
-</C:prop-filter>"""], "contact")
-        assert "/contacts.vcf/contact1.vcf" in self._test_filter(["""\
+</C:prop-filter>"""
+            ],
+            "contact",
+        )
+        assert "/contacts.vcf/contact1.vcf" in self._test_filter(
+            [
+                """\
 <C:prop-filter name="NICKNAME">
     <C:text-match collation="i;unicode-casemap" match-type="ends-with"
         >est</C:text-match>
-</C:prop-filter>"""], "contact")
-        assert "/contacts.vcf/contact1.vcf" not in self._test_filter(["""\
+</C:prop-filter>"""
+            ],
+            "contact",
+        )
+        assert "/contacts.vcf/contact1.vcf" not in self._test_filter(
+            [
+                """\
 <C:prop-filter name="NICKNAME">
     <C:text-match collation="i;unicode-casemap" match-type="ends-with"
         >tes</C:text-match>
-</C:prop-filter>"""], "contact")
+</C:prop-filter>"""
+            ],
+            "contact",
+        )
 
     def test_addressbook_prop_filter_any(self) -> None:
-        assert "/contacts.vcf/contact1.vcf" in self._test_filter(["""\
+        assert "/contacts.vcf/contact1.vcf" in self._test_filter(
+            [
+                """\
 <C:prop-filter name="NICKNAME">
     <C:text-match collation="i;unicode-casemap">test</C:text-match>
 </C:prop-filter>
 <C:prop-filter name="EMAIL">
     <C:text-match collation="i;unicode-casemap">test</C:text-match>
-</C:prop-filter>"""], "contact", test="anyof")
-        assert "/contacts.vcf/contact1.vcf" not in self._test_filter(["""\
+</C:prop-filter>"""
+            ],
+            "contact",
+            test="anyof",
+        )
+        assert "/contacts.vcf/contact1.vcf" not in self._test_filter(
+            [
+                """\
 <C:prop-filter name="NICKNAME">
     <C:text-match collation="i;unicode-casemap">a</C:text-match>
 </C:prop-filter>
 <C:prop-filter name="EMAIL">
     <C:text-match collation="i;unicode-casemap">test</C:text-match>
-</C:prop-filter>"""], "contact", test="anyof")
-        assert "/contacts.vcf/contact1.vcf" in self._test_filter(["""\
+</C:prop-filter>"""
+            ],
+            "contact",
+            test="anyof",
+        )
+        assert "/contacts.vcf/contact1.vcf" in self._test_filter(
+            [
+                """\
 <C:prop-filter name="NICKNAME">
     <C:text-match collation="i;unicode-casemap">test</C:text-match>
 </C:prop-filter>
 <C:prop-filter name="EMAIL">
     <C:text-match collation="i;unicode-casemap">test</C:text-match>
-</C:prop-filter>"""], "contact")
+</C:prop-filter>"""
+            ],
+            "contact",
+        )
 
     def test_addressbook_prop_filter_all(self) -> None:
-        assert "/contacts.vcf/contact1.vcf" in self._test_filter(["""\
+        assert "/contacts.vcf/contact1.vcf" in self._test_filter(
+            [
+                """\
 <C:prop-filter name="NICKNAME">
     <C:text-match collation="i;unicode-casemap">tes</C:text-match>
 </C:prop-filter>
 <C:prop-filter name="NICKNAME">
     <C:text-match collation="i;unicode-casemap">est</C:text-match>
-</C:prop-filter>"""], "contact", test="allof")
-        assert "/contacts.vcf/contact1.vcf" not in self._test_filter(["""\
+</C:prop-filter>"""
+            ],
+            "contact",
+            test="allof",
+        )
+        assert "/contacts.vcf/contact1.vcf" not in self._test_filter(
+            [
+                """\
 <C:prop-filter name="NICKNAME">
     <C:text-match collation="i;unicode-casemap">test</C:text-match>
 </C:prop-filter>
 <C:prop-filter name="EMAIL">
     <C:text-match collation="i;unicode-casemap">test</C:text-match>
-</C:prop-filter>"""], "contact", test="allof")
+</C:prop-filter>"""
+            ],
+            "contact",
+            test="allof",
+        )
 
     def test_calendar_empty_filter(self) -> None:
         self._test_filter([""])
 
     def test_calendar_tag_filter(self) -> None:
         """Report request with tag-based filter on calendar."""
-        assert "/calendar.ics/event1.ics" in self._test_filter(["""\
-<C:comp-filter name="VCALENDAR"></C:comp-filter>"""])
+        assert "/calendar.ics/event1.ics" in self._test_filter(
+            [
+                """\
+<C:comp-filter name="VCALENDAR"></C:comp-filter>"""
+            ]
+        )
 
     def test_item_tag_filter(self) -> None:
         """Report request with tag-based filter on an item."""
-        assert "/calendar.ics/event1.ics" in self._test_filter(["""\
+        assert "/calendar.ics/event1.ics" in self._test_filter(
+            [
+                """\
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VEVENT"></C:comp-filter>
-</C:comp-filter>"""])
-        assert "/calendar.ics/event1.ics" not in self._test_filter(["""\
+</C:comp-filter>"""
+            ]
+        )
+        assert "/calendar.ics/event1.ics" not in self._test_filter(
+            [
+                """\
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VTODO"></C:comp-filter>
-</C:comp-filter>"""])
+</C:comp-filter>"""
+            ]
+        )
 
     def test_item_not_tag_filter(self) -> None:
         """Report request with tag-based is-not filter on an item."""
-        assert "/calendar.ics/event1.ics" not in self._test_filter(["""\
+        assert "/calendar.ics/event1.ics" not in self._test_filter(
+            [
+                """\
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VEVENT">
         <C:is-not-defined />
     </C:comp-filter>
-</C:comp-filter>"""])
-        assert "/calendar.ics/event1.ics" in self._test_filter(["""\
+</C:comp-filter>"""
+            ]
+        )
+        assert "/calendar.ics/event1.ics" in self._test_filter(
+            [
+                """\
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VTODO">
         <C:is-not-defined />
     </C:comp-filter>
-</C:comp-filter>"""])
+</C:comp-filter>"""
+            ]
+        )
 
     def test_item_prop_filter(self) -> None:
         """Report request with prop-based filter on an item."""
-        assert "/calendar.ics/event1.ics" in self._test_filter(["""\
+        assert "/calendar.ics/event1.ics" in self._test_filter(
+            [
+                """\
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VEVENT">
         <C:prop-filter name="SUMMARY"></C:prop-filter>
     </C:comp-filter>
-</C:comp-filter>"""])
-        assert "/calendar.ics/event1.ics" not in self._test_filter(["""\
+</C:comp-filter>"""
+            ]
+        )
+        assert "/calendar.ics/event1.ics" not in self._test_filter(
+            [
+                """\
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VEVENT">
         <C:prop-filter name="UNKNOWN"></C:prop-filter>
     </C:comp-filter>
-</C:comp-filter>"""])
+</C:comp-filter>"""
+            ]
+        )
 
     def test_item_not_prop_filter(self) -> None:
         """Report request with prop-based is-not filter on an item."""
-        assert "/calendar.ics/event1.ics" not in self._test_filter(["""\
+        assert "/calendar.ics/event1.ics" not in self._test_filter(
+            [
+                """\
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VEVENT">
         <C:prop-filter name="SUMMARY">
             <C:is-not-defined />
         </C:prop-filter>
     </C:comp-filter>
-</C:comp-filter>"""])
-        assert "/calendar.ics/event1.ics" in self._test_filter(["""\
+</C:comp-filter>"""
+            ]
+        )
+        assert "/calendar.ics/event1.ics" in self._test_filter(
+            [
+                """\
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VEVENT">
         <C:prop-filter name="UNKNOWN">
             <C:is-not-defined />
         </C:prop-filter>
     </C:comp-filter>
-</C:comp-filter>"""])
+</C:comp-filter>"""
+            ]
+        )
 
     def test_mutiple_filters(self) -> None:
         """Report request with multiple filters on an item."""
-        assert "/calendar.ics/event1.ics" not in self._test_filter(["""\
+        assert "/calendar.ics/event1.ics" not in self._test_filter(
+            [
+                """\
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VEVENT">
         <C:prop-filter name="SUMMARY">
             <C:is-not-defined />
         </C:prop-filter>
     </C:comp-filter>
-</C:comp-filter>""", """
+</C:comp-filter>""",
+                """
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VEVENT">
         <C:prop-filter name="UNKNOWN">
             <C:is-not-defined />
         </C:prop-filter>
     </C:comp-filter>
-</C:comp-filter>"""])
-        assert "/calendar.ics/event1.ics" in self._test_filter(["""\
+</C:comp-filter>""",
+            ]
+        )
+        assert "/calendar.ics/event1.ics" in self._test_filter(
+            [
+                """\
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VEVENT">
         <C:prop-filter name="SUMMARY"></C:prop-filter>
     </C:comp-filter>
-</C:comp-filter>""", """
+</C:comp-filter>""",
+                """
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VEVENT">
         <C:prop-filter name="UNKNOWN">
             <C:is-not-defined />
         </C:prop-filter>
     </C:comp-filter>
-</C:comp-filter>"""])
-        assert "/calendar.ics/event1.ics" in self._test_filter(["""\
+</C:comp-filter>""",
+            ]
+        )
+        assert "/calendar.ics/event1.ics" in self._test_filter(
+            [
+                """\
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VEVENT">
         <C:prop-filter name="SUMMARY"></C:prop-filter>
@@ -906,62 +1070,90 @@ permissions: RrWw""")
             <C:is-not-defined />
         </C:prop-filter>
     </C:comp-filter>
-</C:comp-filter>"""])
+</C:comp-filter>"""
+            ]
+        )
 
     def test_text_match_filter(self) -> None:
         """Report request with text-match filter on calendar."""
-        assert "/calendar.ics/event1.ics" in self._test_filter(["""\
+        assert "/calendar.ics/event1.ics" in self._test_filter(
+            [
+                """\
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VEVENT">
         <C:prop-filter name="SUMMARY">
             <C:text-match>event</C:text-match>
         </C:prop-filter>
     </C:comp-filter>
-</C:comp-filter>"""])
-        assert "/calendar.ics/event1.ics" in self._test_filter(["""\
+</C:comp-filter>"""
+            ]
+        )
+        assert "/calendar.ics/event1.ics" in self._test_filter(
+            [
+                """\
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VEVENT">
         <C:prop-filter name="CATEGORIES">
             <C:text-match>some_category1</C:text-match>
         </C:prop-filter>
     </C:comp-filter>
-</C:comp-filter>"""])
-        assert "/calendar.ics/event1.ics" in self._test_filter(["""\
+</C:comp-filter>"""
+            ]
+        )
+        assert "/calendar.ics/event1.ics" in self._test_filter(
+            [
+                """\
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VEVENT">
         <C:prop-filter name="CATEGORIES">
             <C:text-match collation="i;octet">some_category1</C:text-match>
         </C:prop-filter>
     </C:comp-filter>
-</C:comp-filter>"""])
-        assert "/calendar.ics/event1.ics" not in self._test_filter(["""\
+</C:comp-filter>"""
+            ]
+        )
+        assert "/calendar.ics/event1.ics" not in self._test_filter(
+            [
+                """\
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VEVENT">
         <C:prop-filter name="UNKNOWN">
             <C:text-match>event</C:text-match>
         </C:prop-filter>
     </C:comp-filter>
-</C:comp-filter>"""])
-        assert "/calendar.ics/event1.ics" not in self._test_filter(["""\
+</C:comp-filter>"""
+            ]
+        )
+        assert "/calendar.ics/event1.ics" not in self._test_filter(
+            [
+                """\
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VEVENT">
         <C:prop-filter name="SUMMARY">
             <C:text-match>unknown</C:text-match>
         </C:prop-filter>
     </C:comp-filter>
-</C:comp-filter>"""])
-        assert "/calendar.ics/event1.ics" not in self._test_filter(["""\
+</C:comp-filter>"""
+            ]
+        )
+        assert "/calendar.ics/event1.ics" not in self._test_filter(
+            [
+                """\
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VEVENT">
         <C:prop-filter name="SUMMARY">
             <C:text-match negate-condition="yes">event</C:text-match>
         </C:prop-filter>
     </C:comp-filter>
-</C:comp-filter>"""])
+</C:comp-filter>"""
+            ]
+        )
 
     def test_param_filter(self) -> None:
         """Report request with param-filter on calendar."""
-        assert "/calendar.ics/event1.ics" in self._test_filter(["""\
+        assert "/calendar.ics/event1.ics" in self._test_filter(
+            [
+                """\
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VEVENT">
         <C:prop-filter name="ATTENDEE">
@@ -971,8 +1163,12 @@ permissions: RrWw""")
             </C:param-filter>
         </C:prop-filter>
     </C:comp-filter>
-</C:comp-filter>"""])
-        assert "/calendar.ics/event1.ics" not in self._test_filter(["""\
+</C:comp-filter>"""
+            ]
+        )
+        assert "/calendar.ics/event1.ics" not in self._test_filter(
+            [
+                """\
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VEVENT">
         <C:prop-filter name="ATTENDEE">
@@ -982,8 +1178,12 @@ permissions: RrWw""")
             </C:param-filter>
         </C:prop-filter>
     </C:comp-filter>
-</C:comp-filter>"""])
-        assert "/calendar.ics/event1.ics" not in self._test_filter(["""\
+</C:comp-filter>"""
+            ]
+        )
+        assert "/calendar.ics/event1.ics" not in self._test_filter(
+            [
+                """\
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VEVENT">
         <C:prop-filter name="ATTENDEE">
@@ -992,8 +1192,12 @@ permissions: RrWw""")
             </C:param-filter>
         </C:prop-filter>
     </C:comp-filter>
-</C:comp-filter>"""])
-        assert "/calendar.ics/event1.ics" in self._test_filter(["""\
+</C:comp-filter>"""
+            ]
+        )
+        assert "/calendar.ics/event1.ics" in self._test_filter(
+            [
+                """\
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VEVENT">
         <C:prop-filter name="ATTENDEE">
@@ -1002,29 +1206,45 @@ permissions: RrWw""")
             </C:param-filter>
         </C:prop-filter>
     </C:comp-filter>
-</C:comp-filter>"""])
+</C:comp-filter>"""
+            ]
+        )
 
     def test_time_range_filter_events(self) -> None:
         """Report request with time-range filter on events."""
-        answer = self._test_filter(["""\
+        answer = self._test_filter(
+            [
+                """\
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VEVENT">
         <C:time-range start="20130801T000000Z" end="20131001T000000Z"/>
     </C:comp-filter>
-</C:comp-filter>"""], "event", items=range(1, 6))
+</C:comp-filter>"""
+            ],
+            "event",
+            items=range(1, 6),
+        )
         assert "/calendar.ics/event1.ics" in answer
         assert "/calendar.ics/event2.ics" in answer
         assert "/calendar.ics/event3.ics" in answer
         assert "/calendar.ics/event4.ics" in answer
         assert "/calendar.ics/event5.ics" in answer
-        answer = self._test_filter(["""\
+        answer = self._test_filter(
+            [
+                """\
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VTODO">
         <C:time-range start="20130801T000000Z" end="20131001T000000Z"/>
     </C:comp-filter>
-</C:comp-filter>"""], "event", items=range(1, 6))
+</C:comp-filter>"""
+            ],
+            "event",
+            items=range(1, 6),
+        )
         assert "/calendar.ics/event1.ics" not in answer
-        answer = self._test_filter(["""\
+        answer = self._test_filter(
+            [
+                """\
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VEVENT">
         <C:prop-filter name="ATTENDEE">
@@ -1034,51 +1254,74 @@ permissions: RrWw""")
         </C:prop-filter>
         <C:time-range start="20130801T000000Z" end="20131001T000000Z"/>
     </C:comp-filter>
-</C:comp-filter>"""], items=range(1, 6))
+</C:comp-filter>"""
+            ],
+            items=range(1, 6),
+        )
         assert "/calendar.ics/event1.ics" not in answer
         assert "/calendar.ics/event2.ics" not in answer
         assert "/calendar.ics/event3.ics" not in answer
         assert "/calendar.ics/event4.ics" not in answer
         assert "/calendar.ics/event5.ics" not in answer
-        answer = self._test_filter(["""\
+        answer = self._test_filter(
+            [
+                """\
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VEVENT">
         <C:time-range start="20130902T000000Z" end="20131001T000000Z"/>
     </C:comp-filter>
-</C:comp-filter>"""], items=range(1, 6))
+</C:comp-filter>"""
+            ],
+            items=range(1, 6),
+        )
         assert "/calendar.ics/event1.ics" not in answer
         assert "/calendar.ics/event2.ics" in answer
         assert "/calendar.ics/event3.ics" in answer
         assert "/calendar.ics/event4.ics" in answer
         assert "/calendar.ics/event5.ics" in answer
-        answer = self._test_filter(["""\
+        answer = self._test_filter(
+            [
+                """\
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VEVENT">
         <C:time-range start="20130903T000000Z" end="20130908T000000Z"/>
     </C:comp-filter>
-</C:comp-filter>"""], items=range(1, 6))
+</C:comp-filter>"""
+            ],
+            items=range(1, 6),
+        )
         assert "/calendar.ics/event1.ics" not in answer
         assert "/calendar.ics/event2.ics" not in answer
         assert "/calendar.ics/event3.ics" in answer
         assert "/calendar.ics/event4.ics" in answer
         assert "/calendar.ics/event5.ics" in answer
-        answer = self._test_filter(["""\
+        answer = self._test_filter(
+            [
+                """\
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VEVENT">
         <C:time-range start="20130903T000000Z" end="20130904T000000Z"/>
     </C:comp-filter>
-</C:comp-filter>"""], items=range(1, 6))
+</C:comp-filter>"""
+            ],
+            items=range(1, 6),
+        )
         assert "/calendar.ics/event1.ics" not in answer
         assert "/calendar.ics/event2.ics" not in answer
         assert "/calendar.ics/event3.ics" in answer
         assert "/calendar.ics/event4.ics" not in answer
         assert "/calendar.ics/event5.ics" not in answer
-        answer = self._test_filter(["""\
+        answer = self._test_filter(
+            [
+                """\
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VEVENT">
         <C:time-range start="20130805T000000Z" end="20130810T000000Z"/>
     </C:comp-filter>
-</C:comp-filter>"""], items=range(1, 6))
+</C:comp-filter>"""
+            ],
+            items=range(1, 6),
+        )
         assert "/calendar.ics/event1.ics" not in answer
         assert "/calendar.ics/event2.ics" not in answer
         assert "/calendar.ics/event3.ics" not in answer
@@ -1086,94 +1329,149 @@ permissions: RrWw""")
         assert "/calendar.ics/event5.ics" not in answer
         # HACK: VObject doesn't match RECURRENCE-ID to recurrences, the
         # overwritten recurrence is still used for filtering.
-        answer = self._test_filter(["""\
+        answer = self._test_filter(
+            [
+                """\
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VEVENT">
         <C:time-range start="20170601T063000Z" end="20170601T070000Z"/>
     </C:comp-filter>
-</C:comp-filter>"""], items=(6, 7, 8, 9))
+</C:comp-filter>"""
+            ],
+            items=(6, 7, 8, 9),
+        )
         assert "/calendar.ics/event6.ics" in answer
         assert "/calendar.ics/event7.ics" in answer
         assert "/calendar.ics/event8.ics" in answer
         assert "/calendar.ics/event9.ics" in answer
-        answer = self._test_filter(["""\
+        answer = self._test_filter(
+            [
+                """\
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VEVENT">
         <C:time-range start="20170701T060000Z"/>
     </C:comp-filter>
-</C:comp-filter>"""], items=(6, 7, 8, 9))
+</C:comp-filter>"""
+            ],
+            items=(6, 7, 8, 9),
+        )
         assert "/calendar.ics/event6.ics" in answer
         assert "/calendar.ics/event7.ics" in answer
         assert "/calendar.ics/event8.ics" in answer
         assert "/calendar.ics/event9.ics" not in answer
-        answer = self._test_filter(["""\
+        answer = self._test_filter(
+            [
+                """\
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VEVENT">
         <C:time-range start="20170702T070000Z" end="20170704T060000Z"/>
     </C:comp-filter>
-</C:comp-filter>"""], items=(6, 7, 8, 9))
+</C:comp-filter>"""
+            ],
+            items=(6, 7, 8, 9),
+        )
         assert "/calendar.ics/event6.ics" not in answer
         assert "/calendar.ics/event7.ics" not in answer
         assert "/calendar.ics/event8.ics" not in answer
         assert "/calendar.ics/event9.ics" not in answer
-        answer = self._test_filter(["""\
+        answer = self._test_filter(
+            [
+                """\
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VEVENT">
         <C:time-range start="20170602T075959Z" end="20170602T080000Z"/>
     </C:comp-filter>
-</C:comp-filter>"""], items=(9,))
+</C:comp-filter>"""
+            ],
+            items=(9,),
+        )
         assert "/calendar.ics/event9.ics" in answer
-        answer = self._test_filter(["""\
+        answer = self._test_filter(
+            [
+                """\
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VEVENT">
         <C:time-range start="20170602T080000Z" end="20170603T083000Z"/>
     </C:comp-filter>
-</C:comp-filter>"""], items=(9,))
+</C:comp-filter>"""
+            ],
+            items=(9,),
+        )
         assert "/calendar.ics/event9.ics" not in answer
 
     def test_time_range_filter_events_rrule(self) -> None:
         """Report request with time-range filter on events with rrules."""
-        answer = self._test_filter(["""\
+        answer = self._test_filter(
+            [
+                """\
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VEVENT">
         <C:time-range start="20130801T000000Z" end="20131001T000000Z"/>
     </C:comp-filter>
-</C:comp-filter>"""], "event", items=(1, 2))
+</C:comp-filter>"""
+            ],
+            "event",
+            items=(1, 2),
+        )
         assert "/calendar.ics/event1.ics" in answer
         assert "/calendar.ics/event2.ics" in answer
-        answer = self._test_filter(["""\
+        answer = self._test_filter(
+            [
+                """\
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VEVENT">
         <C:time-range start="20140801T000000Z" end="20141001T000000Z"/>
     </C:comp-filter>
-</C:comp-filter>"""], "event", items=(1, 2))
+</C:comp-filter>"""
+            ],
+            "event",
+            items=(1, 2),
+        )
         assert "/calendar.ics/event1.ics" not in answer
         assert "/calendar.ics/event2.ics" in answer
-        answer = self._test_filter(["""\
+        answer = self._test_filter(
+            [
+                """\
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VEVENT">
         <C:time-range start="20120801T000000Z" end="20121001T000000Z"/>
     </C:comp-filter>
-</C:comp-filter>"""], "event", items=(1, 2))
+</C:comp-filter>"""
+            ],
+            "event",
+            items=(1, 2),
+        )
         assert "/calendar.ics/event1.ics" not in answer
         assert "/calendar.ics/event2.ics" not in answer
-        answer = self._test_filter(["""\
+        answer = self._test_filter(
+            [
+                """\
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VEVENT">
         <C:time-range start="20130903T000000Z" end="20130907T000000Z"/>
     </C:comp-filter>
-</C:comp-filter>"""], "event", items=(1, 2))
+</C:comp-filter>"""
+            ],
+            "event",
+            items=(1, 2),
+        )
         assert "/calendar.ics/event1.ics" not in answer
         assert "/calendar.ics/event2.ics" not in answer
 
     def test_time_range_filter_todos(self) -> None:
         """Report request with time-range filter on todos."""
-        answer = self._test_filter(["""\
+        answer = self._test_filter(
+            [
+                """\
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VTODO">
         <C:time-range start="20130801T000000Z" end="20131001T000000Z"/>
     </C:comp-filter>
-</C:comp-filter>"""], "todo", items=range(1, 9))
+</C:comp-filter>"""
+            ],
+            "todo",
+            items=range(1, 9),
+        )
         assert "/calendar.ics/todo1.ics" in answer
         assert "/calendar.ics/todo2.ics" in answer
         assert "/calendar.ics/todo3.ics" in answer
@@ -1182,12 +1480,18 @@ permissions: RrWw""")
         assert "/calendar.ics/todo6.ics" in answer
         assert "/calendar.ics/todo7.ics" in answer
         assert "/calendar.ics/todo8.ics" in answer
-        answer = self._test_filter(["""\
+        answer = self._test_filter(
+            [
+                """\
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VTODO">
         <C:time-range start="20130901T160000Z" end="20130901T183000Z"/>
     </C:comp-filter>
-</C:comp-filter>"""], "todo", items=range(1, 9))
+</C:comp-filter>"""
+            ],
+            "todo",
+            items=range(1, 9),
+        )
         assert "/calendar.ics/todo1.ics" not in answer
         assert "/calendar.ics/todo2.ics" in answer
         assert "/calendar.ics/todo3.ics" in answer
@@ -1196,151 +1500,253 @@ permissions: RrWw""")
         assert "/calendar.ics/todo6.ics" not in answer
         assert "/calendar.ics/todo7.ics" in answer
         assert "/calendar.ics/todo8.ics" in answer
-        answer = self._test_filter(["""\
+        answer = self._test_filter(
+            [
+                """\
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VTODO">
         <C:time-range start="20130903T160000Z" end="20130901T183000Z"/>
     </C:comp-filter>
-</C:comp-filter>"""], "todo", items=range(1, 9))
+</C:comp-filter>"""
+            ],
+            "todo",
+            items=range(1, 9),
+        )
         assert "/calendar.ics/todo2.ics" not in answer
-        answer = self._test_filter(["""\
+        answer = self._test_filter(
+            [
+                """\
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VTODO">
         <C:time-range start="20130903T160000Z" end="20130901T173000Z"/>
     </C:comp-filter>
-</C:comp-filter>"""], "todo", items=range(1, 9))
+</C:comp-filter>"""
+            ],
+            "todo",
+            items=range(1, 9),
+        )
         assert "/calendar.ics/todo2.ics" not in answer
-        answer = self._test_filter(["""\
+        answer = self._test_filter(
+            [
+                """\
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VTODO">
         <C:time-range start="20130903T160000Z" end="20130903T173000Z"/>
     </C:comp-filter>
-</C:comp-filter>"""], "todo", items=range(1, 9))
+</C:comp-filter>"""
+            ],
+            "todo",
+            items=range(1, 9),
+        )
         assert "/calendar.ics/todo3.ics" not in answer
-        answer = self._test_filter(["""\
+        answer = self._test_filter(
+            [
+                """\
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VTODO">
         <C:time-range start="20130903T160000Z" end="20130803T203000Z"/>
     </C:comp-filter>
-</C:comp-filter>"""], "todo", items=range(1, 9))
+</C:comp-filter>"""
+            ],
+            "todo",
+            items=range(1, 9),
+        )
         assert "/calendar.ics/todo7.ics" in answer
 
     def test_time_range_filter_todos_rrule(self) -> None:
         """Report request with time-range filter on todos with rrules."""
-        answer = self._test_filter(["""\
+        answer = self._test_filter(
+            [
+                """\
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VTODO">
         <C:time-range start="20130801T000000Z" end="20131001T000000Z"/>
     </C:comp-filter>
-</C:comp-filter>"""], "todo", items=(1, 2, 9))
+</C:comp-filter>"""
+            ],
+            "todo",
+            items=(1, 2, 9),
+        )
         assert "/calendar.ics/todo1.ics" in answer
         assert "/calendar.ics/todo2.ics" in answer
         assert "/calendar.ics/todo9.ics" in answer
-        answer = self._test_filter(["""\
+        answer = self._test_filter(
+            [
+                """\
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VTODO">
         <C:time-range start="20140801T000000Z" end="20141001T000000Z"/>
     </C:comp-filter>
-</C:comp-filter>"""], "todo", items=(1, 2, 9))
+</C:comp-filter>"""
+            ],
+            "todo",
+            items=(1, 2, 9),
+        )
         assert "/calendar.ics/todo1.ics" not in answer
         assert "/calendar.ics/todo2.ics" in answer
         assert "/calendar.ics/todo9.ics" in answer
-        answer = self._test_filter(["""\
+        answer = self._test_filter(
+            [
+                """\
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VTODO">
         <C:time-range start="20140902T000000Z" end="20140903T000000Z"/>
     </C:comp-filter>
-</C:comp-filter>"""], "todo", items=(1, 2))
+</C:comp-filter>"""
+            ],
+            "todo",
+            items=(1, 2),
+        )
         assert "/calendar.ics/todo1.ics" not in answer
         assert "/calendar.ics/todo2.ics" in answer
-        answer = self._test_filter(["""\
+        answer = self._test_filter(
+            [
+                """\
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VTODO">
         <C:time-range start="20140904T000000Z" end="20140914T000000Z"/>
     </C:comp-filter>
-</C:comp-filter>"""], "todo", items=(1, 2))
+</C:comp-filter>"""
+            ],
+            "todo",
+            items=(1, 2),
+        )
         assert "/calendar.ics/todo1.ics" not in answer
         assert "/calendar.ics/todo2.ics" not in answer
-        answer = self._test_filter(["""\
+        answer = self._test_filter(
+            [
+                """\
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VTODO">
         <C:time-range start="20130902T000000Z" end="20130906T235959Z"/>
     </C:comp-filter>
-</C:comp-filter>"""], "todo", items=(9,))
+</C:comp-filter>"""
+            ],
+            "todo",
+            items=(9,),
+        )
         assert "/calendar.ics/todo9.ics" not in answer
 
     def test_time_range_filter_journals(self) -> None:
         """Report request with time-range filter on journals."""
-        answer = self._test_filter(["""\
+        answer = self._test_filter(
+            [
+                """\
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VJOURNAL">
         <C:time-range start="19991229T000000Z" end="20000202T000000Z"/>
     </C:comp-filter>
-</C:comp-filter>"""], "journal", items=(1, 2, 3))
+</C:comp-filter>"""
+            ],
+            "journal",
+            items=(1, 2, 3),
+        )
         assert "/calendar.ics/journal1.ics" not in answer
         assert "/calendar.ics/journal2.ics" in answer
         assert "/calendar.ics/journal3.ics" in answer
-        answer = self._test_filter(["""\
+        answer = self._test_filter(
+            [
+                """\
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VJOURNAL">
         <C:time-range start="19991229T000000Z" end="20000202T000000Z"/>
     </C:comp-filter>
-</C:comp-filter>"""], "journal", items=(1, 2, 3))
+</C:comp-filter>"""
+            ],
+            "journal",
+            items=(1, 2, 3),
+        )
         assert "/calendar.ics/journal1.ics" not in answer
         assert "/calendar.ics/journal2.ics" in answer
         assert "/calendar.ics/journal3.ics" in answer
-        answer = self._test_filter(["""\
+        answer = self._test_filter(
+            [
+                """\
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VJOURNAL">
         <C:time-range start="19981229T000000Z" end="19991012T000000Z"/>
     </C:comp-filter>
-</C:comp-filter>"""], "journal", items=(1, 2, 3))
+</C:comp-filter>"""
+            ],
+            "journal",
+            items=(1, 2, 3),
+        )
         assert "/calendar.ics/journal1.ics" not in answer
         assert "/calendar.ics/journal2.ics" not in answer
         assert "/calendar.ics/journal3.ics" not in answer
-        answer = self._test_filter(["""\
+        answer = self._test_filter(
+            [
+                """\
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VJOURNAL">
         <C:time-range start="20131229T000000Z" end="21520202T000000Z"/>
     </C:comp-filter>
-</C:comp-filter>"""], "journal", items=(1, 2, 3))
+</C:comp-filter>"""
+            ],
+            "journal",
+            items=(1, 2, 3),
+        )
         assert "/calendar.ics/journal1.ics" not in answer
         assert "/calendar.ics/journal2.ics" in answer
         assert "/calendar.ics/journal3.ics" not in answer
-        answer = self._test_filter(["""\
+        answer = self._test_filter(
+            [
+                """\
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VJOURNAL">
         <C:time-range start="20000101T000000Z" end="20000202T000000Z"/>
     </C:comp-filter>
-</C:comp-filter>"""], "journal", items=(1, 2, 3))
+</C:comp-filter>"""
+            ],
+            "journal",
+            items=(1, 2, 3),
+        )
         assert "/calendar.ics/journal1.ics" not in answer
         assert "/calendar.ics/journal2.ics" in answer
         assert "/calendar.ics/journal3.ics" in answer
 
     def test_time_range_filter_journals_rrule(self) -> None:
         """Report request with time-range filter on journals with rrules."""
-        answer = self._test_filter(["""\
+        answer = self._test_filter(
+            [
+                """\
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VJOURNAL">
         <C:time-range start="19991229T000000Z" end="20000202T000000Z"/>
     </C:comp-filter>
-</C:comp-filter>"""], "journal", items=(1, 2))
+</C:comp-filter>"""
+            ],
+            "journal",
+            items=(1, 2),
+        )
         assert "/calendar.ics/journal1.ics" not in answer
         assert "/calendar.ics/journal2.ics" in answer
-        answer = self._test_filter(["""\
+        answer = self._test_filter(
+            [
+                """\
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VJOURNAL">
         <C:time-range start="20051229T000000Z" end="20060202T000000Z"/>
     </C:comp-filter>
-</C:comp-filter>"""], "journal", items=(1, 2))
+</C:comp-filter>"""
+            ],
+            "journal",
+            items=(1, 2),
+        )
         assert "/calendar.ics/journal1.ics" not in answer
         assert "/calendar.ics/journal2.ics" in answer
-        answer = self._test_filter(["""\
+        answer = self._test_filter(
+            [
+                """\
 <C:comp-filter name="VCALENDAR">
     <C:comp-filter name="VJOURNAL">
         <C:time-range start="20060102T000000Z" end="20060202T000000Z"/>
     </C:comp-filter>
-</C:comp-filter>"""], "journal", items=(1, 2))
+</C:comp-filter>"""
+            ],
+            "journal",
+            items=(1, 2),
+        )
         assert "/calendar.ics/journal1.ics" not in answer
         assert "/calendar.ics/journal2.ics" not in answer
 
@@ -1351,13 +1757,16 @@ permissions: RrWw""")
         event = get_file_content("event1.ics")
         event_path = posixpath.join(calendar_path, "event.ics")
         self.put(event_path, event)
-        _, responses = self.report(event_path, """\
+        _, responses = self.report(
+            event_path,
+            """\
 <?xml version="1.0" encoding="utf-8" ?>
 <C:calendar-query xmlns:C="urn:ietf:params:xml:ns:caldav">
     <D:prop xmlns:D="DAV:">
         <D:getetag />
     </D:prop>
-</C:calendar-query>""")
+</C:calendar-query>""",
+        )
         assert len(responses) == 1
         response = responses[event_path]
         assert not isinstance(response, int)
@@ -1365,24 +1774,33 @@ permissions: RrWw""")
         assert status == 200 and prop.text
 
     def _report_sync_token(
-            self, calendar_path: str, sync_token: Optional[str] = None
-            ) -> Tuple[str, RESPONSES]:
+        self, calendar_path: str, sync_token: Optional[str] = None
+    ) -> Tuple[str, RESPONSES]:
         sync_token_xml = (
             "<sync-token><![CDATA[%s]]></sync-token>" % sync_token
-            if sync_token else "<sync-token />")
-        status, _, answer = self.request("REPORT", calendar_path, """\
+            if sync_token
+            else "<sync-token />"
+        )
+        status, _, answer = self.request(
+            "REPORT",
+            calendar_path,
+            """\
 <?xml version="1.0" encoding="utf-8" ?>
 <sync-collection xmlns="DAV:">
     <prop>
         <getetag />
     </prop>
     %s
-</sync-collection>""" % sync_token_xml)
+</sync-collection>"""
+            % sync_token_xml,
+        )
         xml = DefusedET.fromstring(answer)
         if status in (403, 409):
             assert xml.tag == xmlutils.make_clark("D:error")
-            assert sync_token and xml.find(
-                xmlutils.make_clark("D:valid-sync-token")) is not None
+            assert (
+                sync_token
+                and xml.find(xmlutils.make_clark("D:valid-sync-token")) is not None
+            )
             return "", {}
         assert status == 207
         assert xml.tag == xmlutils.make_clark("D:multistatus")
@@ -1406,8 +1824,7 @@ permissions: RrWw""")
         self.put(event_path, event)
         sync_token, responses = self._report_sync_token(calendar_path)
         assert len(responses) == 1 and responses[event_path] == 200
-        new_sync_token, responses = self._report_sync_token(
-            calendar_path, sync_token)
+        new_sync_token, responses = self._report_sync_token(calendar_path, sync_token)
         if not self.full_sync_token_support and not new_sync_token:
             return
         assert sync_token == new_sync_token and len(responses) == 0
@@ -1421,8 +1838,7 @@ permissions: RrWw""")
         event = get_file_content("event1.ics")
         event_path = posixpath.join(calendar_path, "event.ics")
         self.put(event_path, event)
-        sync_token, responses = self._report_sync_token(
-            calendar_path, sync_token)
+        sync_token, responses = self._report_sync_token(calendar_path, sync_token)
         if not self.full_sync_token_support and not sync_token:
             return
         assert len(responses) == 1 and responses[event_path] == 200
@@ -1437,8 +1853,7 @@ permissions: RrWw""")
         sync_token, responses = self._report_sync_token(calendar_path)
         assert len(responses) == 1 and responses[event_path] == 200
         self.delete(event_path)
-        sync_token, responses = self._report_sync_token(
-            calendar_path, sync_token)
+        sync_token, responses = self._report_sync_token(calendar_path, sync_token)
         if not self.full_sync_token_support and not sync_token:
             return
         assert len(responses) == 1 and responses[event_path] == 404
@@ -1453,8 +1868,7 @@ permissions: RrWw""")
         event_path = posixpath.join(calendar_path, "event.ics")
         self.put(event_path, event)
         self.delete(event_path)
-        sync_token, responses = self._report_sync_token(
-            calendar_path, sync_token)
+        sync_token, responses = self._report_sync_token(calendar_path, sync_token)
         if not self.full_sync_token_support and not sync_token:
             return
         assert len(responses) == 1 and responses[event_path] == 404
@@ -1471,8 +1885,7 @@ permissions: RrWw""")
         assert len(responses) == 1 and responses[event_path] == 200
         self.put(event_path, event2)
         self.put(event_path, event1)
-        sync_token, responses = self._report_sync_token(
-            calendar_path, sync_token)
+        sync_token, responses = self._report_sync_token(calendar_path, sync_token)
         if not self.full_sync_token_support and not sync_token:
             return
         assert len(responses) == 1 and responses[event_path] == 200
@@ -1487,14 +1900,18 @@ permissions: RrWw""")
         self.put(event1_path, event)
         sync_token, responses = self._report_sync_token(calendar_path)
         assert len(responses) == 1 and responses[event1_path] == 200
-        self.request("MOVE", event1_path, check=201,
-                     HTTP_DESTINATION="http://127.0.0.1/"+event2_path)
-        sync_token, responses = self._report_sync_token(
-            calendar_path, sync_token)
+        self.request(
+            "MOVE",
+            event1_path,
+            check=201,
+            HTTP_DESTINATION="http://127.0.0.1/" + event2_path,
+        )
+        sync_token, responses = self._report_sync_token(calendar_path, sync_token)
         if not self.full_sync_token_support and not sync_token:
             return
-        assert len(responses) == 2 and (responses[event1_path] == 404 and
-                                        responses[event2_path] == 200)
+        assert len(responses) == 2 and (
+            responses[event1_path] == 404 and responses[event2_path] == 200
+        )
 
     def test_report_sync_collection_move_undo(self) -> None:
         """Test sync-collection report with a moved and moved back item"""
@@ -1506,30 +1923,38 @@ permissions: RrWw""")
         self.put(event1_path, event)
         sync_token, responses = self._report_sync_token(calendar_path)
         assert len(responses) == 1 and responses[event1_path] == 200
-        self.request("MOVE", event1_path, check=201,
-                     HTTP_DESTINATION="http://127.0.0.1/"+event2_path)
-        self.request("MOVE", event2_path, check=201,
-                     HTTP_DESTINATION="http://127.0.0.1/"+event1_path)
-        sync_token, responses = self._report_sync_token(
-            calendar_path, sync_token)
+        self.request(
+            "MOVE",
+            event1_path,
+            check=201,
+            HTTP_DESTINATION="http://127.0.0.1/" + event2_path,
+        )
+        self.request(
+            "MOVE",
+            event2_path,
+            check=201,
+            HTTP_DESTINATION="http://127.0.0.1/" + event1_path,
+        )
+        sync_token, responses = self._report_sync_token(calendar_path, sync_token)
         if not self.full_sync_token_support and not sync_token:
             return
-        assert len(responses) == 2 and (responses[event1_path] == 200 and
-                                        responses[event2_path] == 404)
+        assert len(responses) == 2 and (
+            responses[event1_path] == 200 and responses[event2_path] == 404
+        )
 
     def test_report_sync_collection_invalid_sync_token(self) -> None:
         """Test sync-collection report with an invalid sync token"""
         calendar_path = "/calendar.ics/"
         self.mkcalendar(calendar_path)
         sync_token, _ = self._report_sync_token(
-            calendar_path, "http://radicale.org/ns/sync/INVALID")
+            calendar_path, "http://.org/ns/sync/INVALID"
+        )
         assert not sync_token
 
     def test_report_with_expand_property(self) -> None:
         """Test report with expand property"""
         self.put("/calendar.ics/", get_file_content("event_daily_rrule.ics"))
-        req_body_without_expand = \
-            """<?xml version="1.0" encoding="utf-8" ?>
+        req_body_without_expand = """<?xml version="1.0" encoding="utf-8" ?>
             <C:calendar-query xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav">
                 <D:prop>
                     <C:calendar-data>
@@ -1547,7 +1972,7 @@ permissions: RrWw""")
         _, responses = self.report("/calendar.ics/", req_body_without_expand)
         assert len(responses) == 1
 
-        response_without_expand = responses['/calendar.ics/event_daily_rrule.ics']
+        response_without_expand = responses["/calendar.ics/event_daily_rrule.ics"]
         assert not isinstance(response_without_expand, int)
         status, element = response_without_expand["C:calendar-data"]
 
@@ -1560,14 +1985,13 @@ permissions: RrWw""")
         uids: List[str] = []
         for line in element.text.split("\n"):
             if line.startswith("UID:"):
-                uid = line[len("UID:"):]
+                uid = line[len("UID:") :]
                 assert uid == "event_daily_rrule"
                 uids.append(uid)
 
         assert len(uids) == 1
 
-        req_body_with_expand = \
-            """<?xml version="1.0" encoding="utf-8" ?>
+        req_body_with_expand = """<?xml version="1.0" encoding="utf-8" ?>
             <C:calendar-query xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav">
                 <D:prop>
                     <C:calendar-data>
@@ -1588,7 +2012,7 @@ permissions: RrWw""")
 
         assert len(responses) == 1
 
-        response_with_expand = responses['/calendar.ics/event_daily_rrule.ics']
+        response_with_expand = responses["/calendar.ics/event_daily_rrule.ics"]
         assert not isinstance(response_with_expand, int)
         status, element = response_with_expand["C:calendar-data"]
 
@@ -1604,7 +2028,10 @@ permissions: RrWw""")
                 uids.append(line)
 
             if line.startswith("RECURRENCE-ID:"):
-                assert line in ["RECURRENCE-ID:20060103T170000Z", "RECURRENCE-ID:20060104T170000Z"]
+                assert line in [
+                    "RECURRENCE-ID:20060103T170000Z",
+                    "RECURRENCE-ID:20060104T170000Z",
+                ]
                 recurrence_ids.append(line)
 
             if line.startswith("DTSTART:"):
@@ -1616,8 +2043,7 @@ permissions: RrWw""")
     def test_report_with_expand_property_all_day_event(self) -> None:
         """Test report with expand property"""
         self.put("/calendar.ics/", get_file_content("event_full_day_rrule.ics"))
-        req_body_without_expand = \
-            """<?xml version="1.0" encoding="utf-8" ?>
+        req_body_without_expand = """<?xml version="1.0" encoding="utf-8" ?>
             <C:calendar-query xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav">
                 <D:prop>
                     <C:calendar-data>
@@ -1635,7 +2061,7 @@ permissions: RrWw""")
         _, responses = self.report("/calendar.ics/", req_body_without_expand)
         assert len(responses) == 1
 
-        response_without_expand = responses['/calendar.ics/event_full_day_rrule.ics']
+        response_without_expand = responses["/calendar.ics/event_full_day_rrule.ics"]
         assert not isinstance(response_without_expand, int)
         status, element = response_without_expand["C:calendar-data"]
 
@@ -1647,14 +2073,13 @@ permissions: RrWw""")
         uids: List[str] = []
         for line in element.text.split("\n"):
             if line.startswith("UID:"):
-                uid = line[len("UID:"):]
+                uid = line[len("UID:") :]
                 assert uid == "event_full_day_rrule"
                 uids.append(uid)
 
         assert len(uids) == 1
 
-        req_body_with_expand = \
-            """<?xml version="1.0" encoding="utf-8" ?>
+        req_body_with_expand = """<?xml version="1.0" encoding="utf-8" ?>
             <C:calendar-query xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav">
                 <D:prop>
                     <C:calendar-data>
@@ -1675,7 +2100,7 @@ permissions: RrWw""")
 
         assert len(responses) == 1
 
-        response_with_expand = responses['/calendar.ics/event_full_day_rrule.ics']
+        response_with_expand = responses["/calendar.ics/event_full_day_rrule.ics"]
         assert not isinstance(response_with_expand, int)
         status, element = response_with_expand["C:calendar-data"]
 
@@ -1691,7 +2116,11 @@ permissions: RrWw""")
                 uids.append(line)
 
             if line.startswith("RECURRENCE-ID:"):
-                assert line in ["RECURRENCE-ID:20060103", "RECURRENCE-ID:20060104", "RECURRENCE-ID:20060105"]
+                assert line in [
+                    "RECURRENCE-ID:20060103",
+                    "RECURRENCE-ID:20060104",
+                    "RECURRENCE-ID:20060105",
+                ]
                 recurrence_ids.append(line)
 
             if line.startswith("DTSTART:"):
@@ -1744,33 +2173,39 @@ permissions: RrWw""")
             status, _ = self.delete("/test/test.ics", check=None)
             assert status in (200, 404)
             self.put("/test/test.ics", event)
-            _, responses = self.report("/test/", """\
+            _, responses = self.report(
+                "/test/",
+                """\
 <?xml version="1.0" encoding="utf-8" ?>
 <C:calendar-query xmlns:C="urn:ietf:params:xml:ns:caldav">
     <D:prop xmlns:D="DAV:">
         <D:getcontenttype />
     </D:prop>
-</C:calendar-query>""")
+</C:calendar-query>""",
+            )
             assert len(responses) == 1
             response = responses["/test/test.ics"]
             assert not isinstance(response, int) and len(response) == 1
             status, prop = response["D:getcontenttype"]
             assert status == 200 and prop.text == (
-                "text/calendar;charset=utf-8;component=V%s" %
-                component.upper())
+                "text/calendar;charset=utf-8;component=V%s" % component.upper()
+            )
 
     def test_addressbook_getcontenttype(self) -> None:
         """Test report request on an item"""
         self.create_addressbook("/test/")
         contact = get_file_content("contact1.vcf")
         self.put("/test/test.vcf", contact)
-        _, responses = self.report("/test/", """\
+        _, responses = self.report(
+            "/test/",
+            """\
 <?xml version="1.0" encoding="utf-8" ?>
 <C:calendar-query xmlns:C="urn:ietf:params:xml:ns:caldav">
     <D:prop xmlns:D="DAV:">
         <D:getcontenttype />
     </D:prop>
-</C:calendar-query>""")
+</C:calendar-query>""",
+        )
         assert len(responses) == 1
         response = responses["/test/test.vcf"]
         assert not isinstance(response, int) and len(response) == 1
@@ -1778,13 +2213,17 @@ permissions: RrWw""")
         assert status == 200 and prop.text == "text/vcard;charset=utf-8"
 
     def test_authorization(self) -> None:
-        _, responses = self.propfind("/", """\
+        _, responses = self.propfind(
+            "/",
+            """\
 <?xml version="1.0" encoding="utf-8"?>
 <propfind xmlns="DAV:">
     <prop>
         <current-user-principal />
     </prop>
-</propfind>""", login="user:")
+</propfind>""",
+            login="user:",
+        )
         response = responses["/"]
         assert not isinstance(response, int) and len(response) == 1
         status, prop = response["D:current-user-principal"]
@@ -1794,10 +2233,16 @@ permissions: RrWw""")
 
     def test_authentication(self) -> None:
         """Test if server sends authentication request."""
-        self.configure({"auth": {"type": "htpasswd",
-                                 "htpasswd_filename": os.devnull,
-                                 "htpasswd_encryption": "plain"},
-                        "rights": {"type": "owner_only"}})
+        self.configure(
+            {
+                "auth": {
+                    "type": "htpasswd",
+                    "htpasswd_filename": os.devnull,
+                    "htpasswd_encryption": "plain",
+                },
+                "rights": {"type": "owner_only"},
+            }
+        )
         status, headers, _ = self.request("MKCOL", "/user/")
         assert status in (401, 403)
         assert headers.get("WWW-Authenticate")
@@ -1808,14 +2253,18 @@ permissions: RrWw""")
 
     def test_authentication_current_user_principal_hack(self) -> None:
         """Test if server sends authentication request when accessing
-           current-user-principal prop (workaround for DAVx5)."""
-        status, headers, _ = self.request("PROPFIND", "/", """\
+        current-user-principal prop (workaround for DAVx5)."""
+        status, headers, _ = self.request(
+            "PROPFIND",
+            "/",
+            """\
 <?xml version="1.0" encoding="utf-8"?>
 <propfind xmlns="DAV:">
     <prop>
         <current-user-principal />
     </prop>
-</propfind>""")
+</propfind>""",
+        )
         assert status in (401, 403)
         assert headers.get("WWW-Authenticate")
 
@@ -1836,9 +2285,8 @@ permissions: RrWw""")
     def test_well_known_script_name(self) -> None:
         for path in ["/.well-known/caldav", "/.well-known/carddav"]:
             for path in [path, "/foo" + path]:
-                _, headers, _ = self.request(
-                    "GET", path, check=301,  SCRIPT_NAME="/radicale")
-                assert headers.get("Location") == "/radicale/"
+                _, headers, _ = self.request("GET", path, check=301, SCRIPT_NAME="/")
+                assert headers.get("Location") == "//"
 
     def test_well_known_not_found(self) -> None:
         for path in ["/.well-known", "/.well-known/", "/.well-known/foo"]:

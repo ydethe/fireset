@@ -16,8 +16,19 @@
 
 import contextlib
 import sys
-from typing import (Any, Callable, ContextManager, Iterator, List, Mapping,
-                    MutableMapping, Sequence, Tuple, TypeVar, Union)
+from typing import (
+    Any,
+    Callable,
+    ContextManager,
+    Iterator,
+    List,
+    Mapping,
+    MutableMapping,
+    Sequence,
+    Tuple,
+    TypeVar,
+    Union,
+)
 
 WSGIResponseHeaders = Union[Mapping[str, str], Sequence[Tuple[str, str]]]
 WSGIResponse = Tuple[int, WSGIResponseHeaders, Union[None, str, bytes]]
@@ -31,13 +42,13 @@ CONFIG_SCHEMA = Mapping[str, Mapping[str, Any]]
 _T = TypeVar("_T")
 
 
-def contextmanager(func: Callable[..., Iterator[_T]]
-                   ) -> Callable[..., ContextManager[_T]]:
+def contextmanager(
+    func: Callable[..., Iterator[_T]]
+) -> Callable[..., ContextManager[_T]]:
     """Compatibility wrapper for `contextlib.contextmanager` with
     `typeguard`"""
     result = contextlib.contextmanager(func)
-    result.__annotations__ = {**func.__annotations__,
-                              "return": ContextManager[_T]}
+    result.__annotations__ = {**func.__annotations__, "return": ContextManager[_T]}
     return result
 
 
@@ -46,16 +57,21 @@ if sys.version_info >= (3, 8):
 
     @runtime_checkable
     class InputStream(Protocol):
-        def read(self, size: int = ...) -> bytes: ...
+        def read(self, size: int = ...) -> bytes:
+            ...
 
     @runtime_checkable
     class ErrorStream(Protocol):
-        def flush(self) -> object: ...
-        def write(self, s: str) -> object: ...
+        def flush(self) -> object:
+            ...
+
+        def write(self, s: str) -> object:
+            ...
+
 else:
     ErrorStream = Any
     InputStream = Any
 
-from radicale import item, storage  # noqa:E402 isort:skip
+from . import item, storage  # noqa:E402 isort:skip
 
 CollectionOrItem = Union[item.Item, storage.BaseCollection]

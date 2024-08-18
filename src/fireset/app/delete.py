@@ -21,13 +21,17 @@ import xml.etree.ElementTree as ET
 from http import client
 from typing import Optional
 
-from radicale import httputils, storage, types, xmlutils
-from radicale.app.base import Access, ApplicationBase
-from radicale.hook import HookNotificationItem, HookNotificationItemTypes
+from . import httputils, storage, types, xmlutils
+from .app.base import Access, ApplicationBase
+from .hook import HookNotificationItem, HookNotificationItemTypes
 
 
-def xml_delete(base_prefix: str, path: str, collection: storage.BaseCollection,
-               item_href: Optional[str] = None) -> ET.Element:
+def xml_delete(
+    base_prefix: str,
+    path: str,
+    collection: storage.BaseCollection,
+    item_href: Optional[str] = None,
+) -> ET.Element:
     """Read and answer DELETE requests.
 
     Read rfc4918-9.6 for info.
@@ -51,9 +55,9 @@ def xml_delete(base_prefix: str, path: str, collection: storage.BaseCollection,
 
 
 class ApplicationPartDelete(ApplicationBase):
-
-    def do_DELETE(self, environ: types.WSGIEnviron, base_prefix: str,
-                  path: str, user: str) -> types.WSGIResponse:
+    def do_DELETE(
+        self, environ: types.WSGIEnviron, base_prefix: str, path: str, user: str
+    ) -> types.WSGIResponse:
         """Manage DELETE request."""
         access = Access(self._rights, user, path)
         if not access.check("w"):
@@ -74,9 +78,7 @@ class ApplicationPartDelete(ApplicationBase):
                     for i in item.get_all():
                         hook_notification_item_list.append(
                             HookNotificationItem(
-                                HookNotificationItemTypes.DELETE,
-                                access.path,
-                                i.uid
+                                HookNotificationItemTypes.DELETE, access.path, i.uid
                             )
                         )
                     xml_answer = xml_delete(base_prefix, path, item)
@@ -87,13 +89,10 @@ class ApplicationPartDelete(ApplicationBase):
                 assert item.href is not None
                 hook_notification_item_list.append(
                     HookNotificationItem(
-                        HookNotificationItemTypes.DELETE,
-                        access.path,
-                        item.uid
+                        HookNotificationItemTypes.DELETE, access.path, item.uid
                     )
                 )
-                xml_answer = xml_delete(
-                    base_prefix, path, item.collection, item.href)
+                xml_answer = xml_delete(base_prefix, path, item.collection, item.href)
             for notification_item in hook_notification_item_list:
                 self._hook.notify(notification_item)
             headers = {"Content-Type": "text/xml; charset=%s" % self._encoding}

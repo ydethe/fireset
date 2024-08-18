@@ -25,15 +25,14 @@ Features:
 
 """
 
-from radicale import httputils, types, web
+from . import httputils, types, web
 
 MIMETYPES = httputils.MIMETYPES  # deprecated
 FALLBACK_MIMETYPE = httputils.FALLBACK_MIMETYPE  # deprecated
 
 
 class Web(web.BaseWeb):
-
-    def get(self, environ: types.WSGIEnviron, base_prefix: str, path: str,
-            user: str) -> types.WSGIResponse:
-        return httputils.serve_resource("radicale.web", "internal_data",
-                                        base_prefix, path)
+    def get(
+        self, environ: types.WSGIEnviron, base_prefix: str, path: str, user: str
+    ) -> types.WSGIResponse:
+        return httputils.serve_resource(".web", "internal_data", base_prefix, path)

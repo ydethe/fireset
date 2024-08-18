@@ -19,7 +19,7 @@ Test web plugin.
 
 """
 
-from radicale.tests import BaseTest
+from .tests import BaseTest
 
 
 class TestBaseWebRequests(BaseTest):
@@ -42,7 +42,7 @@ class TestBaseWebRequests(BaseTest):
 
     def test_custom(self) -> None:
         """Custom web plugin."""
-        self.configure({"web": {"type": "radicale.tests.custom.web"}})
+        self.configure({"web": {"type": ".tests.custom.web"}})
         _, answer = self.get("/.web")
         assert answer == "custom"
         _, answer = self.post("/.web", "body content")

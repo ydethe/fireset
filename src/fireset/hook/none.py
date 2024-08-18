@@ -1,4 +1,4 @@
-from radicale import hook
+from . import hook
 
 
 class Hook(hook.BaseHook):

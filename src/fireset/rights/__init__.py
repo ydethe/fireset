@@ -34,16 +34,21 @@ Take a look at the class ``BaseRights`` if you want to implement your own.
 
 from typing import Sequence
 
-from radicale import config, utils
+from . import config, utils
 
-INTERNAL_TYPES: Sequence[str] = ("authenticated", "owner_write", "owner_only",
-                                 "from_file")
+INTERNAL_TYPES: Sequence[str] = (
+    "authenticated",
+    "owner_write",
+    "owner_only",
+    "from_file",
+)
 
 
 def load(configuration: "config.Configuration") -> "BaseRights":
     """Load the rights module chosen in configuration."""
-    return utils.load_plugin(INTERNAL_TYPES, "rights", "Rights", BaseRights,
-                             configuration)
+    return utils.load_plugin(
+        INTERNAL_TYPES, "rights", "Rights", BaseRights, configuration
+    )
 
 
 def intersect(a: str, b: str) -> str:
@@ -56,11 +61,10 @@ def intersect(a: str, b: str) -> str:
 
 
 class BaseRights:
-
     def __init__(self, configuration: "config.Configuration") -> None:
         """Initialize BaseRights.
 
-        ``configuration`` see ``radicale.config`` module.
+        ``configuration`` see ``.config`` module.
         The ``configuration`` must not change during the lifetime of
         this object, it is kept as an internal reference.
 

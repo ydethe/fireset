@@ -29,17 +29,19 @@ from http import client
 from typing import Dict, Mapping, Optional
 from urllib.parse import quote
 
-from radicale import item, pathutils
+from . import item, pathutils
 
 MIMETYPES: Mapping[str, str] = {
     "VADDRESSBOOK": "text/vcard",
     "VCALENDAR": "text/calendar",
-    "VSUBSCRIBED": "text/calendar"}
+    "VSUBSCRIBED": "text/calendar",
+}
 
 OBJECT_MIMETYPES: Mapping[str, str] = {
     "VCARD": "text/vcard",
     "VLIST": "text/x-vlist",
-    "VCALENDAR": "text/calendar"}
+    "VCALENDAR": "text/calendar",
+}
 
 NAMESPACES: Mapping[str, str] = {
     "C": "urn:ietf:params:xml:ns:caldav",
@@ -48,7 +50,8 @@ NAMESPACES: Mapping[str, str] = {
     "CS": "http://calendarserver.org/ns/",
     "ICAL": "http://apple.com/ns/ical/",
     "ME": "http://me.com/_namespace/",
-    "RADICALE": "http://radicale.org/ns/"}
+    "RADICALE": "http://.org/ns/",
+}
 
 NAMESPACES_REV: Mapping[str, str] = {v: k for k, v in NAMESPACES.items()}
 
@@ -58,6 +61,7 @@ for short, url in NAMESPACES.items():
 
 def pretty_xml(element: ET.Element) -> str:
     """Indent an ElementTree ``element`` and its children."""
+
     def pretty_xml_recursive(element: ET.Element, level: int) -> None:
         indent = "\n" + level * "  "
         if len(element) > 0:
@@ -71,6 +75,7 @@ def pretty_xml(element: ET.Element) -> str:
                 sub_element.tail = indent
         elif level > 0 and not (element.tail or "").strip():
             element.tail = indent
+
     element = copy.deepcopy(element)
     pretty_xml_recursive(element, 0)
     return '<?xml version="1.0"?>\n%s' % ET.tostring(element, "unicode")
@@ -83,7 +88,7 @@ def make_clark(human_tag: str) -> str:
 
     """
     if human_tag.startswith("{"):
-        ns, tag = human_tag[len("{"):].split("}", maxsplit=1)
+        ns, tag = human_tag[len("{") :].split("}", maxsplit=1)
         if not ns or not tag:
             raise ValueError("Invalid XML tag: %r" % human_tag)
         return human_tag
@@ -110,7 +115,7 @@ def make_human_tag(clark_tag: str) -> str:
         if ns_prefix not in NAMESPACES:
             raise ValueError("Unknown XML namespace prefix: %r" % clark_tag)
         return clark_tag
-    ns, tag = clark_tag[len("{"):].split("}", maxsplit=1)
+    ns, tag = clark_tag[len("{") :].split("}", maxsplit=1)
     if not ns or not tag:
         raise ValueError("Invalid XML tag: %r" % clark_tag)
     ns_prefix = NAMESPACES_REV.get(ns, "")
@@ -138,8 +143,7 @@ def webdav_error(human_tag: str) -> ET.Element:
 
 
 def get_content_type(item: "item.Item", encoding: str) -> str:
-    """Get the content-type of an item with charset and component parameters.
-    """
+    """Get the content-type of an item with charset and component parameters."""
     mimetype = OBJECT_MIMETYPES[item.name]
     tag = item.component_name
     content_type = "%s;charset=%s" % (mimetype, encoding)
@@ -148,8 +152,7 @@ def get_content_type(item: "item.Item", encoding: str) -> str:
     return content_type
 
 
-def props_from_request(xml_request: Optional[ET.Element]
-                       ) -> Dict[str, Optional[str]]:
+def props_from_request(xml_request: Optional[ET.Element]) -> Dict[str, Optional[str]]:
     """Return a list of properties as a dictionary.
 
     Properties that should be removed are set to `None`.
@@ -187,8 +190,10 @@ def props_from_request(xml_request: Optional[ET.Element]
         elif prop.tag == make_clark("C:supported-calendar-component-set"):
             if is_set:
                 value = ",".join(
-                    supported_comp.attrib["name"] for supported_comp in prop
-                    if supported_comp.tag == make_clark("C:comp"))
+                    supported_comp.attrib["name"]
+                    for supported_comp in prop
+                    if supported_comp.tag == make_clark("C:comp")
+                )
         elif is_set:
             value = prop.text or ""
         result[key] = value

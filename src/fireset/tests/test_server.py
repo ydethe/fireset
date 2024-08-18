@@ -35,15 +35,21 @@ from urllib.error import HTTPError, URLError
 
 import pytest
 
-from radicale import config, server
-from radicale.tests import BaseTest
-from radicale.tests.helpers import configuration_to_dict, get_file_path
+from . import config, server
+from .tests import BaseTest
+from .tests.helpers import configuration_to_dict, get_file_path
 
 
 class DisabledRedirectHandler(request.HTTPRedirectHandler):
     def redirect_request(
-            self, req: request.Request, fp: IO[bytes], code: int, msg: str,
-            headers: HTTPMessage, newurl: str) -> None:
+        self,
+        req: request.Request,
+        fp: IO[bytes],
+        code: int,
+        msg: str,
+        headers: HTTPMessage,
+        newurl: str,
+    ) -> None:
         return None
 
 
@@ -62,17 +68,22 @@ class TestBaseServerRequests(BaseTest):
             sock.bind(("127.0.0.1", 0))
             self.sockfamily = socket.AF_INET
             self.sockname = sock.getsockname()
-        self.configure({"server": {"hosts": "%s:%d" % self.sockname},
-                        # Enable debugging for new processes
-                        "logging": {"level": "debug"}})
-        self.thread = threading.Thread(target=server.serve, args=(
-            self.configuration, shutdown_socket_out))
+        self.configure(
+            {
+                "server": {"hosts": "%s:%d" % self.sockname},
+                # Enable debugging for new processes
+                "logging": {"level": "debug"},
+            }
+        )
+        self.thread = threading.Thread(
+            target=server.serve, args=(self.configuration, shutdown_socket_out)
+        )
         ssl_context = ssl.create_default_context()
         ssl_context.check_hostname = False
         ssl_context.verify_mode = ssl.CERT_NONE
         self.opener = request.build_opener(
-            request.HTTPSHandler(context=ssl_context),
-            DisabledRedirectHandler)
+            request.HTTPSHandler(context=ssl_context), DisabledRedirectHandler
+        )
 
     def teardown_method(self) -> None:
         self.shutdown_socket.close()
@@ -82,23 +93,25 @@ class TestBaseServerRequests(BaseTest):
             pass
         super().teardown_method()
 
-    def request(self, method: str, path: str, data: Optional[str] = None,
-                check: Optional[int] = None, **kwargs
-                ) -> Tuple[int, Dict[str, str], str]:
+    def request(
+        self,
+        method: str,
+        path: str,
+        data: Optional[str] = None,
+        check: Optional[int] = None,
+        **kwargs
+    ) -> Tuple[int, Dict[str, str], str]:
         """Send a request."""
         login = kwargs.pop("login", None)
         if login is not None and not isinstance(login, str):
-            raise TypeError("login argument must be %r, not %r" %
-                            (str, type(login)))
+            raise TypeError("login argument must be %r, not %r" % (str, type(login)))
         if login:
             raise NotImplementedError
-        is_alive_fn: Optional[Callable[[], bool]] = kwargs.pop(
-            "is_alive_fn", None)
+        is_alive_fn: Optional[Callable[[], bool]] = kwargs.pop("is_alive_fn", None)
         headers: Dict[str, str] = kwargs
         for k, v in headers.items():
             if not isinstance(v, str):
-                raise TypeError("type of %r is %r, expected %r" %
-                                (k, type(v), str))
+                raise TypeError("type of %r is %r, expected %r" % (k, type(v), str))
         if is_alive_fn is None:
             is_alive_fn = self.thread.is_alive
         encoding: str = self.configuration.get("encoding", "request")
@@ -107,20 +120,22 @@ class TestBaseServerRequests(BaseTest):
         if data:
             data_bytes = data.encode(encoding)
         if self.sockfamily == socket.AF_INET6:
-            req_host = ("[%s]" % self.sockname[0])
+            req_host = "[%s]" % self.sockname[0]
         else:
             req_host = self.sockname[0]
         req = request.Request(
             "%s://%s:%d%s" % (scheme, req_host, self.sockname[1], path),
-            data=data_bytes, headers=headers, method=method)
+            data=data_bytes,
+            headers=headers,
+            method=method,
+        )
         while True:
             assert is_alive_fn()
             try:
                 with self.opener.open(req) as f:
                     return f.getcode(), dict(f.info()), f.read().decode()
             except HTTPError as e:
-                assert check is None or e.code == check, "%d != %d" % (e.code,
-                                                                       check)
+                assert check is None or e.code == check, "%d != %d" % (e.code, check)
                 return e.code, dict(e.headers), e.read().decode()
             except URLError as e:
                 if not isinstance(e.reason, ConnectionRefusedError):
@@ -132,45 +147,58 @@ class TestBaseServerRequests(BaseTest):
         self.get("/", check=302)
 
     def test_ssl(self) -> None:
-        self.configure({"server": {"ssl": "True",
-                                   "certificate": get_file_path("cert.pem"),
-                                   "key": get_file_path("key.pem")}})
+        self.configure(
+            {
+                "server": {
+                    "ssl": "True",
+                    "certificate": get_file_path("cert.pem"),
+                    "key": get_file_path("key.pem"),
+                }
+            }
+        )
         self.thread.start()
         self.get("/", check=302)
 
     def test_bind_fail(self) -> None:
-        for address_family, address in [(socket.AF_INET, "::1"),
-                                        (socket.AF_INET6, "127.0.0.1")]:
+        for address_family, address in [
+            (socket.AF_INET, "::1"),
+            (socket.AF_INET6, "127.0.0.1"),
+        ]:
             with socket.socket(address_family, socket.SOCK_STREAM) as sock:
                 if address_family == socket.AF_INET6:
                     # Only allow IPv6 connections to the IPv6 socket
-                    sock.setsockopt(server.COMPAT_IPPROTO_IPV6,
-                                    socket.IPV6_V6ONLY, 1)
+                    sock.setsockopt(server.COMPAT_IPPROTO_IPV6, socket.IPV6_V6ONLY, 1)
                 with pytest.raises(OSError) as exc_info:
                     sock.bind((address, 0))
-            # See ``radicale.server.serve``
-            assert (isinstance(exc_info.value, socket.gaierror) and
-                    exc_info.value.errno in (
-                        socket.EAI_NONAME, server.COMPAT_EAI_ADDRFAMILY,
-                        server.COMPAT_EAI_NODATA) or
-                    str(exc_info.value) == "address family mismatched" or
-                    exc_info.value.errno in (
-                        errno.EADDRNOTAVAIL, errno.EAFNOSUPPORT,
-                        errno.EPROTONOSUPPORT))
+            # See ``.server.serve``
+            assert (
+                isinstance(exc_info.value, socket.gaierror)
+                and exc_info.value.errno
+                in (
+                    socket.EAI_NONAME,
+                    server.COMPAT_EAI_ADDRFAMILY,
+                    server.COMPAT_EAI_NODATA,
+                )
+                or str(exc_info.value) == "address family mismatched"
+                or exc_info.value.errno
+                in (errno.EADDRNOTAVAIL, errno.EAFNOSUPPORT, errno.EPROTONOSUPPORT)
+            )
 
     def test_ipv6(self) -> None:
         try:
             with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as sock:
                 # Only allow IPv6 connections to the IPv6 socket
-                sock.setsockopt(
-                    server.COMPAT_IPPROTO_IPV6, socket.IPV6_V6ONLY, 1)
+                sock.setsockopt(server.COMPAT_IPPROTO_IPV6, socket.IPV6_V6ONLY, 1)
                 # Find available port
                 sock.bind(("::1", 0))
                 self.sockfamily = socket.AF_INET6
                 self.sockname = sock.getsockname()[:2]
         except OSError as e:
-            if e.errno in (errno.EADDRNOTAVAIL, errno.EAFNOSUPPORT,
-                           errno.EPROTONOSUPPORT):
+            if e.errno in (
+                errno.EADDRNOTAVAIL,
+                errno.EAFNOSUPPORT,
+                errno.EPROTONOSUPPORT,
+            ):
                 pytest.skip("IPv6 not supported")
             raise
         self.configure({"server": {"hosts": "[%s]:%d" % self.sockname}})
@@ -187,8 +215,13 @@ class TestBaseServerRequests(BaseTest):
                 if option.startswith("_"):
                     continue
                 long_name = "--%s-%s" % (section, option.replace("_", "-"))
-                if with_bool_options and config.DEFAULT_CONFIG_SCHEMA.get(
-                        section, {}).get(option, {}).get("type") == bool:
+                if (
+                    with_bool_options
+                    and config.DEFAULT_CONFIG_SCHEMA.get(section, {})
+                    .get(option, {})
+                    .get("type")
+                    == bool
+                ):
                     if not cast(bool, self.configuration.get(section, option)):
                         long_name = "--no%s" % long_name[1:]
                     config_args.append(long_name)
@@ -199,14 +232,15 @@ class TestBaseServerRequests(BaseTest):
                     config_args.append(raw_value)
         config_args.append("--headers-Test-Header=test")
         p = subprocess.Popen(
-            [sys.executable, "-m", "radicale"] + config_args,
-            env={**os.environ, "PYTHONPATH": os.pathsep.join(sys.path)})
+            [sys.executable, "-m", ""] + config_args,
+            env={**os.environ, "PYTHONPATH": os.pathsep.join(sys.path)},
+        )
         try:
             status, headers, _ = self.request(
-                "GET", "/", check=302, is_alive_fn=lambda: p.poll() is None)
+                "GET", "/", check=302, is_alive_fn=lambda: p.poll() is None
+            )
             for key in self.configuration.options("headers"):
-                assert headers.get(key) == self.configuration.get(
-                    "headers", key)
+                assert headers.get(key) == self.configuration.get("headers", key)
         finally:
             p.terminate()
             p.wait()
@@ -227,9 +261,17 @@ class TestBaseServerRequests(BaseTest):
         env["RADICALE_CONFIG"] = config_path
         raw_server_hosts = self.configuration.get_raw("server", "hosts")
         assert isinstance(raw_server_hosts, str)
-        p = subprocess.Popen([
-            sys.executable, "-m", "waitress", "--listen", raw_server_hosts,
-            "radicale:application"], env=env)
+        p = subprocess.Popen(
+            [
+                sys.executable,
+                "-m",
+                "waitress",
+                "--listen",
+                raw_server_hosts,
+                ":application",
+            ],
+            env=env,
+        )
         try:
             self.get("/", is_alive_fn=lambda: p.poll() is None, check=302)
         finally:

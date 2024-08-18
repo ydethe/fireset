@@ -21,24 +21,23 @@ import posixpath
 import socket
 from http import client
 
-import radicale.item as radicale_item
-from radicale import httputils, pathutils, storage, types, xmlutils
-from radicale.app.base import ApplicationBase
-from radicale.log import logger
+from .. import item as radicale_item
+from . import httputils, pathutils, storage, types, xmlutils
+from ..app.base import ApplicationBase
+from ..log import logger
 
 
 class ApplicationPartMkcalendar(ApplicationBase):
-
-    def do_MKCALENDAR(self, environ: types.WSGIEnviron, base_prefix: str,
-                      path: str, user: str) -> types.WSGIResponse:
+    def do_MKCALENDAR(
+        self, environ: types.WSGIEnviron, base_prefix: str, path: str, user: str
+    ) -> types.WSGIResponse:
         """Manage MKCALENDAR request."""
         if "w" not in self._rights.authorization(user, path):
             return httputils.NOT_ALLOWED
         try:
             xml_content = self._read_xml_request_body(environ)
         except RuntimeError as e:
-            logger.warning(
-                "Bad MKCALENDAR request on %r: %s", path, e, exc_info=True)
+            logger.warning("Bad MKCALENDAR request on %r: %s", path, e, exc_info=True)
             return httputils.BAD_REQUEST
         except socket.timeout:
             logger.debug("Client timed out", exc_info=True)
@@ -49,8 +48,7 @@ class ApplicationPartMkcalendar(ApplicationBase):
         try:
             props = radicale_item.check_and_sanitize_props(props_with_remove)
         except ValueError as e:
-            logger.warning(
-                "Bad MKCALENDAR request on %r: %s", path, e, exc_info=True)
+            logger.warning("Bad MKCALENDAR request on %r: %s", path, e, exc_info=True)
             return httputils.BAD_REQUEST
         # TODO: use this?
         # timezone = props.get("C:calendar-timezone")
@@ -58,19 +56,21 @@ class ApplicationPartMkcalendar(ApplicationBase):
             item = next(iter(self._storage.discover(path)), None)
             if item:
                 return self._webdav_error_response(
-                    client.CONFLICT, "D:resource-must-be-null")
+                    client.CONFLICT, "D:resource-must-be-null"
+                )
             parent_path = pathutils.unstrip_path(
-                posixpath.dirname(pathutils.strip_path(path)), True)
+                posixpath.dirname(pathutils.strip_path(path)), True
+            )
             parent_item = next(iter(self._storage.discover(parent_path)), None)
             if not parent_item:
                 return httputils.CONFLICT
-            if (not isinstance(parent_item, storage.BaseCollection) or
-                    parent_item.tag):
+            if not isinstance(parent_item, storage.BaseCollection) or parent_item.tag:
                 return httputils.FORBIDDEN
             try:
                 self._storage.create_collection(path, props=props)
             except ValueError as e:
                 logger.warning(
-                    "Bad MKCALENDAR request on %r: %s", path, e, exc_info=True)
+                    "Bad MKCALENDAR request on %r: %s", path, e, exc_info=True
+                )
                 return httputils.BAD_REQUEST
             return client.CREATED, {}, None

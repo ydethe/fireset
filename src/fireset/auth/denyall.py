@@ -21,10 +21,9 @@ Used as default for security reasons.
 
 """
 
-from radicale import auth
+from . import auth
 
 
 class Auth(auth.BaseAuth):
-
     def _login(self, login: str, password: str) -> str:
         return ""

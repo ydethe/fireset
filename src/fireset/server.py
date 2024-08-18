@@ -30,12 +30,21 @@ import socketserver
 import ssl
 import sys
 import wsgiref.simple_server
-from typing import (Any, Callable, Dict, List, MutableMapping, Optional, Set,
-                    Tuple, Union)
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    MutableMapping,
+    Optional,
+    Set,
+    Tuple,
+    Union,
+)
 from urllib.parse import unquote
 
-from radicale import Application, config
-from radicale.log import logger
+from . import Application, config
+from .log import logger
 
 COMPAT_EAI_ADDRFAMILY: int
 if hasattr(socket, "EAI_ADDRFAMILY"):
@@ -58,23 +67,22 @@ elif sys.platform == "win32":
 
 
 # IPv4 (host, port) and IPv6 (host, port, flowinfo, scopeid)
-ADDRESS_TYPE = Union[Tuple[Union[str, bytes, bytearray], int],
-                     Tuple[str, int, int, int]]
+ADDRESS_TYPE = Union[
+    Tuple[Union[str, bytes, bytearray], int], Tuple[str, int, int, int]
+]
 
 
 def format_address(address: ADDRESS_TYPE) -> str:
     host, port, *_ = address
     if not isinstance(host, str):
-        raise NotImplementedError("Unsupported address format: %r" %
-                                  (address,))
+        raise NotImplementedError("Unsupported address format: %r" % (address,))
     if host.find(":") == -1:
         return "%s:%d" % (host, port)
     else:
         return "[%s]:%d" % (host, port)
 
 
-class ParallelHTTPServer(socketserver.ThreadingMixIn,
-                         wsgiref.simple_server.WSGIServer):
+class ParallelHTTPServer(socketserver.ThreadingMixIn, wsgiref.simple_server.WSGIServer):
 
     configuration: config.Configuration
     worker_sockets: Set[socket.socket]
@@ -84,9 +92,13 @@ class ParallelHTTPServer(socketserver.ThreadingMixIn,
     block_on_close: bool = False
     daemon_threads: bool = True
 
-    def __init__(self, configuration: config.Configuration, family: int,
-                 address: Tuple[str, int], RequestHandlerClass:
-                 Callable[..., http.server.BaseHTTPRequestHandler]) -> None:
+    def __init__(
+        self,
+        configuration: config.Configuration,
+        family: int,
+        address: Tuple[str, int],
+        RequestHandlerClass: Callable[..., http.server.BaseHTTPRequestHandler],
+    ) -> None:
         self.configuration = configuration
         self.address_family = family
         super().__init__(address, RequestHandlerClass)
@@ -100,7 +112,8 @@ class ParallelHTTPServer(socketserver.ThreadingMixIn,
         super().server_bind()
 
     def get_request(  # type:ignore[override]
-            self) -> Tuple[socket.socket, Tuple[ADDRESS_TYPE, socket.socket]]:
+        self,
+    ) -> Tuple[socket.socket, Tuple[ADDRESS_TYPE, socket.socket]]:
         # Set timeout for client
         request: socket.socket
         client_address: ADDRESS_TYPE
@@ -116,21 +129,28 @@ class ParallelHTTPServer(socketserver.ThreadingMixIn,
         return request, (client_address, worker_socket)
 
     def verify_request(  # type:ignore[override]
-            self, request: socket.socket, client_address_and_socket:
-            Tuple[ADDRESS_TYPE, socket.socket]) -> bool:
+        self,
+        request: socket.socket,
+        client_address_and_socket: Tuple[ADDRESS_TYPE, socket.socket],
+    ) -> bool:
         return True
 
     def process_request(  # type:ignore[override]
-            self, request: socket.socket, client_address_and_socket:
-            Tuple[ADDRESS_TYPE, socket.socket]) -> None:
+        self,
+        request: socket.socket,
+        client_address_and_socket: Tuple[ADDRESS_TYPE, socket.socket],
+    ) -> None:
         # HACK: Super class calls `finish_request` in new thread with
         # `client_address_and_socket`
         return super().process_request(
-            request, client_address_and_socket)  # type:ignore[arg-type]
+            request, client_address_and_socket
+        )  # type:ignore[arg-type]
 
     def finish_request(  # type:ignore[override]
-            self, request: socket.socket, client_address_and_socket:
-            Tuple[ADDRESS_TYPE, socket.socket]) -> None:
+        self,
+        request: socket.socket,
+        client_address_and_socket: Tuple[ADDRESS_TYPE, socket.socket],
+    ) -> None:
         # HACK: Unpack `client_address_and_socket` and call super class
         # `finish_request` with original `client_address`
         client_address, worker_socket = client_address_and_socket
@@ -139,15 +159,18 @@ class ParallelHTTPServer(socketserver.ThreadingMixIn,
         finally:
             worker_socket.close()
 
-    def finish_request_locked(self, request: socket.socket,
-                              client_address: ADDRESS_TYPE) -> None:
-        return super().finish_request(
-            request, client_address)  # type:ignore[arg-type]
+    def finish_request_locked(
+        self, request: socket.socket, client_address: ADDRESS_TYPE
+    ) -> None:
+        return super().finish_request(request, client_address)  # type:ignore[arg-type]
 
     def handle_error(  # type:ignore[override]
-            self, request: socket.socket,
-            client_address_or_client_address_and_socket:
-            Union[ADDRESS_TYPE, Tuple[ADDRESS_TYPE, socket.socket]]) -> None:
+        self,
+        request: socket.socket,
+        client_address_or_client_address_and_socket: Union[
+            ADDRESS_TYPE, Tuple[ADDRESS_TYPE, socket.socket]
+        ],
+    ) -> None:
         # HACK: This method can be called with the modified
         # `client_address_and_socket` or the original `client_address` value
         e = sys.exc_info()[1]
@@ -155,12 +178,14 @@ class ParallelHTTPServer(socketserver.ThreadingMixIn,
         if isinstance(e, socket.timeout):
             logger.info("Client timed out", exc_info=True)
         else:
-            logger.error("An exception occurred during request: %s",
-                         sys.exc_info()[1], exc_info=True)
+            logger.error(
+                "An exception occurred during request: %s",
+                sys.exc_info()[1],
+                exc_info=True,
+            )
 
 
 class ParallelHTTPSServer(ParallelHTTPServer):
-
     def server_bind(self) -> None:
         super().server_bind()
         # Wrap the TCP socket in an SSL socket
@@ -168,10 +193,12 @@ class ParallelHTTPSServer(ParallelHTTPServer):
         keyfile: str = self.configuration.get("server", "key")
         cafile: str = self.configuration.get("server", "certificate_authority")
         # Test if the files can be read
-        for name, filename in [("certificate", certfile), ("key", keyfile),
-                               ("certificate_authority", cafile)]:
-            type_name = config.DEFAULT_CONFIG_SCHEMA["server"][name][
-                "type"].__name__
+        for name, filename in [
+            ("certificate", certfile),
+            ("key", keyfile),
+            ("certificate_authority", cafile),
+        ]:
+            type_name = config.DEFAULT_CONFIG_SCHEMA["server"][name]["type"].__name__
             source = self.configuration.get_source("server", name)
             if name == "certificate_authority" and not filename:
                 continue
@@ -180,19 +207,20 @@ class ParallelHTTPSServer(ParallelHTTPServer):
             except OSError as e:
                 raise RuntimeError(
                     "Invalid %s value for option %r in section %r in %s: %r "
-                    "(%s)" % (type_name, name, "server", source, filename,
-                              e)) from e
+                    "(%s)" % (type_name, name, "server", source, filename, e)
+                ) from e
         context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
         context.load_cert_chain(certfile=certfile, keyfile=keyfile)
         if cafile:
             context.load_verify_locations(cafile=cafile)
             context.verify_mode = ssl.CERT_REQUIRED
         self.socket = context.wrap_socket(
-            self.socket, server_side=True, do_handshake_on_connect=False)
+            self.socket, server_side=True, do_handshake_on_connect=False
+        )
 
     def finish_request_locked(  # type:ignore[override]
-            self, request: ssl.SSLSocket, client_address: ADDRESS_TYPE
-            ) -> None:
+        self, request: ssl.SSLSocket, client_address: ADDRESS_TYPE
+    ) -> None:
         try:
             try:
                 request.do_handshake()
@@ -215,8 +243,9 @@ class ServerHandler(wsgiref.simple_server.ServerHandler):
     os_environ: MutableMapping[str, str] = {}
 
     def log_exception(self, exc_info) -> None:
-        logger.error("An exception occurred during request: %s",
-                     exc_info[1], exc_info=exc_info)  # type:ignore[arg-type]
+        logger.error(
+            "An exception occurred during request: %s", exc_info[1], exc_info=exc_info
+        )  # type:ignore[arg-type]
 
 
 class RequestHandler(wsgiref.simple_server.WSGIRequestHandler):
@@ -225,8 +254,9 @@ class RequestHandler(wsgiref.simple_server.WSGIRequestHandler):
     # HACK: Assigned in `socketserver.StreamRequestHandler`
     connection: socket.socket
 
-    def log_request(self, code: Union[int, str] = "-",
-                    size: Union[int, str] = "-") -> None:
+    def log_request(
+        self, code: Union[int, str] = "-", size: Union[int, str] = "-"
+    ) -> None:
         pass  # Disable request logging.
 
     def log_error(self, format_: str, *args: Any) -> None:
@@ -263,9 +293,10 @@ class RequestHandler(wsgiref.simple_server.WSGIRequestHandler):
         handler.run(app)
 
 
-def serve(configuration: config.Configuration,
-          shutdown_socket: Optional[socket.socket] = None) -> None:
-    """Serve radicale from configuration.
+def serve(
+    configuration: config.Configuration, shutdown_socket: Optional[socket.socket] = None
+) -> None:
+    """Serve  from configuration.
 
     `shutdown_socket` can be used to gracefully shutdown the server.
     The socket can be created with `socket.socketpair()`, when the other socket
@@ -277,8 +308,9 @@ def serve(configuration: config.Configuration,
     logger.info("Starting Radicale")
     # Copy configuration before modifying
     configuration = configuration.copy()
-    configuration.update({"server": {"_internal_server": "True"}}, "server",
-                         privileged=True)
+    configuration.update(
+        {"server": {"_internal_server": "True"}}, "server", privileged=True
+    )
 
     use_ssl: bool = configuration.get("server", "ssl")
     server_class = ParallelHTTPSServer if use_ssl else ParallelHTTPServer
@@ -289,23 +321,53 @@ def serve(configuration: config.Configuration,
         for address_port in hosts:
             # retrieve IPv4/IPv6 address of address
             try:
-                getaddrinfo = socket.getaddrinfo(address_port[0], address_port[1], 0, socket.SOCK_STREAM, socket.IPPROTO_TCP)
+                getaddrinfo = socket.getaddrinfo(
+                    address_port[0],
+                    address_port[1],
+                    0,
+                    socket.SOCK_STREAM,
+                    socket.IPPROTO_TCP,
+                )
             except OSError as e:
-                logger.warning("cannot retrieve IPv4 or IPv6 address of '%s': %s" % (format_address(address_port), e))
+                logger.warning(
+                    "cannot retrieve IPv4 or IPv6 address of '%s': %s"
+                    % (format_address(address_port), e)
+                )
                 continue
-            logger.debug("getaddrinfo of '%s': %s" % (format_address(address_port), getaddrinfo))
-            for (address_family, socket_kind, socket_proto, socket_flags, socket_address) in getaddrinfo:
-                logger.debug("try to create server socket on '%s'" % (format_address(socket_address)))
+            logger.debug(
+                "getaddrinfo of '%s': %s" % (format_address(address_port), getaddrinfo)
+            )
+            for (
+                address_family,
+                socket_kind,
+                socket_proto,
+                socket_flags,
+                socket_address,
+            ) in getaddrinfo:
+                logger.debug(
+                    "try to create server socket on '%s'"
+                    % (format_address(socket_address))
+                )
                 try:
-                    server = server_class(configuration, address_family, (socket_address[0], socket_address[1]), RequestHandler)
+                    server = server_class(
+                        configuration,
+                        address_family,
+                        (socket_address[0], socket_address[1]),
+                        RequestHandler,
+                    )
                 except OSError as e:
-                    logger.warning("cannot create server socket on '%s': %s" % (format_address(socket_address), e))
+                    logger.warning(
+                        "cannot create server socket on '%s': %s"
+                        % (format_address(socket_address), e)
+                    )
                     continue
                 servers[server.socket] = server
                 server.set_app(application)
-                logger.info("Listening on %r%s",
-                            format_address(server.server_address),
-                            " with SSL" if use_ssl else "")
+                logger.info(
+                    "Listening on %r%s",
+                    format_address(server.server_address),
+                    " with SSL" if use_ssl else "",
+                )
         if not servers:
             raise RuntimeError("No servers started")
 

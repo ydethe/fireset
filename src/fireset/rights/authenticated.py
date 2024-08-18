@@ -21,11 +21,10 @@ calendars and address books.
 
 """
 
-from radicale import config, pathutils, rights
+from . import config, pathutils, rights
 
 
 class Rights(rights.BaseRights):
-
     def __init__(self, configuration: config.Configuration) -> None:
         super().__init__(configuration)
         self._verify_user = self.configuration.get("auth", "type") != "none"

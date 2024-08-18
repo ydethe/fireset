@@ -1,13 +1,12 @@
 import pika
 from pika.exceptions import ChannelWrongStateError, StreamLostError
 
-from radicale import hook
-from radicale.hook import HookNotificationItem
-from radicale.log import logger
+from . import hook
+from .hook import HookNotificationItem
+from .log import logger
 
 
 class Hook(hook.BaseHook):
-
     def __init__(self, configuration):
         super().__init__(configuration)
         self._endpoint = configuration.get("hook", "rabbitmq_endpoint")
@@ -24,7 +23,11 @@ class Hook(hook.BaseHook):
         self._channel = connection.channel()
 
     def _make_declare_queue_synced(self):
-        self._channel.queue_declare(queue=self._topic, durable=True, arguments={"x-queue-type": self._queue_type})
+        self._channel.queue_declare(
+            queue=self._topic,
+            durable=True,
+            arguments={"x-queue-type": self._queue_type},
+        )
 
     def notify(self, notification_item):
         if isinstance(notification_item, HookNotificationItem):
@@ -33,18 +36,19 @@ class Hook(hook.BaseHook):
     def _notify(self, notification_item, recall):
         try:
             self._channel.basic_publish(
-                exchange='',
+                exchange="",
                 routing_key=self._topic,
-                body=notification_item.to_json().encode(
-                    encoding=self._encoding
-                )
+                body=notification_item.to_json().encode(encoding=self._encoding),
             )
         except Exception as e:
-            if (isinstance(e, ChannelWrongStateError) or
-                    isinstance(e, StreamLostError)) and recall:
+            if (
+                isinstance(e, ChannelWrongStateError) or isinstance(e, StreamLostError)
+            ) and recall:
                 self._make_connection_synced()
                 self._notify(notification_item, False)
                 return
-            logger.error("An exception occurred during "
-                         "publishing hook notification item: %s",
-                         e, exc_info=True)
+            logger.error(
+                "An exception occurred during " "publishing hook notification item: %s",
+                e,
+                exc_info=True,
+            )

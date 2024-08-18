@@ -22,8 +22,8 @@ import sys
 from tempfile import TemporaryDirectory
 from typing import IO, AnyStr, ClassVar, Iterator, Optional, Type
 
-from radicale import config, pathutils, storage, types
-from radicale.storage import multifilesystem  # noqa:F401
+from . import config, pathutils, storage, types
+from .storage import multifilesystem  # noqa:F401
 
 
 class CollectionBase(storage.BaseCollection):
@@ -33,30 +33,40 @@ class CollectionBase(storage.BaseCollection):
     _encoding: str
     _filesystem_path: str
 
-    def __init__(self, storage_: "multifilesystem.Storage", path: str,
-                 filesystem_path: Optional[str] = None) -> None:
+    def __init__(
+        self,
+        storage_: "multifilesystem.Storage",
+        path: str,
+        filesystem_path: Optional[str] = None,
+    ) -> None:
         super().__init__()
         self._storage = storage_
         folder = storage_._get_collection_root_folder()
         # Path should already be sanitized
         self._path = pathutils.strip_path(path)
         self._encoding = storage_.configuration.get("encoding", "stock")
-        self._skip_broken_item = storage_.configuration.get("storage", "skip_broken_item")
+        self._skip_broken_item = storage_.configuration.get(
+            "storage", "skip_broken_item"
+        )
         if filesystem_path is None:
             filesystem_path = pathutils.path_to_filesystem(folder, self.path)
         self._filesystem_path = filesystem_path
 
     # TODO: better fix for "mypy"
     @types.contextmanager  # type: ignore
-    def _atomic_write(self, path: str, mode: str = "w",
-                      newline: Optional[str] = None) -> Iterator[IO[AnyStr]]:
+    def _atomic_write(
+        self, path: str, mode: str = "w", newline: Optional[str] = None
+    ) -> Iterator[IO[AnyStr]]:
         # TODO: Overload with Literal when dropping support for Python < 3.8
         parent_dir, name = os.path.split(path)
         # Do not use mkstemp because it creates with permissions 0o600
-        with TemporaryDirectory(
-                prefix=".Radicale.tmp-", dir=parent_dir) as tmp_dir:
-            with open(os.path.join(tmp_dir, name), mode, newline=newline,
-                      encoding=None if "b" in mode else self._encoding) as tmp:
+        with TemporaryDirectory(prefix=".Radicale.tmp-", dir=parent_dir) as tmp_dir:
+            with open(
+                os.path.join(tmp_dir, name),
+                mode,
+                newline=newline,
+                encoding=None if "b" in mode else self._encoding,
+            ) as tmp:
                 yield tmp
                 tmp.flush()
                 self._storage._fsync(tmp)
@@ -73,10 +83,8 @@ class StorageBase(storage.BaseStorage):
 
     def __init__(self, configuration: config.Configuration) -> None:
         super().__init__(configuration)
-        self._filesystem_folder = configuration.get(
-            "storage", "filesystem_folder")
-        self._filesystem_fsync = configuration.get(
-            "storage", "_filesystem_fsync")
+        self._filesystem_folder = configuration.get("storage", "filesystem_folder")
+        self._filesystem_fsync = configuration.get("storage", "_filesystem_fsync")
 
     def _get_collection_root_folder(self) -> str:
         return os.path.join(self._filesystem_folder, "collection-root")
@@ -86,8 +94,7 @@ class StorageBase(storage.BaseStorage):
             try:
                 pathutils.fsync(f.fileno())
             except OSError as e:
-                raise RuntimeError("Fsync'ing file %r failed: %s" %
-                                   (f.name, e)) from e
+                raise RuntimeError("Fsync'ing file %r failed: %s" % (f.name, e)) from e
 
     def _sync_directory(self, path: str) -> None:
         """Sync directory to disk.
@@ -105,8 +112,9 @@ class StorageBase(storage.BaseStorage):
                 finally:
                     os.close(fd)
             except OSError as e:
-                raise RuntimeError("Fsync'ing directory %r failed: %s" %
-                                   (path, e)) from e
+                raise RuntimeError(
+                    "Fsync'ing directory %r failed: %s" % (path, e)
+                ) from e
 
     def _makedirs_synced(self, filesystem_path: str) -> None:
         """Recursively create a directory and its parents in a sync'ed way.

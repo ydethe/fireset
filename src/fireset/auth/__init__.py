@@ -31,22 +31,27 @@ Take a look at the class ``BaseAuth`` if you want to implement your own.
 
 from typing import Sequence, Tuple, Union
 
-from radicale import config, types, utils
-from radicale.log import logger
+from . import config, types, utils
+from .log import logger
 
-INTERNAL_TYPES: Sequence[str] = ("none", "remote_user", "http_x_remote_user",
-                                 "denyall",
-                                 "htpasswd")
+INTERNAL_TYPES: Sequence[str] = (
+    "none",
+    "remote_user",
+    "http_x_remote_user",
+    "denyall",
+    "htpasswd",
+)
 
 
 def load(configuration: "config.Configuration") -> "BaseAuth":
     """Load the authentication module chosen in configuration."""
     if configuration.get("auth", "type") == "none":
-        logger.warning("No user authentication is selected: '[auth] type=none' (insecure)")
+        logger.warning(
+            "No user authentication is selected: '[auth] type=none' (insecure)"
+        )
     if configuration.get("auth", "type") == "denyall":
         logger.warning("All access is blocked by: '[auth] type=denyall'")
-    return utils.load_plugin(INTERNAL_TYPES, "auth", "Auth", BaseAuth,
-                             configuration)
+    return utils.load_plugin(INTERNAL_TYPES, "auth", "Auth", BaseAuth, configuration)
 
 
 class BaseAuth:
@@ -57,7 +62,7 @@ class BaseAuth:
     def __init__(self, configuration: "config.Configuration") -> None:
         """Initialize BaseAuth.
 
-        ``configuration`` see ``radicale.config`` module.
+        ``configuration`` see ``.config`` module.
         The ``configuration`` must not change during the lifetime of
         this object, it is kept as an internal reference.
 
@@ -66,8 +71,9 @@ class BaseAuth:
         self._lc_username = configuration.get("auth", "lc_username")
         self._strip_domain = configuration.get("auth", "strip_domain")
 
-    def get_external_login(self, environ: types.WSGIEnviron) -> Union[
-            Tuple[()], Tuple[str, str]]:
+    def get_external_login(
+        self, environ: types.WSGIEnviron
+    ) -> Union[Tuple[()], Tuple[str, str]]:
         """Optionally provide the login and password externally.
 
         ``environ`` a dict with the WSGI environment
@@ -96,5 +102,5 @@ class BaseAuth:
         if self._lc_username:
             login = login.lower()
         if self._strip_domain:
-            login = login.split('@')[0]
+            login = login.split("@")[0]
         return self._login(login, password)

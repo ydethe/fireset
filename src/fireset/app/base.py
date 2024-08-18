@@ -22,12 +22,23 @@ import sys
 import xml.etree.ElementTree as ET
 from typing import Optional
 
-from radicale import (auth, config, hook, httputils, pathutils, rights,
-                      storage, types, web, xmlutils)
-from radicale.log import logger
+from . import (
+    auth,
+    config,
+    hook,
+    httputils,
+    pathutils,
+    rights,
+    storage,
+    types,
+    web,
+    xmlutils,
+)
+from .log import logger
 
 # HACK: https://github.com/tiran/defusedxml/issues/54
 import defusedxml.ElementTree as DefusedET  # isort:skip
+
 sys.modules["xml.etree"].ElementTree = ET  # type:ignore[attr-defined]
 
 
@@ -49,15 +60,22 @@ class ApplicationBase:
         self._rights = rights.load(configuration)
         self._web = web.load(configuration)
         self._encoding = configuration.get("encoding", "request")
-        self._log_bad_put_request_content = configuration.get("logging", "bad_put_request_content")
-        self._response_content_on_debug = configuration.get("logging", "response_content_on_debug")
+        self._log_bad_put_request_content = configuration.get(
+            "logging", "bad_put_request_content"
+        )
+        self._response_content_on_debug = configuration.get(
+            "logging", "response_content_on_debug"
+        )
         self._hook = hook.load(configuration)
 
-    def _read_xml_request_body(self, environ: types.WSGIEnviron
-                               ) -> Optional[ET.Element]:
+    def _read_xml_request_body(
+        self, environ: types.WSGIEnviron
+    ) -> Optional[ET.Element]:
         content = httputils.decode_request(
-            self.configuration, environ,
-            httputils.read_raw_request_body(self.configuration, environ))
+            self.configuration,
+            environ,
+            httputils.read_raw_request_body(self.configuration, environ),
+        )
         if not content:
             return None
         try:
@@ -66,24 +84,24 @@ class ApplicationBase:
             logger.debug("Request content (Invalid XML):\n%s", content)
             raise RuntimeError("Failed to parse XML: %s" % e) from e
         if logger.isEnabledFor(logging.DEBUG):
-            logger.debug("Request content:\n%s",
-                         xmlutils.pretty_xml(xml_content))
+            logger.debug("Request content:\n%s", xmlutils.pretty_xml(xml_content))
         return xml_content
 
     def _xml_response(self, xml_content: ET.Element) -> bytes:
         if logger.isEnabledFor(logging.DEBUG):
             if self._response_content_on_debug:
-                logger.debug("Response content:\n%s",
-                             xmlutils.pretty_xml(xml_content))
+                logger.debug("Response content:\n%s", xmlutils.pretty_xml(xml_content))
             else:
-                logger.debug("Response content: suppressed by config/option [auth] response_content_on_debug")
+                logger.debug(
+                    "Response content: suppressed by config/option [auth] response_content_on_debug"
+                )
         f = io.BytesIO()
-        ET.ElementTree(xml_content).write(f, encoding=self._encoding,
-                                          xml_declaration=True)
+        ET.ElementTree(xml_content).write(
+            f, encoding=self._encoding, xml_declaration=True
+        )
         return f.getvalue()
 
-    def _webdav_error_response(self, status: int, human_tag: str
-                               ) -> types.WSGIResponse:
+    def _webdav_error_response(self, status: int, human_tag: str) -> types.WSGIResponse:
         """Generate XML error response."""
         headers = {"Content-Type": "text/xml; charset=%s" % self._encoding}
         content = self._xml_response(xmlutils.webdav_error(human_tag))
@@ -100,13 +118,13 @@ class Access:
     _rights: rights.BaseRights
     _parent_permissions: Optional[str]
 
-    def __init__(self, rights: rights.BaseRights, user: str, path: str
-                 ) -> None:
+    def __init__(self, rights: rights.BaseRights, user: str, path: str) -> None:
         self._rights = rights
         self.user = user
         self.path = path
         self.parent_path = pathutils.unstrip_path(
-            posixpath.dirname(pathutils.strip_path(path)), True)
+            posixpath.dirname(pathutils.strip_path(path)), True
+        )
         self.permissions = self._rights.authorization(self.user, self.path)
         self._parent_permissions = None
 
@@ -116,11 +134,13 @@ class Access:
             return self.permissions
         if self._parent_permissions is None:
             self._parent_permissions = self._rights.authorization(
-                self.user, self.parent_path)
+                self.user, self.parent_path
+            )
         return self._parent_permissions
 
-    def check(self, permission: str,
-              item: Optional[types.CollectionOrItem] = None) -> bool:
+    def check(
+        self, permission: str, item: Optional[types.CollectionOrItem] = None
+    ) -> bool:
         if permission not in "rw":
             raise ValueError("Invalid permission argument: %r" % permission)
         if not item:
@@ -135,6 +155,10 @@ class Access:
         else:
             permissions = ""
             parent_permissions = permission
-        return bool(rights.intersect(self.permissions, permissions) or (
-            self.path != self.parent_path and
-            rights.intersect(self.parent_permissions, parent_permissions)))
+        return bool(
+            rights.intersect(self.permissions, permissions)
+            or (
+                self.path != self.parent_path
+                and rights.intersect(self.parent_permissions, parent_permissions)
+            )
+        )

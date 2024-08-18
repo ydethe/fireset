@@ -20,9 +20,9 @@ import json
 import os
 from typing import Mapping, Optional, TextIO, Union, cast, overload
 
-import radicale.item as radicale_item
-from radicale.storage import multifilesystem
-from radicale.storage.multifilesystem.base import CollectionBase
+from .. import item as radicale_item
+from .. import multifilesystem
+from .base import CollectionBase
 
 
 class CollectionPartMeta(CollectionBase):
@@ -30,21 +30,27 @@ class CollectionPartMeta(CollectionBase):
     _meta_cache: Optional[Mapping[str, str]]
     _props_path: str
 
-    def __init__(self, storage_: "multifilesystem.Storage", path: str,
-                 filesystem_path: Optional[str] = None) -> None:
+    def __init__(
+        self,
+        storage_: "multifilesystem.Storage",
+        path: str,
+        filesystem_path: Optional[str] = None,
+    ) -> None:
         super().__init__(storage_, path, filesystem_path)
         self._meta_cache = None
-        self._props_path = os.path.join(
-            self._filesystem_path, ".Radicale.props")
+        self._props_path = os.path.join(self._filesystem_path, ".Radicale.props")
 
     @overload
-    def get_meta(self, key: None = None) -> Mapping[str, str]: ...
+    def get_meta(self, key: None = None) -> Mapping[str, str]:
+        ...
 
     @overload
-    def get_meta(self, key: str) -> Optional[str]: ...
+    def get_meta(self, key: str) -> Optional[str]:
+        ...
 
-    def get_meta(self, key: Optional[str] = None) -> Union[Mapping[str, str],
-                                                           Optional[str]]:
+    def get_meta(
+        self, key: Optional[str] = None
+    ) -> Union[Mapping[str, str], Optional[str]]:
         # reuse cached value if the storage is read-only
         if self._storage._lock.locked == "w" or self._meta_cache is None:
             try:
@@ -53,11 +59,11 @@ class CollectionPartMeta(CollectionBase):
                         temp_meta = json.load(f)
                 except FileNotFoundError:
                     temp_meta = {}
-                self._meta_cache = radicale_item.check_and_sanitize_props(
-                    temp_meta)
+                self._meta_cache = radicale_item.check_and_sanitize_props(temp_meta)
             except ValueError as e:
-                raise RuntimeError("Failed to load properties of collection "
-                                   "%r: %s" % (self.path, e)) from e
+                raise RuntimeError(
+                    "Failed to load properties of collection " "%r: %s" % (self.path, e)
+                ) from e
         return self._meta_cache if key is None else self._meta_cache.get(key)
 
     def set_meta(self, props: Mapping[str, str]) -> None:

@@ -35,12 +35,22 @@ import struct
 import sys
 import threading
 import time
-from typing import (Any, Callable, ClassVar, Dict, Iterator, Mapping, Optional,
-                    Tuple, Union, cast)
+from typing import (
+    Any,
+    Callable,
+    ClassVar,
+    Dict,
+    Iterator,
+    Mapping,
+    Optional,
+    Tuple,
+    Union,
+    cast,
+)
 
-from radicale import types
+from . import types
 
-LOGGER_NAME: str = "radicale"
+LOGGER_NAME: str = ""
 LOGGER_FORMATS: Mapping[str, str] = {
     "verbose": "[%(asctime)s] [%(ident)s] [%(levelname)s] %(message)s",
     "journal": "[%(ident)s] [%(levelname)s] %(message)s",
@@ -51,7 +61,6 @@ logger: logging.Logger = logging.getLogger(LOGGER_NAME)
 
 
 class RemoveTracebackFilter(logging.Filter):
-
     def filter(self, record: logging.LogRecord) -> bool:
         record.exc_info = None
         return True
@@ -63,20 +72,21 @@ REMOVE_TRACEBACK_FILTER: logging.Filter = RemoveTracebackFilter()
 class IdentLogRecordFactory:
     """LogRecordFactory that adds ``ident`` attribute."""
 
-    def __init__(self, upstream_factory: Callable[..., logging.LogRecord]
-                 ) -> None:
+    def __init__(self, upstream_factory: Callable[..., logging.LogRecord]) -> None:
         self._upstream_factory = upstream_factory
 
     def __call__(self, *args: Any, **kwargs: Any) -> logging.LogRecord:
         record = self._upstream_factory(*args, **kwargs)
-        ident = ("%d" % record.process if record.process is not None
-                 else record.processName or "unknown")
+        ident = (
+            "%d" % record.process
+            if record.process is not None
+            else record.processName or "unknown"
+        )
         tid = None
         if record.thread is not None:
             if record.thread != threading.main_thread().ident:
                 ident += "/%s" % (record.threadName or "unknown")
-            if (sys.version_info >= (3, 8) and
-                    record.thread == threading.get_ident()):
+            if sys.version_info >= (3, 8) and record.thread == threading.get_ident():
                 tid = threading.get_native_id()
         record.ident = ident  # type:ignore[attr-defined]
         record.tid = tid  # type:ignore[attr-defined]
@@ -85,7 +95,7 @@ class IdentLogRecordFactory:
 
 class ThreadedStreamHandler(logging.Handler):
     """Sends logging output to the stream registered for the current thread or
-       ``sys.stderr`` when no stream was registered."""
+    ``sys.stderr`` when no stream was registered."""
 
     terminator: ClassVar[str] = "\n"
 
@@ -105,10 +115,13 @@ class ThreadedStreamHandler(logging.Handler):
             self._journal_stream_id = (int(dev), int(inode))
         self._journal_socket = None
         self._journal_socket_failed = False
-        self._formatters = {name: logging.Formatter(fmt, DATE_FORMAT)
-                            for name, fmt in LOGGER_FORMATS.items()}
-        self._formatter = (self._formatters[format_name]
-                           if format_name is not None else None)
+        self._formatters = {
+            name: logging.Formatter(fmt, DATE_FORMAT)
+            for name, fmt in LOGGER_FORMATS.items()
+        }
+        self._formatter = (
+            self._formatters[format_name] if format_name is not None else None
+        )
 
     def _get_formatter(self, default_format_name: str) -> logging.Formatter:
         return self._formatter or self._formatters[default_format_name]
@@ -123,8 +136,7 @@ class ThreadedStreamHandler(logging.Handler):
         return self._journal_stream_id == (stat.st_dev, stat.st_ino)
 
     @staticmethod
-    def _encode_journal(data: Mapping[str, Optional[Union[str, int]]]
-                        ) -> bytes:
+    def _encode_journal(data: Mapping[str, Optional[Union[str, int]]]) -> bytes:
         msg = b""
         for key, value in data.items():
             if value is None:
@@ -132,8 +144,7 @@ class ThreadedStreamHandler(logging.Handler):
             keyb = key.encode()
             valueb = str(value).encode()
             if b"\n" in valueb:
-                msg += (keyb + b"\n" +
-                        struct.pack("<Q", len(valueb)) + valueb + b"\n")
+                msg += keyb + b"\n" + struct.pack("<Q", len(valueb)) + valueb + b"\n"
             else:
                 msg += keyb + b"=" + valueb + b"\n"
         return msg
@@ -145,36 +156,38 @@ class ThreadedStreamHandler(logging.Handler):
                 return False
             journal_socket = None
             try:
-                journal_socket = socket.socket(
-                    socket.AF_UNIX, socket.SOCK_DGRAM)
+                journal_socket = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
                 journal_socket.connect("/run/systemd/journal/socket")
             except OSError as e:
                 self._journal_socket_failed = True
                 if journal_socket:
                     journal_socket.close()
                 # Log after setting `_journal_socket_failed` to prevent loop!
-                logger.error("Failed to connect to systemd journal: %s",
-                             e, exc_info=True)
+                logger.error(
+                    "Failed to connect to systemd journal: %s", e, exc_info=True
+                )
                 return False
             self._journal_socket = journal_socket
 
-        priority = {"DEBUG": 7,
-                    "INFO": 6,
-                    "WARNING": 4,
-                    "ERROR": 3,
-                    "CRITICAL": 2}.get(record.levelname, 4)
-        timestamp = time.strftime("%Y-%m-%dT%H:%M:%S.%%03dZ",
-                                  time.gmtime(record.created)) % record.msecs
-        data = {"PRIORITY": priority,
-                "TID": cast(Optional[int], getattr(record, "tid", None)),
-                "SYSLOG_IDENTIFIER": record.name,
-                "SYSLOG_FACILITY": 1,
-                "SYSLOG_PID": record.process,
-                "SYSLOG_TIMESTAMP": timestamp,
-                "CODE_FILE": record.pathname,
-                "CODE_LINE": record.lineno,
-                "CODE_FUNC": record.funcName,
-                "MESSAGE": self._get_formatter("journal").format(record)}
+        priority = {"DEBUG": 7, "INFO": 6, "WARNING": 4, "ERROR": 3, "CRITICAL": 2}.get(
+            record.levelname, 4
+        )
+        timestamp = (
+            time.strftime("%Y-%m-%dT%H:%M:%S.%%03dZ", time.gmtime(record.created))
+            % record.msecs
+        )
+        data = {
+            "PRIORITY": priority,
+            "TID": cast(Optional[int], getattr(record, "tid", None)),
+            "SYSLOG_IDENTIFIER": record.name,
+            "SYSLOG_FACILITY": 1,
+            "SYSLOG_PID": record.process,
+            "SYSLOG_TIMESTAMP": timestamp,
+            "CODE_FILE": record.pathname,
+            "CODE_LINE": record.lineno,
+            "CODE_FUNC": record.funcName,
+            "MESSAGE": self._get_formatter("journal").format(record),
+        }
         self._journal_socket.sendall(self._encode_journal(data))
         return True
 
