@@ -29,21 +29,35 @@ Configuration files can be specified in the environment variable
 import os
 import threading
 from typing import Iterable, Optional, cast
+import sys
 
-from . import config, log, types, utils
-from .app import Application
-from .log import logger
+if sys.version_info < (3, 8):
+    import pkg_resources
+else:
+    from importlib import metadata
 
-VERSION: str = utils.package_version("")
 
-_application_instance: Optional[Application] = None
+def package_version(name):
+    if sys.version_info < (3, 8):
+        return pkg_resources.get_distribution(name).version
+    return metadata.version(name)
+
+
+VERSION: str = package_version("")
+
+_application_instance: Optional["Application"] = None  # noqa: F821
 _application_config_path: Optional[str] = None
 _application_lock = threading.Lock()
 
 
 def _get_application_instance(
-    config_path: str, wsgi_errors: types.ErrorStream
-) -> Application:
+    config_path: str, wsgi_errors: "ErrorStream"  # noqa: F821
+) -> "Application":  # noqa: F821
+
+    from . import config, log
+    from .app import Application
+    from .log import logger
+
     global _application_instance, _application_config_path
     with _application_lock:
         if _application_instance is None:
@@ -82,8 +96,9 @@ def _get_application_instance(
 
 
 def application(
-    environ: types.WSGIEnviron, start_response: types.WSGIStartResponse
+    environ: "WSGIEnviron", start_response: "WSGIStartResponse"  # noqa: F821
 ) -> Iterable[bytes]:
+
     """Entry point for external WSGI servers."""
     config_path = environ.get("RADICALE_CONFIG", os.environ.get("RADICALE_CONFIG"))
     app = _get_application_instance(config_path, environ["wsgi.errors"])
