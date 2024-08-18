@@ -20,8 +20,8 @@ Radicale tests with simple requests and rights.
 
 import os
 
-from .tests import BaseTest
-from .tests.helpers import get_file_content
+from fireset.tests.BaseTest import BaseTest
+from fireset.tests.helpers import get_file_content
 
 
 class TestBaseRightsRequests(BaseTest):

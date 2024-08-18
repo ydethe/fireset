@@ -26,10 +26,10 @@ from typing import ClassVar, cast
 
 import pytest
 
-from .custom import storage_simple_sync
-from . import BaseTest
-from .helpers import get_file_content
-from .test_base import TestBaseRequests as _TestBaseRequests
+from fireset.tests.custom import storage_simple_sync
+from fireset.tests.BaseTest import BaseTest
+from fireset.tests.helpers import get_file_content
+from fireset.tests.test_base import TestBaseRequests as _TestBaseRequests
 
 
 class TestMultiFileSystem(BaseTest):

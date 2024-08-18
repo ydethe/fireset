@@ -22,8 +22,8 @@ from typing import List, Tuple
 
 import pytest
 
-from . import config, types
-from .tests.helpers import configuration_to_dict
+from fireset import config, types
+from fireset.tests.helpers import configuration_to_dict
 
 
 class TestConfig:

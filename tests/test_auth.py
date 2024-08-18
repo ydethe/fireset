@@ -28,8 +28,8 @@ from typing import Iterable, Tuple, Union
 
 import pytest
 
-from . import xmlutils
-from .tests import BaseTest
+from fireset import xmlutils
+from fireset.tests.BaseTest import BaseTest
 
 
 class TestBaseAuthRequests(BaseTest):

@@ -26,9 +26,9 @@ from typing import Any, Callable, ClassVar, Iterable, List, Optional, Tuple
 
 import defusedxml.ElementTree as DefusedET
 
-from . import storage, xmlutils
-from .tests import RESPONSES, BaseTest
-from .tests.helpers import get_file_content
+from fireset import storage, xmlutils
+from fireset.tests.BaseTest import RESPONSES, BaseTest
+from fireset.tests.helpers import get_file_content
 
 
 class TestBaseRequests(BaseTest):
