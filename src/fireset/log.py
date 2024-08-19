@@ -26,7 +26,6 @@ Log messages are sent to the first available target of:
 
 """
 
-import contextlib
 import io
 import logging
 import os
@@ -110,9 +109,9 @@ class ThreadedStreamHandler(logging.Handler):
         super().__init__()
         self._streams = {}
         self._journal_stream_id = None
-        with contextlib.suppress(TypeError, ValueError):
-            dev, inode = os.environ.get("JOURNAL_STREAM", "").split(":", 1)
-            self._journal_stream_id = (int(dev), int(inode))
+        # with contextlib.suppress(TypeError, ValueError):
+        #     dev, inode = os.environ.get("JOURNAL_STREAM", "").split(":", 1)
+        #     self._journal_stream_id = (int(dev), int(inode))
         self._journal_socket = None
         self._journal_socket_failed = False
         self._formatters = {

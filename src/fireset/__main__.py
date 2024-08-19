@@ -108,7 +108,7 @@ def run() -> None:
             kwargs["metavar"] = "VALUE"
             kwargs["default"] = argparse.SUPPRESS
             del kwargs["value"]
-            with contextlib.suppress(KeyError):
+            if "internal" in kwargs.keys():
                 del kwargs["internal"]
 
             if kwargs["type"] == bool:
@@ -158,7 +158,7 @@ def run() -> None:
     with contextlib.suppress(ValueError):
         log.set_level(
             config.DEFAULT_CONFIG_SCHEMA()["logging"]["level"]["type"](
-                vars(args_ns).get("c:logging:level", "")
+                vars(args_ns).get("c:logging:level", "info")
             ),
             True,
         )
