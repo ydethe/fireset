@@ -46,6 +46,7 @@ except ImportError:
 
     def get_systemd_listen_sockets() -> list[socket.socket]:
         raise NotImplementedError
+
 else:
     systemd_imported = True
 

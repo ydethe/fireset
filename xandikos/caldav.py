@@ -588,24 +588,20 @@ class CalendarColorProperty(webdav.Property):
 
 
 class CreatedByProperty(webdav.Property):
-    """created-by property.
-    """
+    """created-by property."""
 
     name = "{http://calendarserver.org/ns/}created-by"
-    resource_type = (
-        CALENDAR_RESOURCE_TYPE)
+    resource_type = CALENDAR_RESOURCE_TYPE
 
     async def get_value(self, href, resource, el, environ):
         el.text = resource.get_created_by()
 
 
 class UpdatedByProperty(webdav.Property):
-    """updated-by property.
-    """
+    """updated-by property."""
 
     name = "{http://calendarserver.org/ns/}updated-by"
-    resource_type = (
-        CALENDAR_RESOURCE_TYPE)
+    resource_type = CALENDAR_RESOURCE_TYPE
 
     async def get_value(self, href, resource, el, environ):
         el.text = resource.get_updated_by()

@@ -335,9 +335,9 @@ class Status:
         if self.error is not None:
             ET.SubElement(ret, "{DAV:}error").append(self.error)
         if self.responsedescription:
-            ET.SubElement(
-                ret, "{DAV:}responsedescription"
-            ).text = self.responsedescription
+            ET.SubElement(ret, "{DAV:}responsedescription").text = (
+                self.responsedescription
+            )
         return ret
 
 
@@ -1478,7 +1478,7 @@ class Backend:
 
 
 def href_to_path(environ, href) -> Optional[str]:
-    script_name = environ["SCRIPT_NAME"].rstrip('/')
+    script_name = environ["SCRIPT_NAME"].rstrip("/")
     if not href or not href.startswith(script_name):
         return None
     else:
@@ -1488,7 +1488,9 @@ def href_to_path(environ, href) -> Optional[str]:
         return path
 
 
-def _get_resources_by_hrefs(backend, environ, hrefs) -> Iterator[tuple[str, Optional[Resource]]]:
+def _get_resources_by_hrefs(
+    backend, environ, hrefs
+) -> Iterator[tuple[str, Optional[Resource]]]:
     """Retrieve multiple resources by href.
 
     Args:
@@ -1505,7 +1507,7 @@ def _get_resources_by_hrefs(backend, environ, hrefs) -> Iterator[tuple[str, Opti
         else:
             yield (href, None)
 
-    for (relpath, resource) in backend.get_resources(paths):
+    for relpath, resource in backend.get_resources(paths):
         href = paths[relpath]
         yield (href, resource)
 
