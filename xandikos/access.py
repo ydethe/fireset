@@ -31,9 +31,10 @@ FEATURE = "access-control"
 
 
 class CurrentUserPrivilegeSetProperty(webdav.Property):
-    """current-user-privilege-set property.
+    """Defines a property class for the 'current-user-privilege-set' property.
 
     See http://www.webdav.org/specs/rfc3744.html, section 3.7
+
     """
 
     name = "{DAV:}current-user-privilege-set"
@@ -47,9 +48,14 @@ class CurrentUserPrivilegeSetProperty(webdav.Property):
 
 
 class OwnerProperty(webdav.Property):
-    """owner property.
+    """Defines an owner property for webdav.
 
     See http://www.webdav.org/specs/rfc3744.html, section 5.1
+
+    Attributes:
+        name (str): "{DAV:}owner"
+        in_allprops (bool): False
+        live (bool): True
     """
 
     name = "{DAV:}owner"

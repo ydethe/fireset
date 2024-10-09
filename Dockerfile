@@ -5,16 +5,20 @@
 
 FROM debian:sid-slim
 LABEL maintainer="jelmer@jelmer.uk"
+
 RUN apt-get update && \
-    apt-get -y install --no-install-recommends python3-icalendar python3-dulwich python3-jinja2 python3-defusedxml python3-aiohttp python3-vobject python3-aiohttp-openmetrics && \
+    apt-get -y install --no-install-recommends python3-dev python3-venv python3-pip && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/ && \
     groupadd -g 1000 xandikos && \
     useradd -d /code -c Xandikos -g xandikos -M -s /bin/bash -u 1000 xandikos
-ADD . /code
+
 WORKDIR /code
+COPY dist/*.whl /code
+RUN python3 -m venv /code/venv && \
+    /code/venv/bin/python -m pip install /code/*.whl
 VOLUME /data
 EXPOSE 8000
 USER xandikos
-ENTRYPOINT ["python3", "-m", "xandikos.web", "--port=8000", "--metrics-port=8001", "--listen-address=0.0.0.0", "-d", "/data"]
+ENTRYPOINT ["/code/venv/bin/python3", "-m", "xandikos", "--port=8000", "--metrics-port=8001", "--listen-address=0.0.0.0", "-d", "/data"]
 CMD ["--defaults"]

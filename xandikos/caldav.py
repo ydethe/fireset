@@ -25,9 +25,10 @@ import datetime
 import itertools
 
 import pytz
+from pytz.tzinfo import DstTzInfo
 from icalendar.cal import Calendar as ICalendar
 from icalendar.cal import Component, FreeBusy, component_factory
-from icalendar.prop import LocalTimezone, vDDDTypes, vPeriod
+from icalendar.prop import vDDDTypes, vPeriod
 
 from . import davcommon, webdav
 from .icalendar import apply_time_range_vevent, as_tz_aware_ts, expand_calendar_rrule
@@ -488,16 +489,16 @@ def extract_tzid(cal):
     return cal.subcomponents[0]["TZID"]
 
 
-def get_pytz_from_text(tztext):
+def get_pytz_from_text(tztext) -> DstTzInfo:
     tzid = extract_tzid(ICalendar.from_ical(tztext))
     return pytz.timezone(tzid)
 
 
-def get_calendar_timezone(resource):
+def get_calendar_timezone(resource) -> DstTzInfo:
     try:
         tztext = resource.get_calendar_timezone()
     except KeyError:
-        return LocalTimezone()
+        return get_pytz_from_text("Europe/Paris")
     else:
         return get_pytz_from_text(tztext)
 
