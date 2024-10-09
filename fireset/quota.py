@@ -21,7 +21,7 @@
 
 See https://tools.ietf.org/html/rfc4331
 """
-from xandikos import webdav
+from . import webdav
 
 FEATURE: str = "quota"
 

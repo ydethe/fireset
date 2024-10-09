@@ -18,7 +18,7 @@
 # MA  02110-1301, USA.
 
 """Inf-It properties."""
-from xandikos import carddav, webdav
+from . import carddav, webdav
 
 
 class SettingsProperty(webdav.Property):

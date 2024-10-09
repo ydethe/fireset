@@ -26,5 +26,5 @@ RUN python3 -m venv /code/venv && \
     /code/venv/bin/python -m pip install /code/*.whl
 VOLUME /data
 EXPOSE 8000
-ENTRYPOINT ["/code/venv/bin/python3", "-m", "xandikos", "--port=8000", "--metrics-port=8001", "--listen-address=0.0.0.0", "-d", "/data"]
+ENTRYPOINT ["/code/venv/bin/python3", "-m", "fireset", "--port=8000", "--metrics-port=8001", "--listen-address=0.0.0.0", "-d", "/data"]
 CMD ["--defaults"]

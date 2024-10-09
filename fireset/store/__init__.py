@@ -180,9 +180,7 @@ class Filter:
         raise NotImplementedError(self.check_from_indexes)
 
 
-def open_by_content_type(
-    content: Iterable[bytes], content_type: str, extra_file_handlers
-) -> File:
+def open_by_content_type(content: Iterable[bytes], content_type: str, extra_file_handlers) -> File:
     """Open a file based on content type.
 
     Args:
@@ -190,9 +188,7 @@ def open_by_content_type(
       content_type: MIME type
     Returns: File instance
     """
-    return extra_file_handlers.get(content_type.split(";")[0], File)(
-        content, content_type
-    )
+    return extra_file_handlers.get(content_type.split(";")[0], File)(content, content_type)
 
 
 def open_by_extension(
@@ -210,9 +206,7 @@ def open_by_extension(
     (mime_type, _) = MIMETYPES.guess_type(name)
     if mime_type is None:
         mime_type = DEFAULT_MIME_TYPE
-    return open_by_content_type(
-        content, mime_type, extra_file_handlers=extra_file_handlers
-    )
+    return open_by_content_type(content, mime_type, extra_file_handlers=extra_file_handlers)
 
 
 class DuplicateUidError(Exception):
@@ -290,9 +284,7 @@ class Store:
     def load_extra_file_handler(self, file_handler: type[File]) -> None:
         self.extra_file_handlers[file_handler.content_type] = file_handler
 
-    def iter_with_etag(
-        self, ctag: Optional[str] = None
-    ) -> Iterator[tuple[str, str, str]]:
+    def iter_with_etag(self, ctag: Optional[str] = None) -> Iterator[tuple[str, str, str]]:
         """Iterate over all items in the store with etag.
 
         Args:
@@ -319,9 +311,7 @@ class Store:
                     return self._iter_with_filter_indexes(filter, present_keys)
         return self._iter_with_filter_naive(filter)
 
-    def _iter_with_filter_naive(
-        self, filter: Filter
-    ) -> Iterator[tuple[str, File, str]]:
+    def _iter_with_filter_naive(self, filter: Filter) -> Iterator[tuple[str, File, str]]:
         for name, content_type, etag in self.iter_with_etag():
             if not filter.content_type == content_type:
                 continue
@@ -332,9 +322,7 @@ class Store:
             except InvalidFileContents:
                 logger.warning("Unable to parse file %s, skipping.", name)
 
-    def _iter_with_filter_indexes(
-        self, filter: Filter, keys
-    ) -> Iterator[tuple[str, File, str]]:
+    def _iter_with_filter_indexes(self, filter: Filter, keys) -> Iterator[tuple[str, File, str]]:
         for name, content_type, etag in self.iter_with_etag():
             if not filter.content_type == content_type:
                 continue
@@ -346,9 +334,7 @@ class Store:
                 try:
                     file_values = file.get_indexes(self.index.available_keys())
                 except InvalidFileContents:
-                    logger.warning(
-                        "Unable to parse file %s for indexing, skipping.", name
-                    )
+                    logger.warning("Unable to parse file %s for indexing, skipping.", name)
                     file_values = {}
                 self.index.add_values(name, etag, file_values)
                 if filter.check_from_indexes(name, file_values):
@@ -359,12 +345,8 @@ class Store:
                 file = self.get_file(name, content_type, etag)
                 if self.double_check_indexes:
                     if file_values != file.get_indexes(keys):
-                        raise AssertionError(
-                            f"{file_values!r} != {file.get_indexes(keys)!r}"
-                        )
-                    if filter.check_from_indexes(name, file_values) != filter.check(
-                        name, file
-                    ):
+                        raise AssertionError(f"{file_values!r} != {file.get_indexes(keys)!r}")
+                    if filter.check_from_indexes(name, file_values) != filter.check(name, file):
                         raise AssertionError(
                             f"index based filter {filter} "
                             f"(values: {file_values}) not matching "
@@ -505,9 +487,7 @@ class Store:
         """Set the color code for this store."""
         raise NotImplementedError(self.set_color)
 
-    def iter_changes(
-        self, old_ctag: str, new_ctag: str
-    ) -> Iterator[tuple[str, str, str, str]]:
+    def iter_changes(self, old_ctag: str, new_ctag: str) -> Iterator[tuple[str, str, str, str]]:
         """Get changes between two versions of this store.
 
         Args:

@@ -19,7 +19,7 @@
 
 """Common functions for DAV implementations."""
 
-from xandikos import webdav
+from . import webdav
 
 ET = webdav.ET
 
@@ -40,14 +40,10 @@ class SubbedProperty(webdav.Property):
         raise NotImplementedError(self.get_value_ext)
 
 
-async def get_properties_with_data(
-    data_property, href, resource, properties, environ, requested
-):
+async def get_properties_with_data(data_property, href, resource, properties, environ, requested):
     properties = dict(properties)
     properties[data_property.name] = data_property
-    async for ps in webdav.get_properties(
-        href, resource, properties, environ, requested
-    ):
+    async for ps in webdav.get_properties(href, resource, properties, environ, requested):
         yield ps
 
 
@@ -81,9 +77,7 @@ class MultiGetReporter(webdav.Reporter):
             elif el.tag == "{DAV:}href":
                 hrefs.append(webdav.read_href_element(el))
             else:
-                webdav.nonfatal_bad_request(
-                    f"Unknown tag {el.tag} in report {self.name}", strict
-                )
+                webdav.nonfatal_bad_request(f"Unknown tag {el.tag} in report {self.name}", strict)
         if requested is None:
             # The CalDAV RFC says that behaviour mimicks that of PROPFIND,
             # and the WebDAV RFC says that no body implies {DAV}allprop
@@ -101,9 +95,7 @@ class MultiGetReporter(webdav.Reporter):
                     environ,
                     requested,
                 )
-                yield webdav.Status(
-                    href, "200 OK", propstat=[s async for s in propstat]
-                )
+                yield webdav.Status(href, "200 OK", propstat=[s async for s in propstat])
 
 
 # see https://tools.ietf.org/html/rfc4790

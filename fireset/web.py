@@ -42,43 +42,8 @@ import jinja2
 
 from . import settings
 
-logger = logging.getLogger("fireset_logger")
-
-try:
-    import systemd.daemon
-except ImportError:
-    systemd_imported = False
-
-    def get_systemd_listen_sockets() -> list[socket.socket]:
-        raise NotImplementedError
-
-else:
-    systemd_imported = True
-
-    def get_systemd_listen_sockets() -> list[socket.socket]:
-        socks = []
-        for fd in systemd.daemon.listen_fds():
-            for family in (
-                socket.AF_UNIX,  # type: ignore
-                socket.AF_INET,
-                socket.AF_INET6,
-            ):
-                if systemd.daemon.is_socket(
-                    fd, family=family, type=socket.SOCK_STREAM, listening=True
-                ):
-                    sock = socket.fromfd(fd, family, socket.SOCK_STREAM)
-                    socks.append(sock)
-                    break
-            else:
-                raise RuntimeError(
-                    "socket family must be AF_INET, AF_INET6, or AF_UNIX; "
-                    "socket type must be SOCK_STREAM; and it must be listening"
-                )
-        return socks
-
-
-from xandikos import __version__ as xandikos_version
-from xandikos import (
+from . import __version__ as xandikos_version
+from . import (
     access,
     apache,
     caldav,
@@ -91,7 +56,7 @@ from xandikos import (
     webdav,
     xmpp,
 )
-from xandikos.store import (
+from .store import (
     STORE_TYPE_ADDRESSBOOK,
     STORE_TYPE_CALENDAR,
     STORE_TYPE_OTHER,
@@ -127,6 +92,40 @@ except ImportError:  # python < 3.8
         return await loop.run_in_executor(None, func_call)
 
 
+try:
+    import systemd.daemon
+except ImportError:
+    systemd_imported = False
+
+    def get_systemd_listen_sockets() -> list[socket.socket]:
+        raise NotImplementedError
+
+else:
+    systemd_imported = True
+
+    def get_systemd_listen_sockets() -> list[socket.socket]:
+        socks = []
+        for fd in systemd.daemon.listen_fds():
+            for family in (
+                socket.AF_UNIX,  # type: ignore
+                socket.AF_INET,
+                socket.AF_INET6,
+            ):
+                if systemd.daemon.is_socket(
+                    fd, family=family, type=socket.SOCK_STREAM, listening=True
+                ):
+                    sock = socket.fromfd(fd, family, socket.SOCK_STREAM)
+                    socks.append(sock)
+                    break
+            else:
+                raise RuntimeError(
+                    "socket family must be AF_INET, AF_INET6, or AF_UNIX; "
+                    "socket type must be SOCK_STREAM; and it must be listening"
+                )
+        return socks
+
+
+logger = logging.getLogger("fireset_logger")
 WELLKNOWN_DAV_PATHS = {
     caldav.WELLKNOWN_CALDAV_PATH,
     carddav.WELLKNOWN_CARDDAV_PATH,
@@ -138,9 +137,7 @@ CALENDAR_HOME_SET = ["calendars"]
 ADDRESSBOOK_HOME_SET = ["contacts"]
 
 TEMPLATES_DIR = os.path.join(os.path.dirname(__file__), "templates")
-jinja_env = jinja2.Environment(
-    loader=jinja2.FileSystemLoader(TEMPLATES_DIR), enable_async=True
-)
+jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(TEMPLATES_DIR), enable_async=True)
 
 
 async def render_jinja_page(
@@ -490,9 +487,7 @@ class StoreBasedCollection:
     async def get_body(self):
         raise NotImplementedError(self.get_body)
 
-    async def render(
-        self, self_url, accepted_content_types, accepted_content_languages
-    ):
+    async def render(self, self_url, accepted_content_types, accepted_content_languages):
         content_types = webdav.pick_content_types(accepted_content_types, ["text/html"])
         assert content_types == ["text/html"]
         return await render_jinja_page(
@@ -763,14 +758,10 @@ class CollectionSetResource(webdav.Collection):
         # RFC2518, section 8.6.2 says this should recursively delete.
         shutil.rmtree(p)
 
-    async def render(
-        self, self_url, accepted_content_types, accepted_content_languages
-    ):
+    async def render(self, self_url, accepted_content_types, accepted_content_languages):
         content_types = webdav.pick_content_types(accepted_content_types, ["text/html"])
         assert content_types == ["text/html"]
-        return await render_jinja_page(
-            "root.html", accepted_content_languages, self_url=self_url
-        )
+        return await render_jinja_page("root.html", accepted_content_languages, self_url=self_url)
 
     def get_is_executable(self):
         return False
@@ -938,9 +929,7 @@ class PrincipalBare(CollectionSetResource, Principal):
                 pass
         return p
 
-    async def render(
-        self, self_url, accepted_content_types, accepted_content_languages
-    ):
+    async def render(self, self_url, accepted_content_types, accepted_content_languages):
         content_types = webdav.pick_content_types(accepted_content_types, ["text/html"])
         assert content_types == ["text/html"]
         return await render_jinja_page(
@@ -1184,9 +1173,7 @@ def create_principal_defaults(backend, principal):
     else:
         resource.store.set_type(STORE_TYPE_ADDRESSBOOK)
         logger.info("Create addressbook in %s.", resource.store.path)
-    calendar_path = posixpath.join(
-        principal.relpath, principal.get_schedule_inbox_url()
-    )
+    calendar_path = posixpath.join(principal.relpath, principal.get_schedule_inbox_url())
     try:
         resource = backend.create_collection(calendar_path)
     except FileExistsError:
@@ -1280,13 +1267,12 @@ def run_simple_server(
 
     if not os.path.isdir(directory):
         logger.warning(
-            "%r does not exist. Run xandikos with --autocreate?",
+            "%r does not exist. Run fireset with --autocreate?",
             directory,
         )
     if not backend.get_resource(current_user_principal):
         logger.warning(
-            "default user principal %s does not exist. "
-            "Run xandikos with --autocreate?",
+            "default user principal %s does not exist. " "Run fireset with --autocreate?",
             current_user_principal,
         )
 
@@ -1329,7 +1315,7 @@ async def main(argv=None):  # noqa: C901
     import argparse
     import sys
 
-    from xandikos import __version__
+    from . import __version__
 
     parser = argparse.ArgumentParser(usage="%(prog)s -d ROOT-DIR [OPTIONS]")
 
@@ -1352,10 +1338,7 @@ async def main(argv=None):  # noqa: C901
         "--listen-address",
         dest="listen_address",
         default="localhost",
-        help=(
-            "Bind to this address. "
-            "Pass in path for unix domain socket. [%(default)s]"
-        ),
+        help=("Bind to this address. " "Pass in path for unix domain socket. [%(default)s]"),
     )
     access_group.add_argument(
         "-p",
@@ -1375,9 +1358,7 @@ async def main(argv=None):  # noqa: C901
         "--route-prefix",
         default="/",
         help=(
-            "Path to Xandikos. "
-            "(useful when Xandikos is behind a reverse proxy) "
-            "[%(default)s]"
+            "Path to Xandikos. " "(useful when Xandikos is behind a reverse proxy) " "[%(default)s]"
         ),
     )
     parser.add_argument(
@@ -1410,9 +1391,7 @@ async def main(argv=None):  # noqa: C901
         dest="dump_dav_xml",
         help="Print DAV XML request/responses.",
     )
-    parser.add_argument(
-        "--avahi", action="store_true", help="Announce services with avahi."
-    )
+    parser.add_argument("--avahi", action="store_true", help="Announce services with avahi.")
     parser.add_argument(
         "--no-strict",
         action="store_false",
@@ -1456,19 +1435,16 @@ async def main(argv=None):  # noqa: C901
     if options.autocreate or options.defaults:
         if not os.path.isdir(options.directory):
             os.makedirs(options.directory)
-        backend.create_principal(
-            options.current_user_principal, create_defaults=options.defaults
-        )
+        backend.create_principal(options.current_user_principal, create_defaults=options.defaults)
 
     if not os.path.isdir(options.directory):
         logger.warning(
-            "%r does not exist. Run xandikos with --autocreate?",
+            "%r does not exist. Run fireset with --autocreate?",
             options.directory,
         )
     if not backend.get_resource(options.current_user_principal):
         logger.warning(
-            "default user principal %s does not exist. "
-            "Run xandikos with --autocreate?",
+            "default user principal %s does not exist. " "Run fireset with --autocreate?",
             options.current_user_principal,
         )
 
@@ -1524,9 +1500,7 @@ async def main(argv=None):  # noqa: C901
         try:
             from aiohttp_openmetrics import metrics, metrics_middleware
         except ModuleNotFoundError:
-            logger.warning(
-                "aiohttp-openmetrics not found; " "/metrics will not be available."
-            )
+            logger.warning("aiohttp-openmetrics not found; " "/metrics will not be available.")
         else:
             app.middlewares.insert(0, metrics_middleware)
             metrics_app.router.add_get("/metrics", metrics, name="metrics")
@@ -1537,9 +1511,7 @@ async def main(argv=None):  # noqa: C901
         metrics_app = None
 
     for path in WELLKNOWN_DAV_PATHS:
-        app.router.add_route(
-            "*", path, RedirectDavHandler(options.route_prefix).__call__
-        )
+        app.router.add_route("*", path, RedirectDavHandler(options.route_prefix).__call__)
 
     if options.route_prefix.strip("/"):
         xandikos_app = web.Application()
@@ -1558,9 +1530,7 @@ async def main(argv=None):  # noqa: C901
             import avahi  # noqa: F401
             import dbus  # noqa: F401
         except ImportError:
-            logger.error(
-                "Please install python-avahi and python-dbus for " "avahi support."
-            )
+            logger.error("Please install python-avahi and python-dbus for " "avahi support.")
         else:
             avahi_register(options.port, options.route_prefix)
 

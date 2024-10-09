@@ -23,7 +23,7 @@ import asyncio
 
 
 def main(argv=None):
-    # For now, just invoke xandikos.web
+    # For now, just invoke fireset.web
     from .web import main
 
     return asyncio.run(main(argv))

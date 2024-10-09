@@ -42,9 +42,7 @@ class VCardFile(File):
             )
         if not self.addressbook.validate():
             # TODO(jelmer): Get data about what is invalid
-            raise InvalidFileContents(
-                self.content_type, self.content, "Invalid VCard file"
-            )
+            raise InvalidFileContents(self.content_type, self.content, "Invalid VCard file")
 
     @property
     def addressbook(self):
@@ -55,7 +53,5 @@ class VCardFile(File):
             try:
                 self._addressbook = vobject.readOne(text)
             except vobject.base.ParseError as exc:
-                raise InvalidFileContents(
-                    self.content_type, self.content, str(exc)
-                ) from exc
+                raise InvalidFileContents(self.content_type, self.content, str(exc)) from exc
         return self._addressbook

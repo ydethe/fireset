@@ -532,9 +532,7 @@ class CalendarQueryReporter(webdav.Reporter):
             elif el.tag == "{urn:ietf:params:xml:ns:caldav}timezone":
                 tztext = el.text
             else:
-                webdav.nonfatal_bad_request(
-                    f"Unknown tag {el.tag} in report {self.name}", strict
-                )
+                webdav.nonfatal_bad_request(f"Unknown tag {el.tag} in report {self.name}", strict)
         if requested is None:
             # The CalDAV RFC says that behaviour mimicks that of PROPFIND,
             # and the WebDAV RFC says that no body implies {DAV}allprop
@@ -567,9 +565,7 @@ class CalendarQueryReporter(webdav.Reporter):
                     environ,
                     requested,
                 )
-                yield webdav.Status(
-                    href, "200 OK", propstat=[s async for s in propstat]
-                )
+                yield webdav.Status(href, "200 OK", propstat=[s async for s in propstat])
 
 
 class CalendarColorProperty(webdav.Property):
@@ -1016,9 +1012,7 @@ class MkcalendarMethod(webdav.Method):
         except FileNotFoundError:
             return webdav.Response(status="409 Conflict")
         el = ET.Element("{DAV:}resourcetype")
-        await app.properties["{DAV:}resourcetype"].get_value(
-            href, resource, el, environ
-        )
+        await app.properties["{DAV:}resourcetype"].get_value(href, resource, el, environ)
         ET.SubElement(el, "{urn:ietf:params:xml:ns:caldav}calendar")
         await app.properties["{DAV:}resourcetype"].set_value(href, resource, el)
         if base_content_type in ("text/xml", "application/xml"):
@@ -1030,23 +1024,17 @@ class MkcalendarMethod(webdav.Method):
             propstat = []
             for el in et:
                 if el.tag != "{DAV:}set":
-                    webdav.nonfatal_bad_request(
-                        f"Unknown tag {el.tag} in mkcalendar", app.strict
-                    )
+                    webdav.nonfatal_bad_request(f"Unknown tag {el.tag} in mkcalendar", app.strict)
                     continue
                 propstat.extend(
                     [
                         ps
-                        async for ps in webdav.apply_modify_prop(
-                            el, href, resource, app.properties
-                        )
+                        async for ps in webdav.apply_modify_prop(el, href, resource, app.properties)
                     ]
                 )
                 ret = ET.Element("{urn:ietf:params:xml:ns:carldav:}mkcalendar-response")
             for propstat_el in webdav.propstat_as_xml(propstat):
                 ret.append(propstat_el)
-            return webdav._send_xml_response(
-                "201 Created", ret, webdav.DEFAULT_ENCODING
-            )
+            return webdav._send_xml_response("201 Created", ret, webdav.DEFAULT_ENCODING)
         else:
             return webdav.Response(status="201 Created")

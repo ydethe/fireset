@@ -25,7 +25,7 @@ See https://tools.ietf.org/html/rfc6578
 import itertools
 import urllib.parse
 
-from xandikos import webdav
+from . import webdav
 
 ET = webdav.ET
 
@@ -107,9 +107,7 @@ class SyncCollectionReporter(webdav.Reporter):
                 try:
                     [nresults_el] = list(limit)
                 except ValueError:
-                    webdav.nonfatal_bad_request(
-                        "Invalid number of subelements in limit", strict
-                    )
+                    webdav.nonfatal_bad_request("Invalid number of subelements in limit", strict)
                 else:
                     try:
                         nresults = int(nresults_el.text)

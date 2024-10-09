@@ -34,9 +34,9 @@ requires-python = ">=3.10,<3.13"
 readme = "README.md"
 
 [project.urls]
-"Bug Tracker" = "https://https://github.com//ydethe/fireset/issues"
-Homepage = "https://https://github.com//ydethe/fireset"
-Source = "https://https://github.com//ydethe/fireset"
+"Bug Tracker" = "https://github.com//ydethe/fireset/issues"
+Homepage = "https://github.com//ydethe/fireset"
+Source = "https://github.com//ydethe/fireset"
 
 [tool.pylint.format]
 max-line-length = 100

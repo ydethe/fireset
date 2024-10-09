@@ -326,9 +326,7 @@ class AddressbookQueryReporter(webdav.Reporter):
             elif el.tag == ("{%s}limit" % NAMESPACE):
                 limit = el
             else:
-                webdav.nonfatal_bad_request(
-                    f"Unknown tag {el.tag} in report {self.name}", strict
-                )
+                webdav.nonfatal_bad_request(f"Unknown tag {el.tag} in report {self.name}", strict)
         if requested is None:
             # The CardDAV RFC says that behaviour mimicks that of PROPFIND,
             # and the WebDAV RFC says that no body implies {DAV}allprop
@@ -338,9 +336,7 @@ class AddressbookQueryReporter(webdav.Reporter):
             try:
                 [nresults_el] = list(limit)
             except ValueError:
-                webdav.nonfatal_bad_request(
-                    "Invalid number of subelements in limit", strict
-                )
+                webdav.nonfatal_bad_request("Invalid number of subelements in limit", strict)
                 nresults = None
             else:
                 try:
@@ -352,9 +348,7 @@ class AddressbookQueryReporter(webdav.Reporter):
             nresults = None
 
         i = 0
-        async for href, resource in webdav.traverse_resource(
-            base_resource, base_href, depth
-        ):
+        async for href, resource in webdav.traverse_resource(base_resource, base_href, depth):
             if not await apply_filter(filter_el, resource):
                 continue
             if nresults is not None and i >= nresults:

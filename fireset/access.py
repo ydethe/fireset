@@ -22,7 +22,7 @@
 See http://www.webdav.org/specs/rfc3744.html
 """
 
-from xandikos import webdav
+from . import webdav
 
 ET = webdav.ET
 

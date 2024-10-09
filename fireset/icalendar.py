@@ -29,8 +29,7 @@ import pytz
 from icalendar.cal import Calendar, Component, component_factory
 from icalendar.prop import TypesFactory, vCategory, vDatetime, vDDDTypes, vText
 
-from xandikos.store import File, Filter, InvalidFileContents
-
+from .store import File, Filter, InvalidFileContents
 from . import collation as _mod_collation
 from .store.index import IndexDict, IndexKey, IndexValue, IndexValueIterator
 
@@ -67,9 +66,7 @@ def validate_calendar(cal, strict=False):
 SubIndexDict = dict[Optional[IndexKey], IndexValue]
 
 
-def create_subindexes(
-    indexes: Union[SubIndexDict, IndexDict], base: str
-) -> SubIndexDict:
+def create_subindexes(indexes: Union[SubIndexDict, IndexDict], base: str) -> SubIndexDict:
     ret: SubIndexDict = {}
     for k, v in indexes.items():
         if k is not None and k.startswith(base + "/"):
@@ -143,8 +140,7 @@ def calendar_component_delta(old_cal, new_cal):
 
 def calendar_prop_delta(old_component, new_component):
     fields = set(
-        [field for field in old_component or []]
-        + [field for field in new_component or []]
+        [field for field in old_component or []] + [field for field in new_component or []]
     )
     for field in fields:
         old_value = old_component.get(field)
@@ -200,9 +196,7 @@ def describe_calendar_delta(old_cal, new_cal):
         if not old_component:
             yield f"Added {describe_component(new_component)}"
             continue
-        for field, old_value, new_value in calendar_prop_delta(
-            old_component, new_component
-        ):
+        for field, old_value, new_value in calendar_prop_delta(old_component, new_component):
             if field.upper() in DELTA_IGNORE_FIELDS:
                 continue
             if old_component.name.upper() == "VTODO" and field.upper() == "STATUS":
@@ -495,9 +489,7 @@ class TextMatcher:
         )
 
     def match_indexes(self, indexes: SubIndexDict):
-        return any(
-            self.match(self.type_fn(self.type_fn.from_ical(k))) for k in indexes[None]
-        )
+        return any(self.match(self.type_fn(self.type_fn.from_ical(k))) for k in indexes[None])
 
     def match(self, prop: Union[vText, vCategory, str]):
         if isinstance(prop, vText):
@@ -507,9 +499,7 @@ class TextMatcher:
         elif isinstance(prop, vCategory):
             matches = any([self.match(cat) for cat in prop.cats])
         else:
-            logger.warning(
-                "potentially unsupported value in text match search: " + repr(prop)
-            )
+            logger.warning("potentially unsupported value in text match search: " + repr(prop))
             return False
         if self.negate_condition:
             return not matches
@@ -544,9 +534,7 @@ class ComponentFilter:
         is_not_defined: bool = False,
         time_range: Optional[ComponentTimeRangeMatcher] = None,
     ):
-        ret = ComponentFilter(
-            name=name, is_not_defined=is_not_defined, time_range=time_range
-        )
+        ret = ComponentFilter(name=name, is_not_defined=is_not_defined, time_range=time_range)
         self.children.append(ret)
         return ret
 
@@ -556,9 +544,7 @@ class ComponentFilter:
         is_not_defined: bool = False,
         time_range: Optional[PropertyTimeRangeMatcher] = None,
     ):
-        ret = PropertyFilter(
-            name=name, is_not_defined=is_not_defined, time_range=time_range
-        )
+        ret = PropertyFilter(name=name, is_not_defined=is_not_defined, time_range=time_range)
         self.children.append(ret)
         return ret
 
@@ -604,9 +590,7 @@ class ComponentFilter:
         return True
 
     def _implicitly_defined(self):
-        return any(
-            not getattr(child, "is_not_defined", False) for child in self.children
-        )
+        return any(not getattr(child, "is_not_defined", False) for child in self.children)
 
     def match_indexes(self, indexes: IndexDict, tzify: TzifyFunction):
         myindex = "C=" + self.name
@@ -615,9 +599,7 @@ class ComponentFilter:
 
         subindexes = create_subindexes(indexes, myindex)
 
-        if self.time_range is not None and not self.time_range.match_indexes(
-            subindexes, tzify
-        ):
+        if self.time_range is not None and not self.time_range.match_indexes(subindexes, tzify):
             return False
 
         for child in self.children:
@@ -660,25 +642,19 @@ class PropertyFilter:
             self.time_range,
         )
 
-    def filter_parameter(
-        self, name: str, is_not_defined: bool = False
-    ) -> "ParameterFilter":
+    def filter_parameter(self, name: str, is_not_defined: bool = False) -> "ParameterFilter":
         ret = ParameterFilter(name=name, is_not_defined=is_not_defined)
         self.children.append(ret)
         return ret
 
-    def filter_time_range(
-        self, start: datetime, end: datetime
-    ) -> PropertyTimeRangeMatcher:
+    def filter_time_range(self, start: datetime, end: datetime) -> PropertyTimeRangeMatcher:
         self.time_range = PropertyTimeRangeMatcher(start, end)
         return self.time_range
 
     def filter_text_match(
         self, text: str, collation: Optional[str] = None, negate_condition: bool = False
     ) -> TextMatcher:
-        ret = TextMatcher(
-            self.name, text, collation=collation, negate_condition=negate_condition
-        )
+        ret = TextMatcher(self.name, text, collation=collation, negate_condition=negate_condition)
         self.children.append(ret)
         return ret
 
@@ -715,9 +691,7 @@ class PropertyFilter:
         if not self.children and not self.time_range:
             return bool(indexes[myindex])
 
-        if self.time_range is not None and not self.time_range.match_indexes(
-            subindexes, tzify
-        ):
+        if self.time_range is not None and not self.time_range.match_indexes(subindexes, tzify):
             return False
 
         for child in self.children:
@@ -752,9 +726,7 @@ class ParameterFilter:
     def filter_text_match(
         self, text: str, collation: Optional[str] = None, negate_condition: bool = False
     ) -> TextMatcher:
-        ret = TextMatcher(
-            self.name, text, collation=collation, negate_condition=negate_condition
-        )
+        ret = TextMatcher(self.name, text, collation=collation, negate_condition=negate_condition)
         self.children.append(ret)
         return ret
 
@@ -801,9 +773,7 @@ class CalendarFilter(Filter):
         self.children: list[ComponentFilter] = []
 
     def filter_subcomponent(self, name, is_not_defined=False, time_range=None):
-        ret = ComponentFilter(
-            name=name, is_not_defined=is_not_defined, time_range=time_range
-        )
+        ret = ComponentFilter(name=name, is_not_defined=is_not_defined, time_range=time_range)
         self.children.append(ret)
         return ret
 
@@ -821,8 +791,7 @@ class CalendarFilter(Filter):
                     return False
             except MissingProperty as e:
                 logger.warning(
-                    "calendar_query: Ignoring calendar object %s, due "
-                    "to missing property %s",
+                    "calendar_query: Ignoring calendar object %s, due " "to missing property %s",
                     name,
                     e.property_name,
                 )
@@ -836,8 +805,7 @@ class CalendarFilter(Filter):
                     return False
             except MissingProperty as e:
                 logger.warning(
-                    "calendar_query: Ignoring calendar object %s, due "
-                    "to missing property %s",
+                    "calendar_query: Ignoring calendar object %s, due " "to missing property %s",
                     name,
                     e.property_name,
                 )
@@ -868,14 +836,10 @@ class ICalendarFile(File):
         cal = self.calendar
         # TODO(jelmer): return the list of errors to the caller
         if cal.is_broken:
-            raise InvalidFileContents(
-                self.content_type, self.content, "Broken calendar file"
-            )
+            raise InvalidFileContents(self.content_type, self.content, "Broken calendar file")
         errors = list(validate_calendar(cal, strict=False))
         if errors:
-            raise InvalidFileContents(
-                self.content_type, self.content, ", ".join(errors)
-            )
+            raise InvalidFileContents(self.content_type, self.content, ", ".join(errors))
 
     def normalized(self):
         """Return a normalized version of the file."""
@@ -887,17 +851,13 @@ class ICalendarFile(File):
             try:
                 self._calendar = Calendar.from_ical(b"".join(self.content))
             except ValueError as exc:
-                raise InvalidFileContents(
-                    self.content_type, self.content, str(exc)
-                ) from exc
+                raise InvalidFileContents(self.content_type, self.content, str(exc)) from exc
         return self._calendar
 
     def describe_delta(self, name, previous):
         try:
             lines = list(
-                describe_calendar_delta(
-                    previous.calendar if previous else None, self.calendar
-                )
+                describe_calendar_delta(previous.calendar if previous else None, self.calendar)
             )
         except NotImplementedError:
             lines = []

@@ -20,7 +20,7 @@
 """Abstract WebDAV server implementation..
 
 This module contains an abstract WebDAV server. All caldav/carddav specific
-functionality should live in xandikos.caldav/xandikos.carddav respectively.
+functionality should live in fireset.caldav/fireset.carddav respectively.
 """
 
 # TODO(jelmer): Add authorization support
@@ -50,9 +50,7 @@ COLLECTION_RESOURCE_TYPE = "{DAV:}collection"
 PRINCIPAL_RESOURCE_TYPE = "{DAV:}principal"
 
 
-PropStatus = collections.namedtuple(
-    "PropStatus", ["statuscode", "responsedescription", "prop"]
-)
+PropStatus = collections.namedtuple("PropStatus", ["statuscode", "responsedescription", "prop"])
 
 
 class BadRequestError(Exception):
@@ -244,9 +242,9 @@ def propstat_by_status(propstat):
     bystatus = {}
     for propstat in propstat:
         (
-            bystatus.setdefault(
-                (propstat.statuscode, propstat.responsedescription), []
-            ).append(propstat.prop)
+            bystatus.setdefault((propstat.statuscode, propstat.responsedescription), []).append(
+                propstat.prop
+            )
         )
     return bystatus
 
@@ -317,11 +315,7 @@ class Status:
             body = ET.tostringlist(ret, encoding)
             return body, (f'text/xml; encoding="{encoding}"')
         else:
-            body = (
-                [self.responsedescription.encode(encoding)]
-                if self.responsedescription
-                else []
-            )
+            body = [self.responsedescription.encode(encoding)] if self.responsedescription else []
             return body, (f'text/plain; encoding="{encoding}"')
 
     def aselement(self):
@@ -337,9 +331,7 @@ class Status:
         if self.error is not None:
             ET.SubElement(ret, "{DAV:}error").append(self.error)
         if self.responsedescription:
-            ET.SubElement(ret, "{DAV:}responsedescription").text = (
-                self.responsedescription
-            )
+            ET.SubElement(ret, "{DAV:}responsedescription").text = self.responsedescription
         return ret
 
 
@@ -445,9 +437,7 @@ class Resource:
                  content_language)
         """
         # TODO(jelmer): Check content_language
-        content_types = pick_content_types(
-            accepted_content_types, [self.get_content_type()]
-        )
+        content_types = pick_content_types(accepted_content_types, [self.get_content_type()])
         assert content_types == [self.get_content_type()]
         body = await self.get_body()
         try:
@@ -476,9 +466,7 @@ class Resource:
         """
         raise NotImplementedError(self.get_content_language)
 
-    async def set_body(
-        self, body: Iterable[bytes], replace_etag: Optional[str] = None
-    ) -> str:
+    async def set_body(self, body: Iterable[bytes], replace_etag: Optional[str] = None) -> str:
         """Set resource contents.
 
         Args:
@@ -567,9 +555,7 @@ class Property:
             return True
         return False
 
-    async def is_set(
-        self, href: str, resource: Resource, environ: dict[str, str]
-    ) -> bool:
+    async def is_set(self, href: str, resource: Resource, environ: dict[str, str]) -> bool:
         """Check if this property is set on a resource."""
         if not self.supported_on(resource):
             return False
@@ -785,9 +771,7 @@ class CurrentUserPrincipalProperty(Property):
         if current_user_principal is None:
             ET.SubElement(el, "{DAV:}unauthenticated")
         else:
-            current_user_principal = ensure_trailing_slash(
-                current_user_principal.lstrip("/")
-            )
+            current_user_principal = ensure_trailing_slash(current_user_principal.lstrip("/"))
             el.append(create_href(current_user_principal, environ["SCRIPT_NAME"]))
 
 
@@ -803,9 +787,7 @@ class PrincipalURLProperty(Property):
         Args:
           name: A property name.
         """
-        el.append(
-            create_href(ensure_trailing_slash(resource.get_principal_url()), href)
-        )
+        el.append(create_href(ensure_trailing_slash(resource.get_principal_url()), href))
 
 
 class SupportedReportSetProperty(Property):
@@ -1024,9 +1006,7 @@ class Principal(Resource):
         raise NotImplementedError(self.get_schedule_outbox_url)
 
 
-async def get_property_from_name(
-    href: str, resource: Resource, properties, name: str, environ
-):
+async def get_property_from_name(href: str, resource: Resource, properties, name: str, environ):
     """Get a single property on a resource.
 
     Args:
@@ -1037,9 +1017,7 @@ async def get_property_from_name(
       name: name of property to resolve
     Returns: PropStatus items
     """
-    return await get_property_from_element(
-        href, resource, properties, environ, ET.Element(name)
-    )
+    return await get_property_from_element(href, resource, properties, environ, ET.Element(name))
 
 
 async def get_property_from_element(
@@ -1076,9 +1054,7 @@ async def get_property_from_element(
             if not prop.supported_on(resource):
                 raise KeyError
             if hasattr(prop, "get_value_ext"):
-                await prop.get_value_ext(  # type: ignore
-                    href, resource, ret, environ, requested
-                )
+                await prop.get_value_ext(href, resource, ret, environ, requested)  # type: ignore
             else:
                 await prop.get_value(href, resource, ret, environ)
         except KeyError:
@@ -1113,9 +1089,7 @@ async def get_properties(
     Returns: Iterator over PropStatus items
     """
     for propreq in list(requested):
-        yield await get_property_from_element(
-            href, resource, properties, environ, propreq
-        )
+        yield await get_property_from_element(href, resource, properties, environ, propreq)
 
 
 async def get_property_names(
@@ -1323,9 +1297,7 @@ class ExpandPropertyReporter(Reporter):
                 nonfatal_bad_request(f"Tag {prop.tag} without name attribute", strict)
                 continue
             # FIXME: Resolve prop_name on resource
-            propstat = await get_property_from_name(
-                href, resource, properties, prop_name, environ
-            )
+            propstat = await get_property_from_name(href, resource, properties, prop_name, environ)
             new_prop = ET.Element(propstat.prop.tag)
             child_hrefs = filter(
                 None,
@@ -1342,9 +1314,7 @@ class ExpandPropertyReporter(Reporter):
                 else:
                     child_href = read_href_element(prop_child)
                     if child_href is None:
-                        nonfatal_bad_request(
-                            f"Tag {prop_child.tag} without valid href", strict
-                        )
+                        nonfatal_bad_request(f"Tag {prop_child.tag} without valid href", strict)
                         continue
                     child_resource = dict(child_resources).get(child_href)
                     if child_resource is None:
@@ -1490,9 +1460,7 @@ def href_to_path(environ, href) -> Optional[str]:
         return path
 
 
-def _get_resources_by_hrefs(
-    backend, environ, hrefs
-) -> Iterator[tuple[str, Optional[Resource]]]:
+def _get_resources_by_hrefs(backend, environ, hrefs) -> Iterator[tuple[str, Optional[Resource]]]:
     """Retrieve multiple resources by href.
 
     Args:
@@ -1551,9 +1519,7 @@ def _send_dav_responses(responses, out_encoding):
 
 
 def _send_simple_dav_error(request, statuscode, error, description):
-    status = Status(
-        request.url, statuscode, error=error, responsedescription=description
-    )
+    status = Status(request.url, statuscode, error=error, responsedescription=description)
     return _send_dav_responses(status, DEFAULT_ENCODING)
 
 
@@ -1586,9 +1552,7 @@ async def apply_modify_prop(el, href, resource, properties):
     try:
         [requested] = el
     except IndexError as exc:
-        raise BadRequestError(
-            "Received more than one element in {DAV:}set element."
-        ) from exc
+        raise BadRequestError("Received more than one element in {DAV:}set element.") from exc
     if requested.tag != "{DAV:}prop":
         raise BadRequestError("Expected prop tag, got " + requested.tag)
     for propel in requested:
@@ -1626,9 +1590,7 @@ async def _readBody(request):
     return [await request.content.read()]
 
 
-async def _readXmlBody(
-    request, expected_tag: Optional[str] = None, strict: bool = True
-):
+async def _readXmlBody(request, expected_tag: Optional[str] = None, strict: bool = True):
     content_type = request.content_type
     base_content_type, params = parse_type(content_type)
     if strict and base_content_type not in ("text/xml", "application/xml"):
@@ -1743,9 +1705,7 @@ class PutMethod(Method):
         if COLLECTION_RESOURCE_TYPE not in r.resource_types:
             return _send_method_not_allowed(app._get_allowed_methods(request))
         try:
-            (new_name, new_etag) = await r.create_member(
-                name, new_contents, content_type
-            )
+            (new_name, new_etag) = await r.create_member(name, new_contents, content_type)
         except PreconditionFailure as e:
             return _send_simple_dav_error(
                 request,
@@ -1808,9 +1768,7 @@ class ReportMethod(Method):
 class PropfindMethod(Method):
     @multistatus
     async def handle(self, request, environ, app):
-        base_href, unused_path, base_resource = app._get_resource_from_environ(
-            request, environ
-        )
+        base_href, unused_path, base_resource = app._get_resource_from_environ(request, environ)
         if base_resource is None:
             yield Status(request.url, "404 Not Found")
             return
@@ -1823,21 +1781,15 @@ class PropfindMethod(Method):
             try:
                 [requested] = et
             except ValueError as exc:
-                raise BadRequestError(
-                    "Received more than one element in propfind."
-                ) from exc
+                raise BadRequestError("Received more than one element in propfind.") from exc
         async for href, resource in traverse_resource(base_resource, base_href, depth):
             propstat = []
             if requested is None or requested.tag == "{DAV:}allprop":
                 propstat = get_all_properties(href, resource, app.properties, environ)
             elif requested.tag == "{DAV:}prop":
-                propstat = get_properties(
-                    href, resource, app.properties, environ, requested
-                )
+                propstat = get_properties(href, resource, app.properties, environ, requested)
             elif requested.tag == "{DAV:}propname":
-                propstat = get_property_names(
-                    href, resource, app.properties, environ, requested
-                )
+                propstat = get_property_names(href, resource, app.properties, environ, requested)
             else:
                 nonfatal_bad_request(
                     "Expected prop/allprop/propname tag, got " + requested.tag,
@@ -1861,17 +1813,10 @@ class ProppatchMethod(Method):
         propstat = []
         for el in et:
             if el.tag not in ("{DAV:}set", "{DAV:}remove"):
-                nonfatal_bad_request(
-                    f"Unknown tag {el.tag} in propertyupdate", app.strict
-                )
+                nonfatal_bad_request(f"Unknown tag {el.tag} in propertyupdate", app.strict)
                 continue
             propstat.extend(
-                [
-                    ps
-                    async for ps in apply_modify_prop(
-                        el, href, resource, app.properties
-                    )
-                ]
+                [ps async for ps in apply_modify_prop(el, href, resource, app.properties)]
             )
         yield Status(request.url, propstat=propstat)
 
@@ -1904,12 +1849,7 @@ class MkcolMethod(Method):
                     nonfatal_bad_request(f"Unknown tag {el.tag} in mkcol", app.strict)
                     continue
                 propstat.extend(
-                    [
-                        ps
-                        async for ps in apply_modify_prop(
-                            el, href, resource, app.properties
-                        )
-                    ]
+                    [ps async for ps in apply_modify_prop(el, href, resource, app.properties)]
                 )
             ret = ET.Element("{DAV:}mkcol-response")
             for propstat_el in propstat_as_xml(propstat):
@@ -1923,9 +1863,7 @@ class OptionsMethod(Method):
     async def handle(self, request, environ, app):
         headers = []
         if request.raw_path != "*":
-            unused_href, unused_path, r = app._get_resource_from_environ(
-                request, environ
-            )
+            unused_href, unused_path, r = app._get_resource_from_environ(request, environ)
             if r is None:
                 return _send_not_found(request)
             dav_features = app._get_dav_features(r)
@@ -1959,9 +1897,7 @@ async def _do_get(request, environ, app, send_body):
     if r is None:
         return _send_not_found(request)
     accept_content_types = parse_accept_header(request.headers.get("Accept", "*/*"))
-    accept_content_languages = parse_accept_header(
-        request.headers.get("Accept-Languages", "*")
-    )
+    accept_content_languages = parse_accept_header(request.headers.get("Accept-Languages", "*"))
 
     (
         body,
@@ -1972,11 +1908,7 @@ async def _do_get(request, environ, app, send_body):
     ) = await r.render(request.path, accept_content_types, accept_content_languages)
 
     if_none_match = request.headers.get("If-None-Match", None)
-    if (
-        if_none_match
-        and current_etag is not None
-        and etag_matches(if_none_match, current_etag)
-    ):
+    if if_none_match and current_etag is not None and etag_matches(if_none_match, current_etag):
         return Response(status="304 Not Modified")
     headers = [
         ("Content-Length", str(content_length)),
@@ -2034,10 +1966,7 @@ class WSGIRequest:
 
     @property
     def can_read_body(self):
-        return (
-            "CONTENT_TYPE" in self._environ
-            or self._environ.get("CONTENT_LENGTH") != "0"
-        )
+        return "CONTENT_TYPE" in self._environ or self._environ.get("CONTENT_LENGTH") != "0"
 
     async def read(self):
         return self._environ["wsgi.input"].read()
@@ -2135,11 +2064,7 @@ class WebDAVApp:
         except UnsupportedMediaType as e:
             return Response(
                 status="415 Unsupported Media Type",
-                body=[
-                    f"Unsupported media type {e.content_type!r}".encode(
-                        DEFAULT_ENCODING
-                    )
-                ],
+                body=[f"Unsupported media type {e.content_type!r}".encode(DEFAULT_ENCODING)],
             )
         except UnauthorizedError:
             return Response(

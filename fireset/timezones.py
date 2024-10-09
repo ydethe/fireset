@@ -22,7 +22,7 @@
 See http://www.webdav.org/specs/rfc7809.html
 """
 
-from xandikos import webdav
+from . import webdav
 
 
 class TimezoneServiceSetProperty(webdav.Property):

@@ -21,7 +21,7 @@
 
 import configparser
 
-FILENAME = ".xandikos"
+FILENAME = ".fireset"
 
 
 class CollectionMetadata:

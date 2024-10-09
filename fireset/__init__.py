@@ -24,7 +24,6 @@ import logging
 import os
 import defusedxml.ElementTree  # noqa: F401: This does some monkey-patching on-load
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import AnyHttpUrl, AnyUrl
 import logfire
 
 __version__ = (0, 2, 11)
@@ -32,9 +31,7 @@ version_string = ".".join(map(str, __version__))
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(
-        env_file=".env", env_file_encoding="utf-8", extra="allow"
-    )
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="allow")
 
     fireset_user: str
     fireset_password: str

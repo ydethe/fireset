@@ -56,9 +56,7 @@ class XmppHeartbeatProperty(webdav.Property):
         (uri, minutes) = resource.get_xmpp_heartbeat()
         uri_el = ET.SubElement(el, "{http://calendarserver.org/ns/}xmpp-heartbeat-uri")
         uri_el.text = uri
-        minutes_el = ET.SubElement(
-            el, "{http://calendarserver.org/ns/}xmpp-heartbeat-minutes"
-        )
+        minutes_el = ET.SubElement(el, "{http://calendarserver.org/ns/}xmpp-heartbeat-minutes")
         minutes_el.text = str(minutes)
 
     async def set_value(self, href, resource, el):

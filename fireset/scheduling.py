@@ -22,7 +22,7 @@
 See https://tools.ietf.org/html/rfc6638
 """
 
-from xandikos import caldav, webdav
+from . import caldav, webdav
 
 SCHEDULE_INBOX_RESOURCE_TYPE = "{%s}schedule-inbox" % caldav.NAMESPACE
 SCHEDULE_OUTBOX_RESOURCE_TYPE = "{%s}schedule-outbox" % caldav.NAMESPACE

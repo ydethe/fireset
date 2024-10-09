@@ -68,11 +68,11 @@ class RepoCollectionMetadata(CollectionMetadata):
     @classmethod
     def present(cls, repo):
         config = repo.get_config()
-        return config.has_section((b"xandikos",))
+        return config.has_section((b"fireset",))
 
     def get_source_url(self):
         config = self._repo.get_config()
-        url = config.get(b"xandikos", b"source")
+        url = config.get(b"fireset", b"source")
         if not url:
             raise KeyError
         return url.decode(DEFAULT_ENCODING)
@@ -80,15 +80,15 @@ class RepoCollectionMetadata(CollectionMetadata):
     def set_source_url(self, url):
         config = self._repo.get_config()
         if url is not None:
-            config.set(b"xandikos", b"source", url.encode(DEFAULT_ENCODING))
+            config.set(b"fireset", b"source", url.encode(DEFAULT_ENCODING))
         else:
             # TODO(jelmer): Add and use config.remove()
-            config.set(b"xandikos", b"source", b"")
+            config.set(b"fireset", b"source", b"")
         self._write_config(config)
 
     def get_color(self):
         config = self._repo.get_config()
-        color = config.get(b"xandikos", b"color")
+        color = config.get(b"fireset", b"color")
         if color == b"":
             raise KeyError
         return color.decode(DEFAULT_ENCODING)
@@ -96,10 +96,10 @@ class RepoCollectionMetadata(CollectionMetadata):
     def set_color(self, color):
         config = self._repo.get_config()
         if color is not None:
-            config.set(b"xandikos", b"color", color.encode(DEFAULT_ENCODING))
+            config.set(b"fireset", b"color", color.encode(DEFAULT_ENCODING))
         else:
             # TODO(jelmer): Add and use config.remove()
-            config.set(b"xandikos", b"color", b"")
+            config.set(b"fireset", b"color", b"")
         self._write_config(config)
 
     def _write_config(self, config):
@@ -109,7 +109,7 @@ class RepoCollectionMetadata(CollectionMetadata):
 
     def get_displayname(self):
         config = self._repo.get_config()
-        displayname = config.get(b"xandikos", b"displayname")
+        displayname = config.get(b"fireset", b"displayname")
         if displayname == b"":
             raise KeyError
         return displayname.decode(DEFAULT_ENCODING)
@@ -118,12 +118,12 @@ class RepoCollectionMetadata(CollectionMetadata):
         config = self._repo.get_config()
         if displayname is not None:
             config.set(
-                b"xandikos",
+                b"fireset",
                 b"displayname",
                 displayname.encode(DEFAULT_ENCODING),
             )
         else:
-            config.set(b"xandikos", b"displayname", b"")
+            config.set(b"fireset", b"displayname", b"")
         self._write_config(config)
 
     def get_description(self):
@@ -140,7 +140,7 @@ class RepoCollectionMetadata(CollectionMetadata):
 
     def get_comment(self):
         config = self._repo.get_config()
-        comment = config.get(b"xandikos", b"comment")
+        comment = config.get(b"fireset", b"comment")
         if comment == b"":
             raise KeyError
         return comment.decode(DEFAULT_ENCODING)
@@ -148,20 +148,20 @@ class RepoCollectionMetadata(CollectionMetadata):
     def set_comment(self, comment):
         config = self._repo.get_config()
         if comment is not None:
-            config.set(b"xandikos", b"comment", comment.encode(DEFAULT_ENCODING))
+            config.set(b"fireset", b"comment", comment.encode(DEFAULT_ENCODING))
         else:
             # TODO(jelmer): Add and use config.remove()
-            config.set(b"xandikos", b"comment", b"")
+            config.set(b"fireset", b"comment", b"")
         self._write_config(config)
 
     def set_type(self, store_type):
         config = self._repo.get_config()
-        config.set(b"xandikos", b"type", store_type.encode(DEFAULT_ENCODING))
+        config.set(b"fireset", b"type", store_type.encode(DEFAULT_ENCODING))
         self._write_config(config)
 
     def get_type(self):
         config = self._repo.get_config()
-        store_type = config.get(b"xandikos", b"type")
+        store_type = config.get(b"fireset", b"type")
         store_type = store_type.decode(DEFAULT_ENCODING)
         if store_type not in VALID_STORE_TYPES:
             logger.warning("Invalid store type %s set for %r.", store_type, self._repo)
@@ -169,7 +169,7 @@ class RepoCollectionMetadata(CollectionMetadata):
 
     def get_order(self):
         config = self._repo.get_config()
-        order = config.get(b"xandikos", b"calendar-order")
+        order = config.get(b"fireset", b"calendar-order")
         if order == b"":
             raise KeyError
         return order.decode("utf-8")
@@ -178,7 +178,7 @@ class RepoCollectionMetadata(CollectionMetadata):
         config = self._repo.get_config()
         if order is None:
             order = ""
-        config.set(b"xandikos", b"calendar-order", order.encode("utf-8"))
+        config.set(b"fireset", b"calendar-order", order.encode("utf-8"))
         self._write_config(config)
 
 
@@ -253,9 +253,7 @@ class GitStore(Store):
             def save_config(cp, message):
                 f = StringIO()
                 cp.write(f)
-                self._import_one(
-                    CONFIG_FILENAME, [f.getvalue().encode("utf-8")], message
-                )
+                self._import_one(CONFIG_FILENAME, [f.getvalue().encode("utf-8")], message)
 
             return FileBasedCollectionMetadata(cp, save=save_config)
 
@@ -602,9 +600,7 @@ class BareGitStore(GitStore):
         return cls(dulwich.repo.MemoryRepo())
 
     def _commit_tree(self, tree_id, message, author=None):
-        return self.repo.do_commit(
-            message=message, tree=tree_id, ref=self.ref, author=author
-        )
+        return self.repo.do_commit(message=message, tree=tree_id, ref=self.ref, author=author)
 
     def _import_one(
         self,
@@ -731,9 +727,7 @@ class TreeGitStore(GitStore):
                 if encoded_name not in index or blob.id != index[encoded_name].sha:
                     self.repo.object_store.add_object(blob)
                     index[encoded_name] = index_entry_from_stat(st, blob.id)
-                    self._commit_tree(
-                        index, message.encode(DEFAULT_ENCODING), author=author
-                    )
+                    self._commit_tree(index, message.encode(DEFAULT_ENCODING), author=author)
                 return blob.id
         except FileLocked as exc:
             raise LockedError(name) from exc
@@ -774,9 +768,7 @@ class TreeGitStore(GitStore):
             with locked_index(self.repo.index_path()) as index:
                 os.unlink(p)
                 del index[name.encode(DEFAULT_ENCODING)]
-                self._commit_tree(
-                    index, message.encode(DEFAULT_ENCODING), author=author
-                )
+                self._commit_tree(index, message.encode(DEFAULT_ENCODING), author=author)
         except FileLocked:
             raise LockedError(name)
 

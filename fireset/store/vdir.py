@@ -110,9 +110,7 @@ class VdirStore(Store):
                 removed.remove(name)
             if name in self._fname_to_uid and self._fname_to_uid[name][0] == etag:
                 continue
-            fi = open_by_extension(
-                self._get_raw(name, etag), name, self.extra_file_handlers
-            )
+            fi = open_by_extension(self._get_raw(name, etag), name, self.extra_file_handlers)
             try:
                 uid = fi.get_uid()
             except KeyError:

@@ -26,7 +26,7 @@ import hashlib
 
 from typing import List
 
-from xandikos import version_string, webdav
+from . import version_string, webdav
 
 ET = webdav.ET
 
