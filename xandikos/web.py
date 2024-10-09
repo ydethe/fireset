@@ -37,7 +37,10 @@ from collections.abc import Iterable, Iterator
 from email.utils import parseaddr
 from typing import Optional
 
+from aiohttp_basicauth_middleware import basic_auth_middleware
 import jinja2
+
+from . import settings
 
 try:
     import systemd.daemon
@@ -1504,6 +1507,17 @@ async def main(argv=None):  # noqa: C901
         parser.error("Metrics port cannot be the same as the main port")
 
     app = web.Application()
+
+    logger = logging.getLogger("fireset_logger")
+    logger.info(f"Added auth for user '{settings.user}'")
+
+    app.middlewares.append(
+        basic_auth_middleware(
+            ("/",),
+            {settings.user: settings.password},
+        )
+    )
+
     if options.metrics_port:
         metrics_app = web.Application()
         try:

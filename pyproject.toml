@@ -37,6 +37,9 @@ dependencies = [
     "prometheus-client>=0.21.0",
     "pytz>=2024.2",
     "aiohttp-openmetrics>=0.0.12",
+    "aiohttp-basicauth-middleware>=1.2.0",
+    "logfire>=1.0.1",
+    "pydantic-settings>=2.5.2",
 ]
 dynamic = ["version"]
 

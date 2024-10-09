@@ -3,6 +3,7 @@ test_results.xml
 .pdm-python
 tests/vcards
 tests/generated.vcf
+data
 
 *.db
 __pypackages__

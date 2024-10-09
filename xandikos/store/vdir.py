@@ -47,7 +47,7 @@ from .index import MemoryIndex
 DEFAULT_ENCODING = "utf-8"
 
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("fireset_logger")
 
 
 class VdirStore(Store):

@@ -2,7 +2,12 @@ services:
   web:
     build: .
     volumes:
-      - $JOHNCLOUD_ROOT/$COMPOSE_PROJECT_NAME/data:/data
+      # - $JOHNCLOUD_ROOT/$COMPOSE_PROJECT_NAME/data:/data
+      - /home/yann/Downloads/xandikos_data:/data
+    environment:
+      - USER=$USER
+      - PASSWORD=$PASSWORD
+      - LOGFIRE_TOKEN=$LOGFIRE_TOKEN
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.$COMPOSE_PROJECT_NAME.rule=Host(`$HOST`)"
