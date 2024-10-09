@@ -10,7 +10,7 @@ build-backend = "pdm.backend"
 [project]
 name = "xandikos"
 description = "Lightweight CalDAV/CardDAV server"
-readme = "README.rst"
+readme = "README.md"
 authors = [{name = "Jelmer Vernooij", email = "jelmer@jelmer.uk"}]
 license = {text = "GNU GPLv3 or later"}
 classifiers = [
