@@ -530,16 +530,3 @@ class Store:
     def set_source_url(self, url: str) -> None:
         """Set the source URL."""
         raise NotImplementedError(self.set_source_url)
-
-
-def open_store(location: str) -> Store:
-    """Open store from a location string.
-
-    Args:
-      location: Location string to open
-    Returns: A `Store`
-    """
-    # For now, just support opening git stores
-    from .git import GitStore
-
-    return GitStore.open_from_path(location)

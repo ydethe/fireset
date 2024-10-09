@@ -1001,15 +1001,18 @@ class XandikosBackend(webdav.Backend):
         """List all of the principals on this server."""
         return self._user_principals
 
-    def get_resource(self, relpath):
+    def get_resource(self, relpath) -> webdav.Resource:
         relpath = posixpath.normpath(relpath)
         if not relpath.startswith("/"):
             raise ValueError("relpath %r should start with /")
+
         if relpath == "/":
             return RootPage(self)
+
         p = self._map_to_file_path(relpath)
         if p is None:
             return None
+
         if os.path.isdir(p):
             try:
                 store = open_store_from_path(
@@ -1031,16 +1034,20 @@ class XandikosBackend(webdav.Backend):
                     STORE_TYPE_SUBSCRIPTION: SubscriptionCollection,
                     STORE_TYPE_OTHER: Collection,
                 }[store.get_type()](self, relpath, store)
+
         else:
             (basepath, name) = os.path.split(relpath)
             assert name != "", f"path is {relpath!r}"
             store = self.get_resource(basepath)
             if store is None:
                 return None
+
             if webdav.COLLECTION_RESOURCE_TYPE not in store.resource_types:
                 return None
+
             try:
                 return store.get_member(name)
+
             except KeyError:
                 return None
 
