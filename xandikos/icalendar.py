@@ -40,6 +40,7 @@ PropTypes = Union[vText]
 
 TzifyFunction = Callable[[datetime], datetime]
 
+logger = logging.getLogger("fireset_logger")
 
 # TODO(jelmer): Populate this further based on
 # https://tools.ietf.org/html/rfc5545#3.3.11
@@ -255,7 +256,7 @@ def describe_calendar_delta(old_cal, new_cal):
                 )
             else:
                 yield f"modified field {field} in {description}"
-                logging.debug(
+                logger.debug(
                     "Changed %s/%s or %s/%s from %s to %s.",
                     old_component.name,
                     field,
@@ -277,7 +278,7 @@ def apply_time_range_vevent(start, end, comp, tzify):
     dtend = comp.get("DTEND")
     if dtend:
         if tzify(dtend.dt) < tzify(dtstart.dt):
-            logging.debug("Invalid DTEND < DTSTART")
+            logger.debug("Invalid DTEND < DTSTART")
         return start < tzify(dtend.dt)
 
     duration = comp.get("DURATION")
@@ -420,7 +421,7 @@ class ComponentTimeRangeMatcher:
         try:
             component_handler = self.component_handlers[comp.name]
         except KeyError:
-            logging.warning("unknown component %r in time-range filter", comp.name)
+            logger.warning("unknown component %r in time-range filter", comp.name)
             return False
         return component_handler(self.start, self.end, comp, tzify)
 
@@ -441,7 +442,7 @@ class ComponentTimeRangeMatcher:
         try:
             component_handler = self.component_handlers[self.comp]
         except KeyError:
-            logging.warning("unknown component %r in time-range filter", self.comp)
+            logger.warning("unknown component %r in time-range filter", self.comp)
             return False
         return component_handler(
             self.start,
@@ -506,7 +507,7 @@ class TextMatcher:
         elif isinstance(prop, vCategory):
             matches = any([self.match(cat) for cat in prop.cats])
         else:
-            logging.warning(
+            logger.warning(
                 "potentially unsupported value in text match search: " + repr(prop)
             )
             return False
@@ -819,7 +820,7 @@ class CalendarFilter(Filter):
                 if not child_filter.match(file.calendar, self.tzify):
                     return False
             except MissingProperty as e:
-                logging.warning(
+                logger.warning(
                     "calendar_query: Ignoring calendar object %s, due "
                     "to missing property %s",
                     name,
@@ -834,7 +835,7 @@ class CalendarFilter(Filter):
                 if not child_filter.match_indexes(indexes, self.tzify):
                     return False
             except MissingProperty as e:
-                logging.warning(
+                logger.warning(
                     "calendar_query: Ignoring calendar object %s, due "
                     "to missing property %s",
                     name,

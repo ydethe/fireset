@@ -119,7 +119,7 @@ class VdirStore(Store):
                 logger.warning("No UID found in file %s", name)
                 uid = None
             except InvalidFileContents:
-                logging.warning("Unable to parse file %s", name)
+                logger.warning("Unable to parse file %s", name)
                 uid = None
             except NotImplementedError:
                 # This file type doesn't support UIDs

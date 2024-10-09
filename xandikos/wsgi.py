@@ -24,12 +24,14 @@ import os
 
 from .web import XandikosApp, XandikosBackend
 
+logger = logging.getLogger("fireset_logger")
+
 backend = XandikosBackend(path=os.environ["XANDIKOSPATH"])
 if not os.path.isdir(backend.path):
     if os.getenv("AUTOCREATE"):
         os.makedirs(os.environ["XANDIKOSPATH"])
     else:
-        logging.warning("%r does not exist.", backend.path)
+        logger.warning("%r does not exist.", backend.path)
 
 current_user_principal = os.environ.get("CURRENT_USER_PRINCIPAL", "/user/")
 if not backend.get_resource(current_user_principal):
@@ -39,7 +41,7 @@ if not backend.get_resource(current_user_principal):
             create_defaults=os.environ["AUTOCREATE"] == "defaults",
         )
     else:
-        logging.warning(
+        logger.warning(
             "default user principal '%s' does not exist. "
             "Create directory %s or set AUTOCREATE variable?",
             current_user_principal,

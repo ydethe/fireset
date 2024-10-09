@@ -32,11 +32,13 @@ version_string = ".".join(map(str, __version__))
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="allow")
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", extra="allow"
+    )
 
-    user: str
+    fireset_user: str
+    fireset_password: str
     logfire_token: str
-    password: str
 
 
 settings = Settings()

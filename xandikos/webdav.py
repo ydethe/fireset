@@ -43,6 +43,8 @@ from xml.etree import ElementTree as ET
 
 from defusedxml.ElementTree import fromstring as xmlparse
 
+logger = logging.getLogger("fireset_logger")
+
 DEFAULT_ENCODING = "utf-8"
 COLLECTION_RESOURCE_TYPE = "{DAV:}collection"
 PRINCIPAL_RESOURCE_TYPE = "{DAV:}principal"
@@ -64,7 +66,7 @@ class BadRequestError(Exception):
 def nonfatal_bad_request(message, strict=False):
     if strict:
         raise BadRequestError(message)
-    logging.debug("Bad request: %s", message)
+    logger.debug("Bad request: %s", message)
 
 
 class NotAcceptableError(Exception):
@@ -1063,7 +1065,7 @@ async def get_property_from_element(
         prop = properties[requested.tag]
     except KeyError:
         statuscode = "404 Not Found"
-        logging.warning(
+        logger.warning(
             "Client requested unknown property %s on %s (%r)",
             requested.tag,
             href,
@@ -1082,7 +1084,7 @@ async def get_property_from_element(
         except KeyError:
             statuscode = "404 Not Found"
         except NotImplementedError:
-            logging.exception(
+            logger.exception(
                 "Not implemented while getting %s for %r",
                 requested.tag,
                 resource,
@@ -1268,7 +1270,7 @@ class Reporter:
 def create_href(href: str, base_href: Optional[str] = None) -> ET.Element:
     parsed_url = urllib.parse.urlparse(href)
     if "//" in parsed_url.path:
-        logging.warning("invalidly formatted href: %s", href)
+        logger.warning("invalidly formatted href: %s", href)
     et = ET.Element("{DAV:}href")
     if base_href is not None:
         href = urllib.parse.urljoin(ensure_trailing_slash(base_href), href)
@@ -1593,7 +1595,7 @@ async def apply_modify_prop(el, href, resource, properties):
         try:
             handler = properties[propel.tag]
         except KeyError:
-            logging.warning(
+            logger.warning(
                 "client attempted to modify unknown property %r on %r",
                 propel.tag,
                 href,
@@ -1769,7 +1771,7 @@ class ReportMethod(Method):
         try:
             reporter = app.reporters[et.tag]
         except KeyError:
-            logging.warning("Client requested unknown REPORT %s", et.tag)
+            logger.warning("Client requested unknown REPORT %s", et.tag)
             return _send_simple_dav_error(
                 request,
                 "403 Forbidden",
@@ -2120,7 +2122,7 @@ class WebDAVApp:
         try:
             return await do.handle(request, environ, self)
         except BadRequestError as e:
-            logging.debug("Bad request: %s", e.message)
+            logger.debug("Bad request: %s", e.message)
             return Response(
                 status="400 Bad Request",
                 body=[e.message.encode(DEFAULT_ENCODING)],
@@ -2147,7 +2149,7 @@ class WebDAVApp:
 
     def handle_wsgi_request(self, environ, start_response):
         if "SCRIPT_NAME" not in environ:
-            logging.debug('SCRIPT_NAME not set; assuming "".')
+            logger.debug('SCRIPT_NAME not set; assuming "".')
             environ["SCRIPT_NAME"] = ""
         request = WSGIRequest(environ)
         environ = {"SCRIPT_NAME": environ["SCRIPT_NAME"]}

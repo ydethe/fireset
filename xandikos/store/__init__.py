@@ -30,6 +30,10 @@ from typing import Optional
 
 from .index import AutoIndexManager, IndexDict, IndexKey, IndexValueIterator
 
+
+logger = logging.getLogger("fireset_logger")
+
+
 STORE_TYPE_ADDRESSBOOK = "addressbook"
 STORE_TYPE_CALENDAR = "calendar"
 STORE_TYPE_PRINCIPAL = "principal"
@@ -326,7 +330,7 @@ class Store:
                 if filter.check(name, file):
                     yield (name, file, etag)
             except InvalidFileContents:
-                logging.warning("Unable to parse file %s, skipping.", name)
+                logger.warning("Unable to parse file %s, skipping.", name)
 
     def _iter_with_filter_indexes(
         self, filter: Filter, keys
@@ -342,7 +346,7 @@ class Store:
                 try:
                     file_values = file.get_indexes(self.index.available_keys())
                 except InvalidFileContents:
-                    logging.warning(
+                    logger.warning(
                         "Unable to parse file %s for indexing, skipping.", name
                     )
                     file_values = {}
