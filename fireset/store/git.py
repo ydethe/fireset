@@ -411,7 +411,7 @@ class GitStore(Store):
             raise NotStoreError(path)
 
     @classmethod
-    def open(cls, repo, **kwargs):
+    def open(cls, repo: dulwich.repo.Repo, **kwargs):
         """Open a GitStore given a Repo object.
 
         Args:

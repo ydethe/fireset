@@ -967,6 +967,7 @@ class PrincipalCollection(Collection, Principal):
 @functools.lru_cache(maxsize=STORE_CACHE_SIZE)
 def open_store_from_path(path: str, **kwargs):
     store = GitStore.open_from_path(path, **kwargs)
+    # store = DatabaseStore.open_from_path(path, **kwargs)
     store.load_extra_file_handler(ICalendarFile)
     store.load_extra_file_handler(VCardFile)
     return store
@@ -1001,7 +1002,7 @@ class XandikosBackend(webdav.Backend):
         """List all of the principals on this server."""
         return self._user_principals
 
-    def get_resource(self, relpath) -> webdav.Resource:
+    def get_resource(self, relpath: str) -> webdav.Resource:
         relpath = posixpath.normpath(relpath)
         if not relpath.startswith("/"):
             raise ValueError("relpath %r should start with /")
@@ -1574,4 +1575,6 @@ async def main(argv=None):  # noqa: C901
 if __name__ == "__main__":
     import sys
 
-    sys.exit(asyncio.run(main(sys.argv[1:])))
+    # argv=sys.argv[1:]
+    argv = ["--defaults", "-d", "data", "-p", "3665", "--autocreate"]
+    sys.exit(asyncio.run(main(argv)))

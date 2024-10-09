@@ -64,27 +64,28 @@ else:
 logger = logging.getLogger("fireset_logger")
 
 
-async def main_for_test():
-    directory = "data"
-    paranoid = False
-    index_threshold = None
-    current_user_principal = "user"
-    autocreate = True
-    defaults = True
-    strict = False
-    route_prefix = "/"
-    detect_systemd = False
-    listen_address = "0.0.0.0"
-    port = 8000
-    metrics_port = 8001
-    avahi = True
-
+async def main_for_test(
+    directory: str = "data",
+    paranoid: bool = False,
+    index_threshold: int | None = None,
+    current_user_principal: str = "user",
+    autocreate: bool = True,
+    defaults: bool = True,
+    strict: bool = False,
+    route_prefix: str = "/",
+    detect_systemd: bool = False,
+    listen_address: str = "0.0.0.0",
+    port: int = 8000,
+    metrics_port: int = 8001,
+    avahi: bool = True,
+):
     backend = XandikosBackend(
         os.path.abspath(directory),
         paranoid=paranoid,
         index_threshold=index_threshold,
     )
     backend._mark_as_principal(current_user_principal)
+    logger.debug(f"{backend}")
 
     if autocreate or defaults:
         if not os.path.isdir(directory):
@@ -219,4 +220,11 @@ async def main_for_test():
 
 
 def test_main():
-    return asyncio.run(main_for_test())
+    from fireset.web import main
+
+    argv = ["--defaults", "-d", "data", "-p", "3665", "--autocreate"]
+    asyncio.run(main(argv))
+
+
+if __name__ == "__main__":
+    test_main()

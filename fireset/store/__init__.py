@@ -27,6 +27,7 @@ import logging
 import mimetypes
 from collections.abc import Iterable, Iterator
 from typing import Optional
+from abc import abstractmethod
 
 from .index import AutoIndexManager, IndexDict, IndexKey, IndexValueIterator
 
@@ -530,3 +531,14 @@ class Store:
     def set_source_url(self, url: str) -> None:
         """Set the source URL."""
         raise NotImplementedError(self.set_source_url)
+
+    @classmethod
+    @abstractmethod
+    def open_from_path(cls, path, **kwargs):
+        """Open a GitStore from a path.
+
+        Args:
+          path: Path
+        Returns: A `GitStore`
+        """
+        raise NotImplementedError(cls.open_from_path)
