@@ -75,7 +75,8 @@ from .store import (
 )
 
 from .icalendar import CalendarFilter, ICalendarFile
-from .store.git import GitStore, TreeGitStore
+from .store.git import TreeGitStore
+from .store.database import DatabaseStore
 from .vcard import VCardFile
 
 try:
@@ -933,8 +934,8 @@ class PrincipalCollection(Collection, Principal):
 
 @functools.lru_cache(maxsize=STORE_CACHE_SIZE)
 def open_store_from_path(path: str, **kwargs):
-    store = GitStore.open_from_path(path, **kwargs)
-    # store = DatabaseStore.open_from_path(path, **kwargs)
+    # store = GitStore.open_from_path(path, **kwargs)
+    store = DatabaseStore.open_from_path(path, **kwargs)
     store.load_extra_file_handler(ICalendarFile)
     store.load_extra_file_handler(VCardFile)
     return store

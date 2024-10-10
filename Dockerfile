@@ -16,7 +16,7 @@ ARG LOGFIRE_TOKEN
 ENV LOGFIRE_TOKEN=$LOGFIRE_TOKEN
 
 RUN apt-get update && \
-    apt-get -y install --no-install-recommends python3-dev python3-venv python3-pip && \
+    apt-get -y install --no-install-recommends libpq5 python3-dev python3-venv python3-pip && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists
 

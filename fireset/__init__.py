@@ -22,6 +22,7 @@
 
 import logging
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import AnyUrl
 import logfire
 from rich.logging import RichHandler
 
@@ -32,6 +33,7 @@ class Settings(BaseSettings):
     fireset_user: str
     fireset_password: str
     logfire_token: str
+    database_uri: AnyUrl
     loglevel: str = "info"
 
     directory: str = "data"
