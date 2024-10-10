@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Added typer ([ab9bb36](https://github.com/ydethe/fireset/commit/ab9bb36cfc05cf2e501d566ab46ecd37574acb85) by Yann de The).
 - Added test (wip) ([4547aa6](https://github.com/ydethe/fireset/commit/4547aa684252bf73ddd2a5f8e9c2c4d68144a75a) by Yann de The).
 - Added pre commit hooks ([7e78ad5](https://github.com/ydethe/fireset/commit/7e78ad51b1eb2d1ad539610400106311ab6ce122) by Yann de The).
 - Added logging in logfire + basic auth ([af5fe3c](https://github.com/ydethe/fireset/commit/af5fe3c82fd9ad11787c31848b7751b38627e0b3) by Yann de The).

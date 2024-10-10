@@ -30,6 +30,7 @@ dependencies = [
     "logfire>=1.0.1",
     "pydantic-settings>=2.5.2",
     "typer~=0.12",
+    "gunicorn~=23.0",
 ]
 requires-python = ">=3.10,<3.13"
 readme = "README.md"

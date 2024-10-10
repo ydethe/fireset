@@ -24,7 +24,7 @@ high level application logic that combines the WebDAV server,
 the carddav support, the caldav support and the DAV store.
 """
 
-import asyncio
+from importlib import metadata
 import functools
 import hashlib
 import logging
@@ -41,7 +41,6 @@ import jinja2
 
 from . import settings
 
-from . import __version__ as xandikos_version
 from . import (
     access,
     apache,
@@ -119,8 +118,9 @@ async def render_jinja_page(
     # TODO(jelmer): Support rendering other languages
     encoding = "utf-8"
     template = jinja_env.get_template(name)
+    fireset_version = metadata.version("fireset")
     body = await template.render_async(
-        version=xandikos_version, urljoin=urllib.parse.urljoin, **kwargs
+        version=fireset_version, urljoin=urllib.parse.urljoin, **kwargs
     )
     body_encoded = body.encode(encoding)
     return (
@@ -1285,41 +1285,29 @@ def run_simple_server(
     web.run_app(app, port=port, host=listen_address, path=socket_path)
 
 
-async def main_web_run(
-    directory: str = "data",
-    paranoid: bool = False,
-    index_threshold: int | None = None,
-    current_user_principal: str = "user",
-    autocreate: bool = True,
-    defaults: bool = True,
-    strict: bool = False,
-    route_prefix: str = "/",
-    listen_address: str = "0.0.0.0",
-    port: int = 8000,
-    metrics_port: int = 8001,
-):  # noqa: C901
-    if not route_prefix.endswith("/"):
-        route_prefix += "/"
+async def main_web_build_app():
+    if not settings.route_prefix.endswith("/"):
+        settings.route_prefix += "/"
 
-    if not current_user_principal.startswith("/"):
-        current_user_principal = "/" + current_user_principal
+    if not settings.current_user_principal.startswith("/"):
+        current_user_principal = "/" + settings.current_user_principal
 
     backend = XandikosBackend(
-        os.path.abspath(directory),
-        paranoid=paranoid,
-        index_threshold=index_threshold,
+        os.path.abspath(settings.directory),
+        paranoid=settings.paranoid,
+        index_threshold=settings.index_threshold,
     )
     backend._mark_as_principal(current_user_principal)
 
-    if autocreate or defaults:
-        if not os.path.isdir(directory):
-            os.makedirs(directory)
-        backend.create_principal(current_user_principal, create_defaults=defaults)
+    if settings.autocreate or settings.defaults:
+        if not os.path.isdir(settings.directory):
+            os.makedirs(settings.directory)
+        backend.create_principal(current_user_principal, create_defaults=settings.defaults)
 
-    if not os.path.isdir(directory):
+    if not os.path.isdir(settings.directory):
         logger.warning(
             "%r does not exist. Run fireset with --autocreate?",
-            directory,
+            settings.directory,
         )
     if not backend.get_resource(current_user_principal):
         logger.warning(
@@ -1330,21 +1318,13 @@ async def main_web_run(
     main_app = XandikosApp(
         backend,
         current_user_principal=current_user_principal,
-        strict=strict,
+        strict=settings.strict,
     )
 
     async def xandikos_handler(request):
-        return await main_app.aiohttp_handler(request, route_prefix)
-
-    listen_address = listen_address
-    listen_port = port
-    logger.info("Listening on %s:%s", listen_address, port)
+        return await main_app.aiohttp_handler(request, settings.route_prefix)
 
     from aiohttp import web
-
-    if metrics_port == port:
-        logger.error("Metrics port cannot be the same as the main port")
-        exit(1)
 
     app = web.Application()
 
@@ -1357,63 +1337,19 @@ async def main_web_run(
         )
     )
 
-    if metrics_port:
-        metrics_app = web.Application()
-        try:
-            from aiohttp_openmetrics import metrics, metrics_middleware
-        except ModuleNotFoundError:
-            logger.warning("aiohttp-openmetrics not found; " "/metrics will not be available.")
-        else:
-            app.middlewares.insert(0, metrics_middleware)
-            metrics_app.router.add_get("/metrics", metrics, name="metrics")
-
-        # For now, just always claim everything is okay.
-        metrics_app.router.add_get("/health", lambda r: web.Response(text="ok"))
-    else:
-        metrics_app = None
-
     for path in WELLKNOWN_DAV_PATHS:
-        app.router.add_route("*", path, RedirectDavHandler(route_prefix).__call__)
+        app.router.add_route("*", path, RedirectDavHandler(settings.route_prefix).__call__)
 
-    if route_prefix.strip("/"):
+    if settings.route_prefix.strip("/"):
         xandikos_app = web.Application()
         xandikos_app.router.add_route("*", "/{path_info:.*}", xandikos_handler)
 
         async def redirect_to_subprefix(request):
-            return web.HTTPFound(route_prefix)
+            return web.HTTPFound(settings.route_prefix)
 
         app.router.add_route("*", "/", redirect_to_subprefix)
-        app.add_subapp(route_prefix, xandikos_app)
+        app.add_subapp(settings.route_prefix, xandikos_app)
     else:
         app.router.add_route("*", "/{path_info:.*}", xandikos_handler)
 
-    runner = web.AppRunner(app)
-    await runner.setup()
-    sites = []
-    if metrics_app:
-        metrics_runner = web.AppRunner(metrics_app)
-        await metrics_runner.setup()
-        # TODO(jelmer): Allow different metrics listen addres?
-        sites.append(web.TCPSite(metrics_runner, listen_address, metrics_port))
-
-    sites.append(web.TCPSite(runner, listen_address, listen_port))
-
-    import signal
-
-    # Set SIGINT to default handler; this appears to be necessary
-    # when running under coverage.
-    signal.signal(signal.SIGINT, signal.SIG_DFL)
-
-    for site in sites:
-        await site.start()
-
-    while True:
-        await asyncio.sleep(3600)
-
-
-if __name__ == "__main__":
-    import sys
-
-    # argv=sys.argv[1:]
-    argv = ["--defaults", "-d", "data", "-p", "3665", "--autocreate"]
-    sys.exit(asyncio.run(main_web_run(argv)))
+    return app

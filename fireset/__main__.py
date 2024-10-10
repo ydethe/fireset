@@ -41,9 +41,7 @@ def main(
     route_prefix: Annotated[str, typer.Option(help="Route prefix")] = "/",
     listen_address: Annotated[str, typer.Option(help="Address to listen on")] = "0.0.0.0",
     port: Annotated[int, typer.Option(help="Port to listen on")] = 8000,
-    metrics_port: Annotated[int, typer.Option(help="Port to listen on for metric")] = 8001,
 ):
-    # For now, just invoke fireset.web
     from .web import main_web_run
 
     return asyncio.run(
@@ -58,7 +56,6 @@ def main(
             route_prefix,
             listen_address,
             port,
-            metrics_port,
         )
     )
 

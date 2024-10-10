@@ -21,12 +21,10 @@
 """CalDAV/CardDAV server."""
 
 import logging
+import sys
 import defusedxml.ElementTree  # noqa: F401: This does some monkey-patching on-load
 from pydantic_settings import BaseSettings, SettingsConfigDict
 import logfire
-
-__version__ = (0, 2, 11)
-version_string = ".".join(map(str, __version__))
 
 
 class Settings(BaseSettings):
@@ -35,7 +33,16 @@ class Settings(BaseSettings):
     fireset_user: str
     fireset_password: str
     logfire_token: str
-    loglevel: str
+    loglevel: str = "info"
+
+    directory: str = "data"
+    paranoid: bool = False
+    index_threshold: int | None = None
+    current_user_principal: str = "user"
+    autocreate: bool = True
+    defaults: bool = True
+    strict: bool = False
+    route_prefix: str = "/"
 
 
 settings = Settings()
@@ -46,3 +53,6 @@ logfire.configure(token=settings.logfire_token)
 logger = logging.getLogger("fireset_logger")
 logger.setLevel(settings.loglevel.upper())
 logger.addHandler(logfire.LogfireLoggingHandler())
+
+handler = logging.StreamHandler(sys.stdout)
+logger.addHandler(handler)

@@ -25,6 +25,5 @@ COPY dist/*.whl /code
 RUN python3 -m venv /code/venv && \
     /code/venv/bin/python -m pip install /code/*.whl
 VOLUME /data
-EXPOSE 8000
-ENTRYPOINT ["/code/venv/bin/python3", "-m", "fireset", "--port=8000", "--metrics-port=8001", "--listen-address=0.0.0.0", "-d", "/data"]
-CMD ["--defaults"]
+EXPOSE 3665
+ENTRYPOINT ["/code/venv/bin/gunicorn", "fireset.web:main_web_build_app", "--bind", "0.0.0.0:3665", "--worker", "aiohttp.GunicornWebWorker"]
