@@ -21,7 +21,6 @@
 """CalDAV/CardDAV server."""
 
 import logging
-import os
 import defusedxml.ElementTree  # noqa: F401: This does some monkey-patching on-load
 from pydantic_settings import BaseSettings, SettingsConfigDict
 import logfire
@@ -36,6 +35,7 @@ class Settings(BaseSettings):
     fireset_user: str
     fireset_password: str
     logfire_token: str
+    loglevel: str
 
 
 settings = Settings()
@@ -44,5 +44,5 @@ logfire.configure(token=settings.logfire_token)
 
 # création de l'objet logger qui va nous servir à écrire dans les logs
 logger = logging.getLogger("fireset_logger")
-logger.setLevel(os.environ.get("LOGLEVEL", "INFO").upper())
+logger.setLevel(settings.loglevel.upper())
 logger.addHandler(logfire.LogfireLoggingHandler())

@@ -7,6 +7,10 @@ class DatabaseStore(Store):
     def iter_with_etag(self, ctag: T.Optional[str] = None) -> T.Iterator[tuple[str, str, str]]:
         """Iterate over all items in the store with etag.
 
+        content_type can be one of:
+        - "text/calendar"
+        - "text/vcard"
+
         Args:
           ctag: Possible ctag to iterate for
         Returns: iterator over (name, content_type, etag) tuples

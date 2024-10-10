@@ -31,7 +31,6 @@ import logging
 import os
 import posixpath
 import shutil
-import socket
 import urllib.parse
 from collections.abc import Iterable, Iterator
 from email.utils import parseaddr
@@ -90,39 +89,6 @@ except ImportError:  # python < 3.8
         ctx = contextvars.copy_context()
         func_call = functools.partial(ctx.run, func, *args, **kwargs)
         return await loop.run_in_executor(None, func_call)
-
-
-try:
-    import systemd.daemon
-except ImportError:
-    systemd_imported = False
-
-    def get_systemd_listen_sockets() -> list[socket.socket]:
-        raise NotImplementedError
-
-else:
-    systemd_imported = True
-
-    def get_systemd_listen_sockets() -> list[socket.socket]:
-        socks = []
-        for fd in systemd.daemon.listen_fds():
-            for family in (
-                socket.AF_UNIX,  # type: ignore
-                socket.AF_INET,
-                socket.AF_INET6,
-            ):
-                if systemd.daemon.is_socket(
-                    fd, family=family, type=socket.SOCK_STREAM, listening=True
-                ):
-                    sock = socket.fromfd(fd, family, socket.SOCK_STREAM)
-                    socks.append(sock)
-                    break
-            else:
-                raise RuntimeError(
-                    "socket family must be AF_INET, AF_INET6, or AF_UNIX; "
-                    "socket type must be SOCK_STREAM; and it must be listening"
-                )
-        return socks
 
 
 logger = logging.getLogger("fireset_logger")
@@ -1005,7 +971,7 @@ class XandikosBackend(webdav.Backend):
     def get_resource(self, relpath: str) -> webdav.Resource:
         relpath = posixpath.normpath(relpath)
         if not relpath.startswith("/"):
-            raise ValueError("relpath %r should start with /")
+            raise ValueError(f"relpath %r should start with /. Got '{relpath}'")
 
         if relpath == "/":
             return RootPage(self)
@@ -1319,178 +1285,66 @@ def run_simple_server(
     web.run_app(app, port=port, host=listen_address, path=socket_path)
 
 
-async def main(argv=None):  # noqa: C901
-    import argparse
-    import sys
+async def main_web_run(
+    directory: str = "data",
+    paranoid: bool = False,
+    index_threshold: int | None = None,
+    current_user_principal: str = "user",
+    autocreate: bool = True,
+    defaults: bool = True,
+    strict: bool = False,
+    route_prefix: str = "/",
+    listen_address: str = "0.0.0.0",
+    port: int = 8000,
+    metrics_port: int = 8001,
+):  # noqa: C901
+    if not route_prefix.endswith("/"):
+        route_prefix += "/"
 
-    from . import __version__
-
-    parser = argparse.ArgumentParser(usage="%(prog)s -d ROOT-DIR [OPTIONS]")
-
-    parser.add_argument(
-        "--version",
-        action="version",
-        version="%(prog)s " + ".".join(map(str, __version__)),
-    )
-
-    access_group = parser.add_argument_group(title="Access Options")
-    access_group.add_argument(
-        "--no-detect-systemd",
-        action="store_false",
-        dest="detect_systemd",
-        help="Disable systemd detection and socket activation.",
-        default=systemd_imported,
-    )
-    access_group.add_argument(
-        "-l",
-        "--listen-address",
-        dest="listen_address",
-        default="localhost",
-        help=("Bind to this address. " "Pass in path for unix domain socket. [%(default)s]"),
-    )
-    access_group.add_argument(
-        "-p",
-        "--port",
-        dest="port",
-        type=int,
-        default=8080,
-        help="Port to listen on. [%(default)s]",
-    )
-    access_group.add_argument(
-        "--metrics-port",
-        dest="metrics_port",
-        default=8081,
-        help="Port to listen on for metrics. [%(default)s]",
-    )
-    access_group.add_argument(
-        "--route-prefix",
-        default="/",
-        help=(
-            "Path to Xandikos. " "(useful when Xandikos is behind a reverse proxy) " "[%(default)s]"
-        ),
-    )
-    parser.add_argument(
-        "-d",
-        "--directory",
-        dest="directory",
-        default=None,
-        help="Directory to serve from.",
-    )
-    parser.add_argument(
-        "--current-user-principal",
-        default="/user/",
-        help="Path to current user principal. [%(default)s]",
-    )
-    parser.add_argument(
-        "--autocreate",
-        action="store_true",
-        dest="autocreate",
-        help="Automatically create necessary directories.",
-    )
-    parser.add_argument(
-        "--defaults",
-        action="store_true",
-        dest="defaults",
-        help=("Create initial calendar and address book. " "Implies --autocreate."),
-    )
-    parser.add_argument(
-        "--dump-dav-xml",
-        action="store_true",
-        dest="dump_dav_xml",
-        help="Print DAV XML request/responses.",
-    )
-    parser.add_argument("--avahi", action="store_true", help="Announce services with avahi.")
-    parser.add_argument(
-        "--no-strict",
-        action="store_false",
-        dest="strict",
-        help=("Enable workarounds for buggy CalDAV/CardDAV client " "implementations."),
-        default=True,
-    )
-    parser.add_argument("--debug", action="store_true", help="Print debug messages")
-    # Hidden arguments. These may change without notice in between releases,
-    # and are generally just meant for developers.
-    parser.add_argument("--paranoid", action="store_true", help=argparse.SUPPRESS)
-    parser.add_argument("--index-threshold", type=int, help=argparse.SUPPRESS)
-    options = parser.parse_args(argv)
-
-    if options.directory is None:
-        parser.print_usage()
-        sys.exit(1)
-
-    if options.dump_dav_xml:
-        # TODO(jelmer): Find a way to propagate this without abusing
-        # os.environ.
-        os.environ["XANDIKOS_DUMP_DAV_XML"] = "1"
-
-    if not options.route_prefix.endswith("/"):
-        options.route_prefix += "/"
-
-    if options.debug:
-        loglevel = logging.DEBUG
-    else:
-        loglevel = logging.INFO
-
-    logger.setLevel(loglevel)
+    if not current_user_principal.startswith("/"):
+        current_user_principal = "/" + current_user_principal
 
     backend = XandikosBackend(
-        os.path.abspath(options.directory),
-        paranoid=options.paranoid,
-        index_threshold=options.index_threshold,
+        os.path.abspath(directory),
+        paranoid=paranoid,
+        index_threshold=index_threshold,
     )
-    backend._mark_as_principal(options.current_user_principal)
+    backend._mark_as_principal(current_user_principal)
 
-    if options.autocreate or options.defaults:
-        if not os.path.isdir(options.directory):
-            os.makedirs(options.directory)
-        backend.create_principal(options.current_user_principal, create_defaults=options.defaults)
+    if autocreate or defaults:
+        if not os.path.isdir(directory):
+            os.makedirs(directory)
+        backend.create_principal(current_user_principal, create_defaults=defaults)
 
-    if not os.path.isdir(options.directory):
+    if not os.path.isdir(directory):
         logger.warning(
             "%r does not exist. Run fireset with --autocreate?",
-            options.directory,
+            directory,
         )
-    if not backend.get_resource(options.current_user_principal):
+    if not backend.get_resource(current_user_principal):
         logger.warning(
             "default user principal %s does not exist. " "Run fireset with --autocreate?",
-            options.current_user_principal,
+            current_user_principal,
         )
 
     main_app = XandikosApp(
         backend,
-        current_user_principal=options.current_user_principal,
-        strict=options.strict,
+        current_user_principal=current_user_principal,
+        strict=strict,
     )
 
     async def xandikos_handler(request):
-        return await main_app.aiohttp_handler(request, options.route_prefix)
+        return await main_app.aiohttp_handler(request, route_prefix)
 
-    if options.detect_systemd and not systemd_imported:
-        parser.error("systemd detection requested, but unable to find systemd_python")
-
-    if options.detect_systemd and systemd.daemon.booted():
-        listen_socks = get_systemd_listen_sockets()
-        socket_path = None
-        listen_address = None
-        listen_port = None
-        logger.info("Receiving file descriptors from systemd socket activation")
-    elif "/" in options.listen_address:
-        socket_path = options.listen_address
-        listen_address = None
-        listen_port = None  # otherwise aiohttp also listens on default host
-        listen_socks = []
-        logger.info("Listening on unix domain socket %s", socket_path)
-    else:
-        listen_address = options.listen_address
-        listen_port = options.port
-        socket_path = None
-        listen_socks = []
-        logger.info("Listening on %s:%s", listen_address, options.port)
+    listen_address = listen_address
+    listen_port = port
+    logger.info("Listening on %s:%s", listen_address, port)
 
     from aiohttp import web
 
-    if options.metrics_port == options.port:
-        parser.error("Metrics port cannot be the same as the main port")
+    if metrics_port == port:
+        logger.error("Metrics port cannot be the same as the main port")
+        exit(1)
 
     app = web.Application()
 
@@ -1503,7 +1357,7 @@ async def main(argv=None):  # noqa: C901
         )
     )
 
-    if options.metrics_port:
+    if metrics_port:
         metrics_app = web.Application()
         try:
             from aiohttp_openmetrics import metrics, metrics_middleware
@@ -1519,28 +1373,19 @@ async def main(argv=None):  # noqa: C901
         metrics_app = None
 
     for path in WELLKNOWN_DAV_PATHS:
-        app.router.add_route("*", path, RedirectDavHandler(options.route_prefix).__call__)
+        app.router.add_route("*", path, RedirectDavHandler(route_prefix).__call__)
 
-    if options.route_prefix.strip("/"):
+    if route_prefix.strip("/"):
         xandikos_app = web.Application()
         xandikos_app.router.add_route("*", "/{path_info:.*}", xandikos_handler)
 
         async def redirect_to_subprefix(request):
-            return web.HTTPFound(options.route_prefix)
+            return web.HTTPFound(route_prefix)
 
         app.router.add_route("*", "/", redirect_to_subprefix)
-        app.add_subapp(options.route_prefix, xandikos_app)
+        app.add_subapp(route_prefix, xandikos_app)
     else:
         app.router.add_route("*", "/{path_info:.*}", xandikos_handler)
-
-    if options.avahi:
-        try:
-            import avahi  # noqa: F401
-            import dbus  # noqa: F401
-        except ImportError:
-            logger.error("Please install python-avahi and python-dbus for " "avahi support.")
-        else:
-            avahi_register(options.port, options.route_prefix)
 
     runner = web.AppRunner(app)
     await runner.setup()
@@ -1549,15 +1394,9 @@ async def main(argv=None):  # noqa: C901
         metrics_runner = web.AppRunner(metrics_app)
         await metrics_runner.setup()
         # TODO(jelmer): Allow different metrics listen addres?
-        sites.append(web.TCPSite(metrics_runner, listen_address, options.metrics_port))
-    # Use systemd sockets first and only if not present use the socket path or
-    # address from --listen-address.
-    if listen_socks:
-        sites.extend([web.SockSite(runner, sock) for sock in listen_socks])
-    elif socket_path:
-        sites.append(web.UnixSite(runner, socket_path))
-    else:
-        sites.append(web.TCPSite(runner, listen_address, listen_port))
+        sites.append(web.TCPSite(metrics_runner, listen_address, metrics_port))
+
+    sites.append(web.TCPSite(runner, listen_address, listen_port))
 
     import signal
 
@@ -1577,4 +1416,4 @@ if __name__ == "__main__":
 
     # argv=sys.argv[1:]
     argv = ["--defaults", "-d", "data", "-p", "3665", "--autocreate"]
-    sys.exit(asyncio.run(main(argv)))
+    sys.exit(asyncio.run(main_web_run(argv)))
