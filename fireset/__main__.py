@@ -20,45 +20,28 @@
 """Xandikos command-line handling."""
 
 import asyncio
-from typing_extensions import Annotated
 
-import typer
-
-app = typer.Typer()
+# from typing_extensions import Annotated
 
 
-@app.command()
-def main(
-    directory: Annotated[str, typer.Option(help="Directory that stores the data")] = "data",
-    paranoid: Annotated[bool, typer.Option(help="Paranoid mode")] = False,
-    index_threshold: Annotated[int | None, typer.Option(help="Index threshold")] = None,
-    current_user_principal: Annotated[
-        str, typer.Option(help="Name of the principal user")
-    ] = "user",
-    autocreate: Annotated[bool, typer.Option(help="Create directory if it does not exist")] = True,
-    defaults: Annotated[bool, typer.Option(help="Fill data with defaults")] = True,
-    strict: Annotated[bool, typer.Option(help="Strict mode")] = False,
-    route_prefix: Annotated[str, typer.Option(help="Route prefix")] = "/",
-    listen_address: Annotated[str, typer.Option(help="Address to listen on")] = "0.0.0.0",
-    port: Annotated[int, typer.Option(help="Port to listen on")] = 8000,
+def runserver(
+    # directory: Annotated[str, typer.Option(help="Directory that stores the data")] = "data",
+    # paranoid: Annotated[bool, typer.Option(help="Paranoid mode")] = False,
+    # index_threshold: Annotated[int | None, typer.Option(help="Index threshold")] = None,
+    # current_user_principal: Annotated[
+    #     str, typer.Option(help="Name of the principal user")
+    # ] = "user",
+    # autocreate: Annotated[bool, typer.Option(help="Create directory if it does not exist")] = True,
+    # defaults: Annotated[bool, typer.Option(help="Fill data with defaults")] = True,
+    # strict: Annotated[bool, typer.Option(help="Strict mode")] = False,
+    # route_prefix: Annotated[str, typer.Option(help="Route prefix")] = "/",
+    # listen_address: Annotated[str, typer.Option(help="Address to listen on")] = "0.0.0.0",
+    # port: Annotated[int, typer.Option(help="Port to listen on")] = 8000,
 ):
     from .web import main_web_run
 
-    return asyncio.run(
-        main_web_run(
-            directory,
-            paranoid,
-            index_threshold,
-            current_user_principal,
-            autocreate,
-            defaults,
-            strict,
-            route_prefix,
-            listen_address,
-            port,
-        )
-    )
+    return asyncio.run(main_web_run())
 
 
 if __name__ == "__main__":
-    app()
+    runserver()

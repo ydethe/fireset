@@ -12,7 +12,7 @@ class DatabaseStore(Store):
         - "text/vcard"
 
         Args:
-          ctag: Possible ctag to iterate for
+            ctag: Possible ctag to iterate for
         Returns: iterator over (name, content_type, etag) tuples
         """
         pass
@@ -21,8 +21,8 @@ class DatabaseStore(Store):
         """Get the raw contents of an object.
 
         Args:
-          name: Filename
-          etag: Optional etag to return
+            name: Filename
+            etag: Optional etag to return
         Returns: raw contents
         """
         pass
@@ -43,15 +43,15 @@ class DatabaseStore(Store):
         """Import a single object.
 
         Args:
-          name: Name of the object
-          content_type: Content type of the object
-          data: serialized object as list of bytes
-          message: Commit message
-          author: Optional author
-          replace_etag: Etag to replace
+            name: Name of the object
+            content_type: Content type of the object
+            data: serialized object as list of bytes
+            message: Commit message
+            author: Optional author
+            replace_etag: Etag to replace
         Raise:
-          NameExists: when the name already exists
-          DuplicateUidError: when the uid already exists
+            NameExists: when the name already exists
+            DuplicateUidError: when the uid already exists
         Returns: (name, etag)
         """
         pass
@@ -66,13 +66,13 @@ class DatabaseStore(Store):
         """Delete an item.
 
         Args:
-          name: Filename to delete
-          message: Commit message
-          author: Optional author
-          etag: Optional mandatory etag of object to remove
+            name: Filename to delete
+            message: Commit message
+            author: Optional author
+            etag: Optional mandatory etag of object to remove
         Raises:
-          NoSuchItem: when the item doesn't exist
-          InvalidETag: If the specified ETag doesn't match the current
+            NoSuchItem: when the item doesn't exist
+            InvalidETag: If the specified ETag doesn't match the current
         """
         pass
 
@@ -80,7 +80,7 @@ class DatabaseStore(Store):
         """Set store type.
 
         Args:
-          store_type: New store type (one of VALID_STORE_TYPES)
+            store_type: New store type (one of VALID_STORE_TYPES)
         """
         pass
 
@@ -88,7 +88,7 @@ class DatabaseStore(Store):
         """Set the extended description of this store.
 
         Args:
-          description: String with description
+            description: String with description
         """
         pass
 
@@ -116,8 +116,8 @@ class DatabaseStore(Store):
         """Get changes between two versions of this store.
 
         Args:
-          old_ctag: Old ctag (None for empty Store)
-          new_ctag: New ctag
+            old_ctag: Old ctag (None for empty Store)
+            new_ctag: New ctag
         Returns: Iterator over (name, content_type, old_etag, new_etag)
         """
         pass
@@ -133,7 +133,7 @@ class DatabaseStore(Store):
         """Set comment.
 
         Args:
-          comment: New comment to set
+            comment: New comment to set
         """
         pass
 
@@ -161,7 +161,7 @@ class DatabaseStore(Store):
         """Open a GitStore from a path.
 
         Args:
-          path: Path
+            path: Path
         Returns: A `GitStore`
         """
         pass

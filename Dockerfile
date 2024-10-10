@@ -24,6 +24,6 @@ WORKDIR /code
 COPY dist/*.whl /code
 RUN python3 -m venv /code/venv && \
     /code/venv/bin/python -m pip install /code/*.whl
-VOLUME /data
+VOLUME /code/data
 EXPOSE 3665
-ENTRYPOINT ["/code/venv/bin/gunicorn", "fireset.web:main_web_build_app", "--bind", "0.0.0.0:3665", "--worker", "aiohttp.GunicornWebWorker"]
+ENTRYPOINT ["/code/venv/bin/python", "-m", "fireset"]

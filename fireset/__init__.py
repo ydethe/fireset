@@ -21,10 +21,9 @@
 """CalDAV/CardDAV server."""
 
 import logging
-import sys
-import defusedxml.ElementTree  # noqa: F401: This does some monkey-patching on-load
 from pydantic_settings import BaseSettings, SettingsConfigDict
 import logfire
+from rich.logging import RichHandler
 
 
 class Settings(BaseSettings):
@@ -42,17 +41,17 @@ class Settings(BaseSettings):
     autocreate: bool = True
     defaults: bool = True
     strict: bool = False
-    route_prefix: str = "/"
 
 
 settings = Settings()
 
-logfire.configure(token=settings.logfire_token)
-
 # création de l'objet logger qui va nous servir à écrire dans les logs
 logger = logging.getLogger("fireset_logger")
 logger.setLevel(settings.loglevel.upper())
-logger.addHandler(logfire.LogfireLoggingHandler())
 
-handler = logging.StreamHandler(sys.stdout)
+if settings.logfire_token != "":
+    logfire.configure(token=settings.logfire_token)
+    logger.addHandler(logfire.LogfireLoggingHandler())
+
+handler = RichHandler()
 logger.addHandler(handler)

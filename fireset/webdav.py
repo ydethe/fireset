@@ -25,7 +25,6 @@ functionality should live in fireset.caldav/fireset.carddav respectively.
 
 # TODO(jelmer): Add authorization support
 
-import asyncio
 import collections
 import fnmatch
 import functools
@@ -41,6 +40,7 @@ from wsgiref.util import request_uri
 # Hmm, defusedxml doesn't have XML generation functions? :(
 from xml.etree import ElementTree as ET
 
+from aiohttp import web
 from defusedxml.ElementTree import fromstring as xmlparse
 
 logger = logging.getLogger("fireset_logger")
@@ -113,13 +113,7 @@ class Response:
         else:
             raise TypeError(headers)
 
-    def for_wsgi(self, start_response):
-        start_response("%d %s" % (self.status, self.reason), self.headers)
-        return self.body
-
-    def for_aiohttp(self):
-        from aiohttp import web
-
+    def for_aiohttp(self) -> web.Response:
         if isinstance(self.body, list):
             body = b"".join(self.body)
         else:
@@ -1892,7 +1886,7 @@ class GetMethod(Method):
         return await _do_get(request, environ, app, send_body=True)
 
 
-async def _do_get(request, environ, app, send_body):
+async def _do_get(request: web.Request, environ: dict, app: "WebDAVApp", send_body: bool):
     unused_href, unused_path, r = app._get_resource_from_environ(request, environ)
     if r is None:
         return _send_not_found(request)
@@ -1980,7 +1974,7 @@ class WebDAVApp:
     (returning None for nonexistant objects).
     """
 
-    def __init__(self, backend, strict=True) -> None:
+    def __init__(self, backend: Backend, strict: bool = True):
         self.backend = backend
         self.properties: Dict[str, Type[Property]] = {}
         self.reporters: Dict[str, Type[Reporter]] = {}
@@ -2043,7 +2037,7 @@ class WebDAVApp:
                 ret.append(name)
         return ret
 
-    async def _handle_request(self, request, environ):
+    async def _handle_request(self, request: web.Request, environ: dict):
         try:
             do = self.methods[request.method]
         except KeyError:
@@ -2072,24 +2066,7 @@ class WebDAVApp:
                 body=[("Please login.".encode(DEFAULT_ENCODING))],
             )
 
-    def handle_wsgi_request(self, environ, start_response):
-        if "SCRIPT_NAME" not in environ:
-            logger.debug('SCRIPT_NAME not set; assuming "".')
-            environ["SCRIPT_NAME"] = ""
-        request = WSGIRequest(environ)
-        environ = {"SCRIPT_NAME": environ["SCRIPT_NAME"]}
-        try:
-            loop = asyncio.get_event_loop()
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-        response = loop.run_until_complete(self._handle_request(request, environ))
-        return response.for_wsgi(start_response)
-
-    async def aiohttp_handler(self, request, route_prefix="/"):
+    async def aiohttp_handler(self, request: web.Request, route_prefix: str = "/") -> web.Response:
         environ = {"SCRIPT_NAME": route_prefix}
         response = await self._handle_request(request, environ)
         return response.for_aiohttp()
-
-    # Backwards compatibility
-    __call__ = handle_wsgi_request

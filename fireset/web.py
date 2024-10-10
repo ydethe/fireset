@@ -36,6 +36,7 @@ from collections.abc import Iterable, Iterator
 from email.utils import parseaddr
 from typing import Optional
 
+from aiohttp import web
 from aiohttp_basicauth_middleware import basic_auth_middleware
 import jinja2
 
@@ -1167,128 +1168,7 @@ class RedirectDavHandler:
         return web.HTTPFound(self._dav_root)
 
 
-MDNS_NAME = "Xandikos CalDAV/CardDAV service"
-
-
-def avahi_register(port: int, path: str):
-    import avahi
-    import dbus
-
-    bus = dbus.SystemBus()
-    server = dbus.Interface(
-        bus.get_object(avahi.DBUS_NAME, avahi.DBUS_PATH_SERVER),
-        avahi.DBUS_INTERFACE_SERVER,
-    )
-    group = dbus.Interface(
-        bus.get_object(avahi.DBUS_NAME, server.EntryGroupNew()),
-        avahi.DBUS_INTERFACE_ENTRY_GROUP,
-    )
-
-    for service in ["_carddav._tcp", "_caldav._tcp"]:
-        try:
-            group.AddService(
-                avahi.IF_UNSPEC,
-                avahi.PROTO_INET,
-                0,
-                MDNS_NAME,
-                service,
-                "",
-                "",
-                port,
-                avahi.string_array_to_txt_array([f"path={path}"]),
-            )
-        except dbus.DBusException as e:
-            logger.error("Error registering %s: %s", service, e)
-
-    group.Commit()
-
-
-def run_simple_server(
-    directory: str,
-    current_user_principal: str,
-    autocreate: bool = False,
-    defaults: bool = False,
-    strict: bool = True,
-    route_prefix: str = "/",
-    listen_address: Optional[str] = "::",
-    port: Optional[int] = 8080,
-    socket_path: Optional[str] = None,
-) -> None:
-    """Simple function to run a Xandikos server.
-
-    This function is meant to be used by external code. We'll try our best
-    not to break API compatibility.
-
-    Args:
-      directory: Directory to store data in ("/tmp/blah")
-      current_user_principal: Name of current user principal ("/user")
-      autocreate: Whether to create missing principals and collections
-      defaults: Whether to create default calendar and addressbook collections
-      strict: Whether to be strict in *DAV implementation. Set to False for
-         buggy clients
-      route_prefix: Route prefix under which to server ("/")
-      listen_address: IP address to listen on (None to disable)
-      port: TCP Port to listen on (None to disable)
-      socket_path: Unix domain socket path to listen on (None to disable)
-    """
-    backend = XandikosBackend(directory)
-    backend._mark_as_principal(current_user_principal)
-
-    if autocreate or defaults:
-        if not os.path.isdir(directory):
-            os.makedirs(directory)
-        backend.create_principal(current_user_principal, create_defaults=defaults)
-
-    if not os.path.isdir(directory):
-        logger.warning(
-            "%r does not exist. Run fireset with --autocreate?",
-            directory,
-        )
-    if not backend.get_resource(current_user_principal):
-        logger.warning(
-            "default user principal %s does not exist. " "Run fireset with --autocreate?",
-            current_user_principal,
-        )
-
-    main_app = XandikosApp(
-        backend,
-        current_user_principal=current_user_principal,
-        strict=strict,
-    )
-
-    async def xandikos_handler(request):
-        return await main_app.aiohttp_handler(request, route_prefix)
-
-    if socket_path:
-        logger.info("Listening on unix domain socket %s", socket_path)
-    if listen_address and port:
-        logger.info("Listening on %s:%s", listen_address, port)
-
-    from aiohttp import web
-
-    app = web.Application()
-    for path in WELLKNOWN_DAV_PATHS:
-        app.router.add_route("*", path, RedirectDavHandler(route_prefix).__call__)
-
-    if route_prefix.strip("/"):
-        xandikos_app = web.Application()
-        xandikos_app.router.add_route("*", "/{path_info:.*}", xandikos_handler)
-
-        async def redirect_to_subprefix(request):
-            return web.HTTPFound(route_prefix)
-
-        app.router.add_route("*", "/", redirect_to_subprefix)
-        app.add_subapp(route_prefix, xandikos_app)
-    else:
-        app.router.add_route("*", "/{path_info:.*}", xandikos_handler)
-
-    web.run_app(app, port=port, host=listen_address, path=socket_path)
-
-
 async def main_web_build_app():
-    if not settings.route_prefix.endswith("/"):
-        settings.route_prefix += "/"
-
     if not settings.current_user_principal.startswith("/"):
         current_user_principal = "/" + settings.current_user_principal
 
@@ -1322,7 +1202,7 @@ async def main_web_build_app():
     )
 
     async def xandikos_handler(request):
-        return await main_app.aiohttp_handler(request, settings.route_prefix)
+        return await main_app.aiohttp_handler(request, "/")
 
     from aiohttp import web
 
@@ -1338,18 +1218,13 @@ async def main_web_build_app():
     )
 
     for path in WELLKNOWN_DAV_PATHS:
-        app.router.add_route("*", path, RedirectDavHandler(settings.route_prefix).__call__)
+        app.router.add_route("*", path, RedirectDavHandler("/").__call__)
 
-    if settings.route_prefix.strip("/"):
-        xandikos_app = web.Application()
-        xandikos_app.router.add_route("*", "/{path_info:.*}", xandikos_handler)
-
-        async def redirect_to_subprefix(request):
-            return web.HTTPFound(settings.route_prefix)
-
-        app.router.add_route("*", "/", redirect_to_subprefix)
-        app.add_subapp(settings.route_prefix, xandikos_app)
-    else:
-        app.router.add_route("*", "/{path_info:.*}", xandikos_handler)
+    app.router.add_route("*", "/{path_info:.*}", xandikos_handler)
 
     return app
+
+
+def main_web_run():
+    app = main_web_build_app()
+    web.run_app(app=app, host="0.0.0.0", port=3665)
