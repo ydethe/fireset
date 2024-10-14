@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Added hypothesis based test ([1f5a4e3](https://github.com/ydethe/fireset/commit/1f5a4e3b942b024a210fdebf3ebaa4075303b6e3) by Yann de The).
 - Added unit tests ([cc2e401](https://github.com/ydethe/fireset/commit/cc2e401578e9e798122250deab82f008111dda41) by Yann de The).
 - Added typer ([ab9bb36](https://github.com/ydethe/fireset/commit/ab9bb36cfc05cf2e501d566ab46ecd37574acb85) by Yann de The).
 - Added test (wip) ([4547aa6](https://github.com/ydethe/fireset/commit/4547aa684252bf73ddd2a5f8e9c2c4d68144a75a) by Yann de The).

@@ -22,39 +22,54 @@ class Adresse:
 
     @classmethod
     def getFormat(cls) -> str:
-        res = "SOURCE:adr:{aid:d}\nitem{nb_item:d}.ADR{pref_str}:{boite_postale};{adresse_etendue};{rue};{ville};{region};{code_postal};{pays}\nitem{nb_item:d}.X-ABLABEL:{type}"
+        res = "SOURCE:adr:{aid}\nitem{nb_item}.{pref_str}:{elems}\nitem{nb_item}.X-ABLABEL:{type}"
         return res
 
     @classmethod
     def fromVcard(cls, data: bytes) -> "Adresse":
         res = parse(cls.getFormat(), data.decode(encoding="utf-8"))
-        return res
+        boite_postale, adresse_etendue, rue, ville, region, code_postal, pays = res["elems"].split(
+            ";"
+        )
+        ret = cls(
+            id=res["aid"],
+            boite_postale=boite_postale,
+            adresse_etendue=adresse_etendue,
+            rue=rue,
+            ville=ville,
+            region=region,
+            code_postal=code_postal,
+            pays=pays,
+            telephone="",
+            type=res["type"],
+            prefered=res["pref_str"] != "",
+        )
+        return ret
 
     def toVcard(self, nb_item: int) -> bytes:
         if self.prefered:
-            pref_str = ";TYPE=pref"
+            pref_str = "ADR;TYPE=pref"
         else:
-            pref_str = ""
+            pref_str = "ADR"
+        elems = ";".join(
+            [
+                self.boite_postale,
+                self.adresse_etendue,
+                self.rue,
+                self.ville,
+                self.region,
+                self.code_postal,
+                self.pays,
+            ]
+        )
         res = Adresse.getFormat().format(
             aid=self.id,
             nb_item=nb_item,
             pref_str=pref_str,
-            boite_postale=self.boite_postale,
-            adresse_etendue=self.adresse_etendue,
-            rue=self.rue,
-            ville=self.ville,
-            region=self.region,
-            code_postal=self.code_postal,
-            pays=self.pays,
+            elems=elems,
             type=self.type,
         )
-        return res.encode(encoding="utf-8")
-
-    @classmethod
-    def processText(cls, txt: str):
-        res = parse(Adresse.fromVcard(), txt)
-        res = parse("item{nb_item}.X-ABLABEL:{type}", txt)
-        return res
+        return res.encode(encoding="utf-8") + b"\n"
 
 
 @dataclass
@@ -65,10 +80,34 @@ class Email:
     prefered: bool = False
 
     @classmethod
-    def processText(cls, txt: str):
-        res = parse("item{nb_item}.EMAIL{pref_str};TYPE=INTERNET:{email}", txt)
-        res = parse("item{nb_item}.X-ABLABEL:{type}", txt)
-        return res
+    def getFormat(cls) -> str:
+        fmt = "SOURCE:email:{mid}\nitem{nb_item}.{pref_str};TYPE=INTERNET:{email}\nitem{nb_item}.X-ABLABEL:{type}"
+        return fmt
+
+    @classmethod
+    def fromVcard(cls, data: bytes) -> "Email":
+        res = parse(cls.getFormat(), data.decode(encoding="utf-8"))
+        ret = cls(
+            id=res["mid"],
+            email=res["email"],
+            type=res["type"],
+            prefered=res["pref_str"] != "",
+        )
+        return ret
+
+    def toVcard(self, nb_item: int) -> bytes:
+        if self.prefered:
+            pref_str = "EMAIL;TYPE=pref"
+        else:
+            pref_str = "EMAIL"
+        res = Email.getFormat().format(
+            mid=self.id,
+            email=self.email,
+            pref_str=pref_str,
+            nb_item=nb_item,
+            type=self.type,
+        )
+        return res.encode(encoding="utf-8") + b"\n"
 
 
 @dataclass
@@ -79,10 +118,36 @@ class Telephone:
     prefered: bool = False
 
     @classmethod
-    def processText(cls, txt: str):
-        res = parse("item{nb_item}.TEL{pref_str}:{telephone}", txt)
-        res = parse("item{nb_item}.X-ABLABEL:{type}", txt)
-        return res
+    def getFormat(cls) -> str:
+        fmt = (
+            "SOURCE:tel:{tid}\nitem{nb_item}.{pref_str}:{telephone}\nitem{nb_item}.X-ABLABEL:{type}"
+        )
+        return fmt
+
+    @classmethod
+    def fromVcard(cls, data: bytes) -> "Telephone":
+        res = parse(cls.getFormat(), data.decode(encoding="utf-8"))
+        ret = cls(
+            id=res["tid"],
+            telephone=res["telephone"],
+            type=res["type"],
+            prefered=res["pref_str"] != "",
+        )
+        return ret
+
+    def toVcard(self, nb_item: int) -> bytes:
+        if self.prefered:
+            pref_str = "TEL;TYPE=pref"
+        else:
+            pref_str = "TEL"
+        res = Telephone.getFormat().format(
+            tid=self.id,
+            nb_item=nb_item,
+            telephone=self.telephone,
+            pref_str=pref_str,
+            type=self.type,
+        )
+        return res.encode(encoding="utf-8") + b"\n"
 
 
 @dataclass
@@ -116,7 +181,7 @@ class Contact:
                 orga = orga[:-1]
             data["organisation"] = orga
         elif raw.startswith(b"TITLE:"):
-            func = raw[4:].decode(encoding="utf-8")
+            func = raw[6:].decode(encoding="utf-8")
             func = func.strip()
             if func.endswith(";"):
                 func = func[:-1]
@@ -129,7 +194,7 @@ class Contact:
             data["civilite"] = civilite
         elif b".URL:" in raw:
             idx = raw.index(b".URL:")
-            website = raw[idx + 4 :].decode(encoding="utf-8")
+            website = raw[idx + 5 :].decode(encoding="utf-8")
             data["website"] = website
         elif raw.startswith(b"BDAY;VALUE=date:"):
             sdt = raw[16:].decode(encoding="utf-8")
@@ -147,30 +212,6 @@ class Contact:
             data["photo"] = raw[29:]
         elif raw.startswith(b"SOURCE:etag:"):
             data["etag"] = raw[12:]
-
-    def _pick_adresses(self, elems: T.Iterable[bytes]):
-        # Enumerate adr, email and tel ids
-        for raw in elems:
-            if raw.startswith(b"SOURCE:adr:"):
-                adr_id = int(raw[11:])
-                self.adresses.append(Adresse(id=adr_id))
-            elif raw.startswith(b"SOURCE:email:"):
-                email_id = int(raw[13:])
-                self.emails.append(Email(id=email_id))
-            elif raw.startswith(b"SOURCE:tel:"):
-                tel_id = int(raw[11:])
-                self.telephones.append(Telephone(id=tel_id))
-
-        # Locate item numbers for adr, email and tel
-        for raw in elems:
-            if raw.startswith(b"item") and b".ADR" in raw:
-                Adresse.processText(raw.decode(encoding="utf-8").strip())
-
-    def _pick_emails(self, elems: T.Iterable[bytes]):
-        pass
-
-    def _pick_telephones(self, elems: T.Iterable[bytes]):
-        pass
 
     @classmethod
     def fromVcard(cls, data: T.Iterable[bytes]) -> "Contact":
@@ -200,9 +241,18 @@ class Contact:
             cls._pick_info(raw, contact_data)
 
         ret = cls(**contact_data)
-        ret._pick_adresses(elems)
-        ret._pick_emails(elems)
-        ret._pick_telephones(elems)
+
+        for iraw in range(len(elems) - 3):
+            raw = elems[iraw]
+            if raw.startswith(b"SOURCE:adr:"):
+                a = Adresse.fromVcard(b"\n".join(elems[iraw : iraw + 3]))
+                ret.adresses.append(a)
+            elif raw.startswith(b"SOURCE:email:"):
+                m = Email.fromVcard(b"\n".join(elems[iraw : iraw + 3]))
+                ret.emails.append(m)
+            elif raw.startswith(b"SOURCE:tel:"):
+                t = Telephone.fromVcard(b"\n".join(elems[iraw : iraw + 3]))
+                ret.telephones.append(t)
 
         return ret
 
@@ -213,12 +263,6 @@ class Contact:
         res += b"VERSION:3.0\n"
         res += f"SOURCE:id:{self.id}\n".encode(encoding="utf-8")
         res += f"SOURCE:etag:{self.etag}\n".encode(encoding="utf-8")
-        for adresse in self.adresses:
-            res += f"SOURCE:adr:{adresse.id}\n".encode(encoding="utf-8")
-        for email in self.emails:
-            res += f"SOURCE:email:{email.id}\n".encode(encoding="utf-8")
-        for telephone in self.telephones:
-            res += f"SOURCE:tel:{telephone.id}\n".encode(encoding="utf-8")
         res += f"N:{self.nom};{self.prenom};;{self.civilite};\n".encode(encoding="utf-8")
         res += f"FN:{self.prenom} {self.nom}\n".encode(encoding="utf-8")
         if self.date_naissance.year > 1:
@@ -235,24 +279,11 @@ class Contact:
 
         nb_item = 1
         for adresse in self.adresses:
-            if adresse.prefered:
-                pref_str = ";TYPE=pref"
-            else:
-                pref_str = ""
-            res += f"item{nb_item}.ADR{pref_str}:{adresse.boite_postale};{adresse.adresse_etendue};{adresse.rue};{adresse.ville};{adresse.region};{adresse.code_postal};{adresse.pays}\n".encode(
-                encoding="utf-8"
-            )
-            res += f"item{nb_item}.X-ABLABEL:{adresse.type}\n".encode(encoding="utf-8")
-            res += f"item{nb_item}.X-ABADR:fr\n".encode(encoding="utf-8")
+            res += adresse.toVcard(nb_item)
             nb_item += 1
 
         for telephone in self.telephones:
-            if telephone.prefered:
-                pref_str = ";TYPE=pref"
-            else:
-                pref_str = ""
-            res += f"item{nb_item}.TEL{pref_str}:{telephone.telephone}\n".encode(encoding="utf-8")
-            res += f"item{nb_item}.X-ABLABEL:{telephone.type}\n".encode(encoding="utf-8")
+            res += telephone.toVcard(nb_item)
             nb_item += 1
 
         if len(self.website) > 0:
@@ -264,14 +295,7 @@ class Contact:
         nb_item += 1
 
         for email in self.emails:
-            if email.prefered:
-                pref_str = ";TYPE=pref"
-            else:
-                pref_str = ""
-            res += f"item{nb_item}.EMAIL{pref_str};TYPE=INTERNET:{email.email}\n".encode(
-                encoding="utf-8"
-            )
-            res += f"item{nb_item}.X-ABLABEL:{email.type}\n".encode(encoding="utf-8")
+            res += email.toVcard(nb_item)
             nb_item += 1
 
         if len(self.linkedin_profil) > 0:
