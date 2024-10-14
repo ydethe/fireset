@@ -34,6 +34,8 @@ class Settings(BaseSettings):
     fireset_password: str
     logfire_token: str
     database_uri: AnyUrl
+    phantombuster_key: str
+    phantombuster_listid: int
     loglevel: str = "info"
 
     directory: str = "data"

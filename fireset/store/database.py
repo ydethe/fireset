@@ -107,11 +107,11 @@ class DatabaseStore(Store):
 
     def get_description(self) -> str:
         """Get the extended description of this store."""
-        return "description"
+        return "fireset description"
 
     def get_displayname(self) -> str:
         """Get the display name of this store."""
-        return "displayname"
+        return "fireset"
 
     def set_displayname(self, displayname: str):
         """Set the display name of this store."""

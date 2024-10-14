@@ -1,5 +1,6 @@
 from datetime import date
 import typing as T
+from uuid import UUID
 
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Session
@@ -165,7 +166,7 @@ def get_db_vcard_by_id(card_id: int) -> Contact | None:
         return contact
 
 
-def get_db_vcard_by_etag(etag: int) -> Contact | None:
+def get_db_vcard_by_etag(etag: UUID) -> Contact | None:
     with Session(engine) as session:
         db_contact = session.query(DbContact).filter(DbContact.etag == etag).first()
 
