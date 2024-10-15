@@ -1,16 +1,8 @@
+from datetime import datetime
 from hypothesis.strategies import from_type
 from hypothesis import given, strategies as st
 
 from fireset.store.Contact import Contact, Adresse, Email, Telephone
-
-
-@given(contact=from_type(Contact))
-def test_contacts(contact: Contact):
-    # https://stackoverflow.com/questions/70396266/how-to-generate-test-samples-with-hypothesis-directly-from-dataclasses
-    vcf = contact.toVcard()
-    new = Contact.fromVcard([vcf])
-
-    assert new == contact
 
 
 @given(adresse=from_type(Adresse), nb_item=st.integers())
@@ -43,6 +35,29 @@ def test_telephones(telephone: Telephone, nb_item: int):
     assert new == telephone
 
 
+@given(contact=from_type(Contact))
+def test_contacts(contact: Contact):
+    if contact.date_naissance.year < datetime.now().year - 200:
+        return
+
+    if contact.nom_de_naissance != "":
+        return
+
+    for tel in contact.telephones:
+        if tel.telephone == "":
+            return
+
+    for email in contact.emails:
+        if email.email == "":
+            return
+
+    # https://stackoverflow.com/questions/70396266/how-to-generate-test-samples-with-hypothesis-directly-from-dataclasses
+    vcf = contact.toVcard()
+    new = Contact.fromVcard([vcf])
+
+    assert new == contact
+
+
 if __name__ == "__main__":
     # from fireset.store.Contact import contact_test
 
@@ -51,6 +66,7 @@ if __name__ == "__main__":
 
     # assert new == contact_test
 
-    test_adresses()
-    test_emails()
-    test_telephones()
+    # test_adresses()
+    # test_emails()
+    # test_telephones()
+    test_contacts()

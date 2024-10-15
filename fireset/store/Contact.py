@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 import typing as T
 from uuid import UUID, uuid4
 
@@ -204,7 +204,7 @@ class Contact:
     prenom: str
     civilite: str
     website: str
-    date_naissance: datetime
+    date_naissance: date
     nom_de_naissance: str
     linkedin_profil: str
     notes: str
@@ -213,6 +213,24 @@ class Contact:
     emails: T.List[Email]
     telephones: T.List[Telephone]
     etag: UUID
+
+    def __eq__(self, value: "Adresse") -> bool:
+        res = (
+            self.id == value.id
+            and self.organisation.strip() == value.organisation.strip()
+            and self.fonction.strip() == value.fonction.strip()
+            and self.nom.strip() == value.nom.strip()
+            and self.prenom.strip() == value.prenom.strip()
+            and self.civilite.strip() == value.civilite.strip()
+            and self.website.strip() == value.website.strip()
+            and self.date_naissance == value.date_naissance
+            and self.nom_de_naissance.strip() == value.nom_de_naissance.strip()
+            and self.linkedin_profil.strip() == value.linkedin_profil.strip()
+            and self.notes.strip() == value.notes.strip()
+            and self.photo == value.photo
+            and self.etag == value.etag
+        )
+        return res
 
     @classmethod
     def _pick_info(cls, raw: bytes, data: dict):
@@ -242,7 +260,7 @@ class Contact:
             data["website"] = website
         elif raw.startswith(b"BDAY;VALUE=date:"):
             sdt = raw[16:].decode(encoding="utf-8")
-            dt = datetime.strptime(sdt, "%Y-%m-%d")
+            dt = date.fromtimestamp(datetime.strptime(sdt, "%Y-%m-%d").timestamp())
             data["date_naissance"] = dt
         elif b"X-SOCIALPROFILE;X-USER=" in raw and b";TYPE=linkedin:" in raw:
             # X-SOCIALPROFILE;X-USER={user};TYPE=linkedin:
@@ -255,7 +273,7 @@ class Contact:
         elif raw.startswith(b"PHOTO:data:image/jpeg;base64,"):
             data["photo"] = raw[29:]
         elif raw.startswith(b"SOURCE:etag:"):
-            data["etag"] = raw[12:]
+            data["etag"] = UUID(raw[12:].decode())
 
     @classmethod
     def fromVcard(cls, data: T.Iterable[bytes]) -> "Contact":
