@@ -12,11 +12,23 @@ ENV FIRESET_USER=$FIRESET_USER
 ARG FIRESET_PASSWORD
 ENV FIRESET_PASSWORD=$FIRESET_PASSWORD
 
+ARG DATABASE_URI
+ENV DATABASE_URI=$DATABASE_URI
+
+ARG PHANTOMBUSTER_KEY
+ENV PHANTOMBUSTER_KEY=$PHANTOMBUSTER_KEY
+
+ARG PHANTOMBUSTER_LISTID
+ENV PHANTOMBUSTER_LISTID=$PHANTOMBUSTER_LISTID
+
 ARG LOGFIRE_TOKEN
 ENV LOGFIRE_TOKEN=$LOGFIRE_TOKEN
 
+ARG LOGLEVEL
+ENV LOGLEVEL=$LOGLEVEL
+
 RUN apt-get update && \
-    apt-get -y install --no-install-recommends libpq5 python3-dev python3-venv python3-pip && \
+    apt-get -y install --no-install-recommends libpq-dev gcc python3-dev python3-venv python3-pip && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists
 

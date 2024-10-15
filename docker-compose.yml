@@ -7,7 +7,11 @@ services:
     environment:
       - FIRESET_USER=$FIRESET_USER
       - FIRESET_PASSWORD=$FIRESET_PASSWORD
+      - DATABASE_URI=$DATABASE_URI
+      - PHANTOMBUSTER_KEY=$PHANTOMBUSTER_KEY
+      - PHANTOMBUSTER_LISTID=$PHANTOMBUSTER_LISTID
       - LOGFIRE_TOKEN=$LOGFIRE_TOKEN
+      - LOGLEVEL=$LOGLEVEL
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.$COMPOSE_PROJECT_NAME.rule=Host(`$HOST`)"
