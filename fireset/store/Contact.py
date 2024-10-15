@@ -1,23 +1,22 @@
-from dataclasses import dataclass
 from datetime import date, datetime
 import typing as T
 from uuid import UUID, uuid4
 
+from pydantic import BaseModel, Field
 from parse import parse
 
 
-@dataclass
-class Adresse:
-    id: int = -1
-    boite_postale: str = ""
-    adresse_etendue: str = ""
-    rue: str = ""
-    ville: str = ""
-    region: str = ""
-    code_postal: str = ""
-    pays: str = ""
-    type: str = ""
-    prefered: bool = False
+class Adresse(BaseModel):
+    id: int = Field(default=-1)
+    boite_postale: str = Field(default="")
+    adresse_etendue: str = Field(default="")
+    rue: str = Field(default="")
+    ville: str = Field(default="")
+    region: str = Field(default="")
+    code_postal: str = Field(default="")
+    pays: str = Field(default="")
+    type: str = Field(default="")
+    prefered: bool = Field(default=False)
 
     def __eq__(self, value: "Adresse") -> bool:
         res = (
@@ -90,12 +89,11 @@ class Adresse:
         return res.encode(encoding="utf-8") + b"\n"
 
 
-@dataclass
-class Email:
-    id: int = -1
-    email: str = ""
-    type: str = ""
-    prefered: bool = False
+class Email(BaseModel):
+    id: int = Field(default=-1)
+    email: str = Field(default="")
+    type: str = Field(default="")
+    prefered: bool = Field(default=False)
 
     def __eq__(self, value: "Adresse") -> bool:
         res = (
@@ -139,12 +137,11 @@ class Email:
         return res.encode(encoding="utf-8") + b"\n"
 
 
-@dataclass
-class Telephone:
-    id: int = -1
-    telephone: str = ""
-    type: str = ""
-    prefered: bool = False
+class Telephone(BaseModel):
+    id: int = Field(default=-1)
+    telephone: str = Field(default="")
+    type: str = Field(default="")
+    prefered: bool = Field(default=False)
 
     def __eq__(self, value: "Adresse") -> bool:
         res = (
@@ -194,8 +191,7 @@ class Telephone:
         return res.encode(encoding="utf-8") + b"\n"
 
 
-@dataclass
-class Contact:
+class Contact(BaseModel):
     # https://github.com/cozy/cozy-vcard/blob/master/test/ios-full.vcf
     id: int
     organisation: str

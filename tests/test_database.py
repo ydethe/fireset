@@ -1,11 +1,10 @@
 from datetime import datetime
-from hypothesis.strategies import from_type
 from hypothesis import given, strategies as st
 
 from fireset.store.Contact import Contact, Adresse, Email, Telephone
 
 
-@given(adresse=from_type(Adresse), nb_item=st.integers())
+@given(adresse=st.builds(Adresse), nb_item=st.integers())
 def test_adresses(adresse: Adresse, nb_item: int):
     vcf = adresse.toVcard(nb_item)
     new = Adresse.fromVcard(vcf)
@@ -13,7 +12,7 @@ def test_adresses(adresse: Adresse, nb_item: int):
     assert new == adresse
 
 
-@given(email=from_type(Email), nb_item=st.integers())
+@given(email=st.builds(Email), nb_item=st.integers())
 def test_emails(email: Email, nb_item: int):
     if email.email == "":
         return
@@ -24,7 +23,7 @@ def test_emails(email: Email, nb_item: int):
     assert new == email
 
 
-@given(telephone=from_type(Telephone), nb_item=st.integers())
+@given(telephone=st.builds(Telephone), nb_item=st.integers())
 def test_telephones(telephone: Telephone, nb_item: int):
     if telephone.telephone == "":
         return
@@ -35,7 +34,7 @@ def test_telephones(telephone: Telephone, nb_item: int):
     assert new == telephone
 
 
-@given(contact=from_type(Contact))
+@given(contact=st.builds(Contact))
 def test_contacts(contact: Contact):
     if contact.date_naissance.year < datetime.now().year - 200:
         return
