@@ -63,6 +63,7 @@ addopts = [
     "--cov-config=tests/coverage.conf",
     "--cov=fireset",
     "--doctest-modules",
+    "--hypothesis-show-statistics",
 
 ]
 testpaths = [

@@ -16,23 +16,42 @@ class Adresse:
     region: str = ""
     code_postal: str = ""
     pays: str = ""
-    telephone: str = ""
     type: str = ""
     prefered: bool = False
 
-    @classmethod
-    def getFormat(cls) -> str:
-        res = "SOURCE:adr:{aid}\nitem{nb_item}.{pref_str}:{elems}\nitem{nb_item}.X-ABLABEL:{type}"
+    def __eq__(self, value: "Adresse") -> bool:
+        res = (
+            self.id == value.id
+            and self.boite_postale.replace(";", ",").strip()
+            == value.boite_postale.replace(";", ",").strip()
+            and self.adresse_etendue.replace(";", ",").strip()
+            == value.adresse_etendue.replace(";", ",").strip()
+            and self.rue.replace(";", ",").strip() == self.rue.replace(";", ",").strip()
+            and self.ville.replace(";", ",").strip() == self.ville.replace(";", ",").strip()
+            and self.region.replace(";", ",").strip() == self.region.replace(";", ",").strip()
+            and self.code_postal.replace(";", ",").strip()
+            == self.code_postal.replace(";", ",").strip()
+            and self.pays.replace(";", ",").strip() == self.pays.replace(";", ",").strip()
+            and self.type.replace(";", ",").strip() == self.type.replace(";", ",").strip()
+            and self.prefered == self.prefered
+        )
         return res
 
     @classmethod
+    def getFormat(cls) -> str:
+        fmt = "SOURCE:adr:{aid}\nitem{nb_item}.{pref_str}:{elems}\nitem{nb_item}.{type}"
+        return fmt
+
+    @classmethod
     def fromVcard(cls, data: bytes) -> "Adresse":
-        res = parse(cls.getFormat(), data.decode(encoding="utf-8"))
+        s = data.decode(encoding="utf-8").strip()
+        res = parse(cls.getFormat(), s)
+
         boite_postale, adresse_etendue, rue, ville, region, code_postal, pays = res["elems"].split(
             ";"
         )
         ret = cls(
-            id=res["aid"],
+            id=int(res["aid"]),
             boite_postale=boite_postale,
             adresse_etendue=adresse_etendue,
             rue=rue,
@@ -40,9 +59,8 @@ class Adresse:
             region=region,
             code_postal=code_postal,
             pays=pays,
-            telephone="",
-            type=res["type"],
-            prefered=res["pref_str"] != "",
+            type=res["type"].split("X-ABLABEL:")[1],
+            prefered=res["pref_str"] != "ADR",
         )
         return ret
 
@@ -53,13 +71,13 @@ class Adresse:
             pref_str = "ADR"
         elems = ";".join(
             [
-                self.boite_postale,
-                self.adresse_etendue,
-                self.rue,
-                self.ville,
-                self.region,
-                self.code_postal,
-                self.pays,
+                self.boite_postale.replace(";", ","),
+                self.adresse_etendue.replace(";", ","),
+                self.rue.replace(";", ","),
+                self.ville.replace(";", ","),
+                self.region.replace(";", ","),
+                self.code_postal.replace(";", ","),
+                self.pays.replace(";", ","),
             ]
         )
         res = Adresse.getFormat().format(
@@ -67,7 +85,7 @@ class Adresse:
             nb_item=nb_item,
             pref_str=pref_str,
             elems=elems,
-            type=self.type,
+            type="X-ABLABEL:" + self.type,
         )
         return res.encode(encoding="utf-8") + b"\n"
 
@@ -79,33 +97,44 @@ class Email:
     type: str = ""
     prefered: bool = False
 
+    def __eq__(self, value: "Adresse") -> bool:
+        res = (
+            self.id == value.id
+            and self.email.strip() == value.email.strip()
+            and self.type.strip() == value.type.strip()
+            and self.prefered == self.prefered
+        )
+        return res
+
     @classmethod
     def getFormat(cls) -> str:
-        fmt = "SOURCE:email:{mid}\nitem{nb_item}.{pref_str};TYPE=INTERNET:{email}\nitem{nb_item}.X-ABLABEL:{type}"
+        fmt = "SOURCE:email:{mid}\nitem{nb_item}.EMAIL{pref_str}TYPE=INTERNET:{email}\nitem{nb_item}.{type}"
         return fmt
 
     @classmethod
     def fromVcard(cls, data: bytes) -> "Email":
-        res = parse(cls.getFormat(), data.decode(encoding="utf-8"))
+        s = data.decode(encoding="utf-8").strip()
+        res = parse(cls.getFormat(), s)
+
         ret = cls(
-            id=res["mid"],
+            id=int(res["mid"]),
             email=res["email"],
-            type=res["type"],
-            prefered=res["pref_str"] != "",
+            type=res["type"].split("X-ABLABEL:")[1],
+            prefered=res["pref_str"] != ";",
         )
         return ret
 
     def toVcard(self, nb_item: int) -> bytes:
         if self.prefered:
-            pref_str = "EMAIL;TYPE=pref"
+            pref_str = ";TYPE=pref;"
         else:
-            pref_str = "EMAIL"
+            pref_str = ";"
         res = Email.getFormat().format(
             mid=self.id,
             email=self.email,
             pref_str=pref_str,
             nb_item=nb_item,
-            type=self.type,
+            type="X-ABLABEL:" + self.type,
         )
         return res.encode(encoding="utf-8") + b"\n"
 
@@ -117,21 +146,36 @@ class Telephone:
     type: str = ""
     prefered: bool = False
 
+    def __eq__(self, value: "Adresse") -> bool:
+        res = (
+            self.id == value.id
+            and self.telephone.strip() == value.telephone.strip()
+            and self.type.strip() == value.type.strip()
+            and self.prefered == self.prefered
+        )
+        return res
+
     @classmethod
     def getFormat(cls) -> str:
-        fmt = (
-            "SOURCE:tel:{tid}\nitem{nb_item}.{pref_str}:{telephone}\nitem{nb_item}.X-ABLABEL:{type}"
-        )
+        # SOURCE:tel:42
+        # item4.TEL:0102030409
+        # item4.X-ABLabel:Customphone
+        # ==================================
+        # SOURCE:tel:53
+        # item4.TEL;type=pref:0102030409
+        # item4.X-ABLabel:Customphone
+        fmt = "SOURCE:tel:{tid}\nitem{nb_item}.{pref_str}:{telephone}\nitem{nb_item}.X-{type}"
         return fmt
 
     @classmethod
     def fromVcard(cls, data: bytes) -> "Telephone":
-        res = parse(cls.getFormat(), data.decode(encoding="utf-8"))
+        res = parse(cls.getFormat(), data.decode(encoding="utf-8").strip())
+
         ret = cls(
-            id=res["tid"],
+            id=int(res["tid"]),
             telephone=res["telephone"],
-            type=res["type"],
-            prefered=res["pref_str"] != "",
+            type=res["type"].split("ABLabel:")[1],
+            prefered=res["pref_str"] != "TEL",
         )
         return ret
 
@@ -145,7 +189,7 @@ class Telephone:
             nb_item=nb_item,
             telephone=self.telephone,
             pref_str=pref_str,
-            type=self.type,
+            type="ABLabel:" + self.type,
         )
         return res.encode(encoding="utf-8") + b"\n"
 
@@ -336,7 +380,6 @@ contact_test = Contact(
             region="",
             code_postal="75015",
             pays="France",
-            telephone="",
             type="type1",
             prefered=True,
         ),
@@ -349,7 +392,6 @@ contact_test = Contact(
             region="",
             code_postal="75008",
             pays="France",
-            telephone="",
             type="type2",
             prefered=False,
         ),
