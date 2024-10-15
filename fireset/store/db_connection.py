@@ -93,7 +93,7 @@ def contact_from_db(db_contact: DbContact) -> Contact:
         notes = db_contact.notes
 
     if db_contact.date_naissance is None:
-        date_naissance = date(1, 1, 1)
+        date_naissance = date(1800, 1, 1)
     else:
         date_naissance = db_contact.date_naissance
 
@@ -107,6 +107,11 @@ def contact_from_db(db_contact: DbContact) -> Contact:
     else:
         linkedin_profile = db_contact.linkedin_profile
 
+    if db_contact.nom_de_naissance is None:
+        nom_de_naissance = ""
+    else:
+        nom_de_naissance = db_contact.nom_de_naissance
+
     contact = Contact(
         id=db_contact.id,
         organisation=organisation,
@@ -115,7 +120,7 @@ def contact_from_db(db_contact: DbContact) -> Contact:
         prenom=db_contact.prenom,
         website=website,
         date_naissance=date_naissance,
-        nom_de_naissance=db_contact.nom_de_naissance,
+        nom_de_naissance=nom_de_naissance,
         civilite=db_contact.civilite,
         linkedin_profil=linkedin_profile,
         notes=notes,

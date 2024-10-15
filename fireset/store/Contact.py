@@ -286,7 +286,7 @@ class Contact:
             nom="",
             prenom="",
             website="",
-            date_naissance=datetime.now(),
+            date_naissance=date(1800, 1, 1),
             nom_de_naissance="",
             civilite="",
             linkedin_profil="",
