@@ -62,7 +62,7 @@ if settings.logfire_token != "":
 
 if settings.pushover_app_token != "":
     pushover_handler = LogPushoverHandler(
-        token=settings.pushover_app_token, user=settings.pushover_user_key
+        token=settings.pushover_app_token, user=settings.pushover_user_key, priority=logging.ERROR
     )
     logger.addHandler(pushover_handler)
 
