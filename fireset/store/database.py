@@ -1,5 +1,6 @@
 import typing as T
 import logging
+from uuid import UUID
 
 from . import Store
 from .index import MemoryIndex
@@ -21,9 +22,9 @@ class DatabaseStore(Store):
             ctag: Possible ctag to iterate for
         Returns: iterator over (name, content_type, etag) tuples
         """
-        for vid in list_vcard_ids():
-            name = f"{vid}"
-            yield (name, "text/vcard", name)
+        for etag in list_vcard_ids():
+            name = f"{etag}.vcf"
+            yield (name, "text/vcard", etag)
 
     def _get_raw(self, name: str, etag: T.Optional[str] = None) -> T.Iterable[bytes]:
         """Get the raw contents of an object.
@@ -33,7 +34,8 @@ class DatabaseStore(Store):
             etag: Optional etag to return
         Returns: raw contents
         """
-        vcard = get_db_vcard_by_etag(name)
+        etag = UUID(name[:-4])
+        vcard = get_db_vcard_by_etag(etag)
         data = vcard.toVcard()
         return [data]
 
@@ -64,6 +66,7 @@ class DatabaseStore(Store):
             DuplicateUidError: when the uid already exists
         Returns: (name, etag)
         """
+        logger.info(f"{name}: {data}")
         if content_type == "text/vcard":
             vcard = get_db_vcard_by_etag(name)
             logger.debug(f"{vcard.nom}")

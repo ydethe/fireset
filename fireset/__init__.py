@@ -37,6 +37,8 @@ class Settings(BaseSettings):
     phantombuster_key: str
     phantombuster_listid: int
     loglevel: str = "info"
+    pushover_app_token: str
+    pushover_user_key: str
 
     directory: str = "data"
     paranoid: bool = False

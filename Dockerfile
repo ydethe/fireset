@@ -27,6 +27,12 @@ ENV LOGFIRE_TOKEN=$LOGFIRE_TOKEN
 ARG LOGLEVEL
 ENV LOGLEVEL=$LOGLEVEL
 
+ARG PUSHOVER_APP_TOKEN
+ENV PUSHOVER_APP_TOKEN=$PUSHOVER_APP_TOKEN
+
+ARG PUSHOVER_USER_KEY
+ENV PUSHOVER_USER_KEY=$PUSHOVER_USER_KEY
+
 RUN apt-get update && \
     apt-get -y install --no-install-recommends libpq-dev gcc python3-dev python3-venv python3-pip && \
     apt-get clean && \

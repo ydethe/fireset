@@ -12,6 +12,8 @@ services:
       - PHANTOMBUSTER_LISTID=$PHANTOMBUSTER_LISTID
       - LOGFIRE_TOKEN=$LOGFIRE_TOKEN
       - LOGLEVEL=$LOGLEVEL
+      - PUSHOVER_APP_TOKEN=$PUSHOVER_APP_TOKEN
+      - PUSHOVER_USER_KEY=$PUSHOVER_USER_KEY
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.$COMPOSE_PROJECT_NAME.rule=Host(`$HOST`)"
