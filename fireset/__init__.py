@@ -25,6 +25,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import AnyUrl
 import logfire
 from rich.logging import RichHandler
+from .LogPushoverHandler import LogPushoverHandler
 
 
 class Settings(BaseSettings):
@@ -58,6 +59,12 @@ logger.setLevel(settings.loglevel.upper())
 if settings.logfire_token != "":
     logfire.configure(token=settings.logfire_token)
     logger.addHandler(logfire.LogfireLoggingHandler())
+
+if settings.pushover_app_token != "":
+    pushover_handler = LogPushoverHandler(
+        token=settings.pushover_app_token, user=settings.pushover_user_key
+    )
+    logger.addHandler(pushover_handler)
 
 handler = RichHandler()
 logger.addHandler(handler)

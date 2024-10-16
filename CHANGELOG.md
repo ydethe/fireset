@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
-- Added pushover ([4624582](https://github.com/ydethe/fireset/commit/4624582b9299eadd00da3cee7f8d494f77d8572f) by Yann de The).
+- Added pushover ([2ddff04](https://github.com/ydethe/fireset/commit/2ddff0465c8184a77853ba57144e961408529811) by Yann de The).
 - Added hypothesis based test ([1f5a4e3](https://github.com/ydethe/fireset/commit/1f5a4e3b942b024a210fdebf3ebaa4075303b6e3) by Yann de The).
 - Added unit tests ([cc2e401](https://github.com/ydethe/fireset/commit/cc2e401578e9e798122250deab82f008111dda41) by Yann de The).
 - Added typer ([ab9bb36](https://github.com/ydethe/fireset/commit/ab9bb36cfc05cf2e501d566ab46ecd37574acb85) by Yann de The).

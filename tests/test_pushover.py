@@ -1,8 +1,11 @@
-from fireset.pushover import send_message
+from datetime import datetime
+
+from fireset import logger
 
 
 def test_pushover():
-    send_message("Hello poney")
+    dt = datetime.now()
+    logger.info(f"Hello poney {dt:%H:%M}")
 
 
 if __name__ == "__main__":
