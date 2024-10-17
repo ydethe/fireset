@@ -22,7 +22,7 @@
 from . import logger
 
 
-def runserver():
+def main():
     logger.info("Running server...")
 
     from .web import main_web_run
@@ -31,7 +31,7 @@ def runserver():
 
 
 if __name__ == "__main__":
-    runserver()
+    main()
 
     # from aiohttp import web
 
@@ -43,4 +43,9 @@ if __name__ == "__main__":
 
     # app = web.Application()
     # app.add_routes(routes)
-    # web.run_app(app, port=3665, access_log=logger)
+    # web.run_app(
+    #     app,
+    #     port=3665,
+    #     access_log=logger,
+    #     access_log_format='%{X-Real-Ip}i %t "%r" %s %b "%{Referer}i" "%{User-Agent}i"',
+    # )

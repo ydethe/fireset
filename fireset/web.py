@@ -1225,4 +1225,9 @@ async def main_web_build_app():
 
 def main_web_run():
     app = main_web_build_app()
-    web.run_app(app=app, host="localhost", port=3665, access_log=logger)
+    web.run_app(
+        app=app,
+        port=3665,
+        access_log=logger,
+        access_log_format='%{X-Real-Ip}i %t "%r" %s %b "%{Referer}i" "%{User-Agent}i"',
+    )
