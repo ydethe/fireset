@@ -1,4 +1,4 @@
-# Xandikos
+# Fireset
 # Copyright (C) 2016-2017 Jelmer Vernooĳ <jelmer@jelmer.uk>, et al.
 #
 # This program is free software; you can redistribute it and/or
@@ -35,7 +35,7 @@ from .icalendar import apply_time_range_vevent, as_tz_aware_ts, expand_calendar_
 
 ET = webdav.ET
 
-PRODID = "-//Jelmer Vernooĳ//Xandikos//EN"
+PRODID = "-//Yann de The//fireset//EN"
 WELLKNOWN_CALDAV_PATH = "/.well-known/caldav"
 EXTENDED_MKCOL_FEATURE = "extended-mkcol"
 

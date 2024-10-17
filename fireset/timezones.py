@@ -1,4 +1,4 @@
-# Xandikos
+# Fireset
 # Copyright (C) 2016-2017 Jelmer Vernooĳ <jelmer@jelmer.uk>, et al.
 #
 # This program is free software; you can redistribute it and/or
@@ -33,7 +33,7 @@ class TimezoneServiceSetProperty(webdav.Property):
 
     name = "{DAV:}timezone-service-set"
     # Should be set on CalDAV calendar home collection resources,
-    # but Xandikos doesn't have a separate resource type for those.
+    # but Fireset doesn't have a separate resource type for those.
     resource_type = webdav.COLLECTION_RESOURCE_TYPE
     in_allprops = False
     live = True

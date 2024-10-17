@@ -1,4 +1,4 @@
-# Xandikos
+# Fireset
 # Copyright (C) 2016-2017 Jelmer Vernooĳ <jelmer@jelmer.uk>, et al.
 #
 # This program is free software; you can redistribute it and/or
@@ -29,7 +29,6 @@ import collections
 import fnmatch
 import functools
 import logging
-import os
 import posixpath
 import urllib.parse
 from collections.abc import AsyncIterable, Iterable, Iterator, Sequence
@@ -1478,8 +1477,6 @@ def _get_resources_by_hrefs(backend, environ, hrefs) -> Iterator[tuple[str, Opti
 
 def _send_xml_response(status, et, out_encoding):
     body_type = f'text/xml; charset="{out_encoding}"'
-    if os.environ.get("XANDIKOS_DUMP_DAV_XML"):
-        print("OUT: " + ET.tostring(et).decode("utf-8"))
     body = ET.tostringlist(et, encoding=out_encoding)
     return Response(
         status=status,
@@ -1590,8 +1587,6 @@ async def _readXmlBody(request, expected_tag: Optional[str] = None, strict: bool
     if strict and base_content_type not in ("text/xml", "application/xml"):
         raise UnsupportedMediaType(content_type)
     body = b"".join(await _readBody(request))
-    if os.environ.get("XANDIKOS_DUMP_DAV_XML"):
-        print("IN: " + body.decode("utf-8"))
     try:
         et = xmlparse(body)
     except ET.ParseError as exc:

@@ -1,5 +1,5 @@
 #
-# Xandikos
+# Fireset
 # Copyright (C) 2016-2017 Jelmer Vernooĳ <jelmer@jelmer.uk>, et al.
 #
 # This program is free software; you can redistribute it and/or
@@ -56,8 +56,11 @@ settings = Settings()
 logger = logging.getLogger("fireset_logger")
 logger.setLevel(settings.loglevel.upper())
 
+handler = RichHandler()
+logger.addHandler(handler)
+
 if settings.logfire_token != "":
-    logfire.configure(token=settings.logfire_token)
+    logfire.configure(token=settings.logfire_token, console=False)
     logger.addHandler(logfire.LogfireLoggingHandler())
 
 if settings.pushover_app_token != "":
@@ -65,6 +68,3 @@ if settings.pushover_app_token != "":
         token=settings.pushover_app_token, user=settings.pushover_user_key, priority=logging.ERROR
     )
     logger.addHandler(pushover_handler)
-
-handler = RichHandler()
-logger.addHandler(handler)

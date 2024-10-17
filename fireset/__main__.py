@@ -1,4 +1,4 @@
-# Xandikos
+# Fireset
 # Copyright (C) 2016-2018 Jelmer Vernooĳ <jelmer@jelmer.uk>, et al.
 #
 # This program is free software; you can redistribute it and/or
@@ -17,31 +17,30 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA  02110-1301, USA.
 
-"""Xandikos command-line handling."""
+"""Fireset command-line handling."""
 
-import asyncio
-
-# from typing_extensions import Annotated
+from . import logger
 
 
-def runserver(
-    # directory: Annotated[str, typer.Option(help="Directory that stores the data")] = "data",
-    # paranoid: Annotated[bool, typer.Option(help="Paranoid mode")] = False,
-    # index_threshold: Annotated[int | None, typer.Option(help="Index threshold")] = None,
-    # current_user_principal: Annotated[
-    #     str, typer.Option(help="Name of the principal user")
-    # ] = "user",
-    # autocreate: Annotated[bool, typer.Option(help="Create directory if it does not exist")] = True,
-    # defaults: Annotated[bool, typer.Option(help="Fill data with defaults")] = True,
-    # strict: Annotated[bool, typer.Option(help="Strict mode")] = False,
-    # route_prefix: Annotated[str, typer.Option(help="Route prefix")] = "/",
-    # listen_address: Annotated[str, typer.Option(help="Address to listen on")] = "0.0.0.0",
-    # port: Annotated[int, typer.Option(help="Port to listen on")] = 8000,
-):
+def runserver():
+    logger.info("Running server...")
+
     from .web import main_web_run
 
-    return asyncio.run(main_web_run())
+    return main_web_run()
 
 
 if __name__ == "__main__":
     runserver()
+
+    # from aiohttp import web
+
+    # routes = web.RouteTableDef()
+
+    # @routes.get("/")
+    # async def hello(request):
+    #     return web.Response(text="Hello, world")
+
+    # app = web.Application()
+    # app.add_routes(routes)
+    # web.run_app(app, port=3665, access_log=logger)

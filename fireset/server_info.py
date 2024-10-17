@@ -1,4 +1,4 @@
-# Xandikos
+# Fireset
 # Copyright (C) 2017 Jelmer Vernooĳ <jelmer@jelmer.uk>, et al.
 #
 # This program is free software; you can redistribute it and/or
@@ -61,7 +61,7 @@ class ServerInfo:
         el = ET.Element("{DAV:}server-info")
         el.set("token", self.token)
         server_el = ET.SubElement(el, "server-instance-info")
-        ET.SubElement(server_el, "name").text = "Xandikos"
+        ET.SubElement(server_el, "name").text = "Fireset"
         ET.SubElement(server_el, "version").text = version_string
         features_el = ET.SubElement(el, "features")
         for feature in self._features:

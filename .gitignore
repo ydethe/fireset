@@ -4,6 +4,7 @@ test_results.xml
 tests/vcards
 tests/generated.vcf
 data
+requirements.txt
 
 *.db
 __pypackages__

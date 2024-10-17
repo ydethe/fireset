@@ -1,4 +1,4 @@
-# Xandikos
+# Fireset
 # Copyright (C) 2016-2017 Jelmer Vernooĳ <jelmer@jelmer.uk>, et al.
 #
 # This program is free software; you can redistribute it and/or
@@ -75,8 +75,7 @@ from .store import (
 )
 
 from .icalendar import CalendarFilter, ICalendarFile
-from .store.git import TreeGitStore
-from .store.database import DatabaseStore
+from .store.git import TreeGitStore, GitStore
 from .vcard import VCardFile
 
 try:
@@ -934,14 +933,14 @@ class PrincipalCollection(Collection, Principal):
 
 @functools.lru_cache(maxsize=STORE_CACHE_SIZE)
 def open_store_from_path(path: str, **kwargs):
-    # store = GitStore.open_from_path(path, **kwargs)
-    store = DatabaseStore.open_from_path(path, **kwargs)
+    store = GitStore.open_from_path(path, **kwargs)
+    # store = DatabaseStore.open_from_path(path, **kwargs)
     store.load_extra_file_handler(ICalendarFile)
     store.load_extra_file_handler(VCardFile)
     return store
 
 
-class XandikosBackend(webdav.Backend):
+class FiresetBackend(webdav.Backend):
     def __init__(
         self, path, *, paranoid: bool = False, index_threshold: Optional[int] = None
     ) -> None:
@@ -1021,8 +1020,8 @@ class XandikosBackend(webdav.Backend):
                 return None
 
 
-class XandikosApp(webdav.WebDAVApp):
-    """A wsgi App that provides a Xandikos web server."""
+class FiresetApp(webdav.WebDAVApp):
+    """A wsgi App that provides a Fireset web server."""
 
     def __init__(self, backend, current_user_principal, strict=True) -> None:
         super().__init__(backend, strict=strict)
@@ -1173,7 +1172,7 @@ async def main_web_build_app():
     if not settings.current_user_principal.startswith("/"):
         current_user_principal = "/" + settings.current_user_principal
 
-    backend = XandikosBackend(
+    backend = FiresetBackend(
         os.path.abspath(settings.directory),
         paranoid=settings.paranoid,
         index_threshold=settings.index_threshold,
@@ -1196,20 +1195,18 @@ async def main_web_build_app():
             current_user_principal,
         )
 
-    main_app = XandikosApp(
+    main_app = FiresetApp(
         backend,
         current_user_principal=current_user_principal,
         strict=settings.strict,
     )
 
-    async def xandikos_handler(request):
+    async def fireset_handler(request):
         return await main_app.aiohttp_handler(request, "/")
 
     from aiohttp import web
 
     app = web.Application()
-
-    logger.info(f"Added auth for user '{settings.fireset_user}'")
 
     app.middlewares.append(
         basic_auth_middleware(
@@ -1221,11 +1218,11 @@ async def main_web_build_app():
     for path in WELLKNOWN_DAV_PATHS:
         app.router.add_route("*", path, RedirectDavHandler("/").__call__)
 
-    app.router.add_route("*", "/{path_info:.*}", xandikos_handler)
+    app.router.add_route("*", "/{path_info:.*}", fireset_handler)
 
     return app
 
 
 def main_web_run():
     app = main_web_build_app()
-    web.run_app(app=app, host="0.0.0.0", port=3665)
+    web.run_app(app=app, host="localhost", port=3665, access_log=logger)

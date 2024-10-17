@@ -39,9 +39,11 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists
 
 WORKDIR /code
-COPY dist/*.whl /code
+COPY requirements.txt /code
 RUN python3 -m venv /code/venv && \
-    /code/venv/bin/python -m pip install /code/*.whl
+    /code/venv/bin/python -m pip install -r requirements.txt
+COPY dist/*.whl /code
+RUN /code/venv/bin/python -m pip install /code/*.whl
 VOLUME /code/data
 EXPOSE 3665
 ENTRYPOINT ["/code/venv/bin/python", "-m", "fireset"]
