@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Removed
 
+- Removed all store except DatabaseStore ([56b68c2](https://github.com/ydethe/fireset/commit/56b68c224c455aced1271feff606e51f03861ea2) by Yann de The).
 - Removed support files ([3e53b91](https://github.com/ydethe/fireset/commit/3e53b91d5e96c2c0d8eab7876416b08300842f99) by Yann de The).
 
 <!-- insertion marker -->

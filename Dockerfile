@@ -33,6 +33,9 @@ ENV PUSHOVER_APP_TOKEN=$PUSHOVER_APP_TOKEN
 ARG PUSHOVER_USER_KEY
 ENV PUSHOVER_USER_KEY=$PUSHOVER_USER_KEY
 
+ARG SENTRY_DSN
+ENV SENTRY_DSN=$SENTRY_DSN
+
 RUN apt-get update && \
     apt-get -y install --no-install-recommends libpq-dev gcc python3-dev python3-venv python3-pip && \
     apt-get clean && \

@@ -21,9 +21,11 @@
 """CalDAV/CardDAV server."""
 
 import logging
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import AnyUrl
 import logfire
+import sentry_sdk
 from rich.logging import RichHandler
 from .LogPushoverHandler import LogPushoverHandler
 
@@ -48,6 +50,7 @@ class Settings(BaseSettings):
     autocreate: bool = True
     defaults: bool = True
     strict: bool = False
+    sentry_dsn: str = ""
 
 
 settings = Settings()
@@ -68,3 +71,15 @@ if settings.pushover_app_token != "":
         token=settings.pushover_app_token, user=settings.pushover_user_key, priority=logging.ERROR
     )
     logger.addHandler(pushover_handler)
+
+if settings.sentry_dsn != "":
+    sentry_sdk.init(
+        dsn=settings.sentry_dsn,
+        # Set traces_sample_rate to 1.0 to capture 100%
+        # of transactions for tracing.
+        traces_sample_rate=1.0,
+        # Set profiles_sample_rate to 1.0 to profile 100%
+        # of sampled transactions.
+        # We recommend adjusting this value in production.
+        profiles_sample_rate=1.0,
+    )

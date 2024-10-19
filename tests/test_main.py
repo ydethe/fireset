@@ -36,7 +36,7 @@ class MyAppTestCase(AioHTTPTestCase):
 
     async def test_get_vcard(self):
         async with self.client.get(
-            # "user/contacts/addressbook/fc652773-d10a-4d75-b040-12a6903fc9f2"
+            # "user/contacts/addressbook/fc652773-d10a-4d75-b040-12a6903fc9f2.vcf"
             "user/contacts/addressbook/0C717D78-DBD7-44AA-8A5F-D300EF686AC6.vcf"
         ) as resp:
             self.assertEqual(resp.status, 200)

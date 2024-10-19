@@ -16,6 +16,7 @@ services:
       - LOGLEVEL=$LOGLEVEL
       - PUSHOVER_APP_TOKEN=$PUSHOVER_APP_TOKEN
       - PUSHOVER_USER_KEY=$PUSHOVER_USER_KEY
+      - SENTRY_DSN=$SENTRY_DSN
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.$COMPOSE_PROJECT_NAME.rule=Host(`$HOST`)"
