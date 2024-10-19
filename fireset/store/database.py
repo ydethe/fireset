@@ -1,16 +1,160 @@
 import typing as T
 import logging
 from uuid import UUID
+import mimetypes
+from collections.abc import Iterator
+from typing import Optional
 
-from . import Store
-from .index import MemoryIndex
 from .db_connection import get_db_vcard_by_etag, list_vcard_ids
-
+from .index import MemoryIndex, AutoIndexManager
+from . import File, Filter, InvalidFileContents, open_by_extension, open_by_content_type
 
 logger = logging.getLogger("fireset_logger")
 
 
-class DatabaseStore(Store):
+STORE_TYPE_ADDRESSBOOK = "addressbook"
+STORE_TYPE_CALENDAR = "calendar"
+STORE_TYPE_PRINCIPAL = "principal"
+STORE_TYPE_SCHEDULE_INBOX = "schedule-inbox"
+STORE_TYPE_SCHEDULE_OUTBOX = "schedule-outbox"
+STORE_TYPE_SUBSCRIPTION = "subscription"
+STORE_TYPE_OTHER = "other"
+VALID_STORE_TYPES = (
+    STORE_TYPE_ADDRESSBOOK,
+    STORE_TYPE_CALENDAR,
+    STORE_TYPE_PRINCIPAL,
+    STORE_TYPE_SCHEDULE_INBOX,
+    STORE_TYPE_SCHEDULE_OUTBOX,
+    STORE_TYPE_SUBSCRIPTION,
+    STORE_TYPE_OTHER,
+)
+
+MIMETYPES = mimetypes.MimeTypes()
+MIMETYPES.add_type("text/calendar", ".ics")  # type: ignore
+MIMETYPES.add_type("text/vcard", ".vcf")  # type: ignore
+
+DEFAULT_MIME_TYPE = "application/octet-stream"
+
+
+class DatabaseStore(object):
+    """A object store."""
+
+    extra_file_handlers: dict[str, type[File]]
+
+    def __init__(
+        self,
+        index,
+        *,
+        double_check_indexes: bool = False,
+        index_threshold: Optional[int] = None,
+    ) -> None:
+        self.extra_file_handlers = {}
+        self.index = index
+        self.index_manager = AutoIndexManager(self.index, threshold=index_threshold)
+        self.double_check_indexes = double_check_indexes
+
+    def load_extra_file_handler(self, file_handler: type[File]) -> None:
+        self.extra_file_handlers[file_handler.content_type] = file_handler
+
+    def iter_with_filter(self, filter: Filter) -> Iterator[tuple[str, File, str]]:
+        """Iterate over all items in the store that match a particular filter.
+
+        Args:
+          filter: Filter to apply
+        Returns: iterator over (name, file, etag) tuples
+        """
+        if self.index_manager is not None:
+            try:
+                necessary_keys = filter.index_keys()
+            except NotImplementedError:
+                pass
+            else:
+                present_keys = self.index_manager.find_present_keys(necessary_keys)
+                if present_keys is not None:
+                    return self._iter_with_filter_indexes(filter, present_keys)
+        return self._iter_with_filter_naive(filter)
+
+    def _iter_with_filter_naive(self, filter: Filter) -> Iterator[tuple[str, File, str]]:
+        for name, content_type, etag in self.iter_with_etag():
+            if not filter.content_type == content_type:
+                continue
+            file = self.get_file(name, content_type, etag)
+            try:
+                if filter.check(name, file):
+                    yield (name, file, etag)
+            except InvalidFileContents:
+                logger.warning("Unable to parse file %s, skipping.", name)
+
+    def _iter_with_filter_indexes(self, filter: Filter, keys) -> Iterator[tuple[str, File, str]]:
+        for name, content_type, etag in self.iter_with_etag():
+            if not filter.content_type == content_type:
+                continue
+            try:
+                file_values = self.index.get_values(name, etag, keys)
+            except KeyError:
+                # Index values not yet present for this file.
+                file = self.get_file(name, content_type, etag)
+                try:
+                    file_values = file.get_indexes(self.index.available_keys())
+                except InvalidFileContents:
+                    logger.warning("Unable to parse file %s for indexing, skipping.", name)
+                    file_values = {}
+                self.index.add_values(name, etag, file_values)
+                if filter.check_from_indexes(name, file_values):
+                    yield (name, file, etag)
+            else:
+                if file_values is None:
+                    continue
+                file = self.get_file(name, content_type, etag)
+                if self.double_check_indexes:
+                    if file_values != file.get_indexes(keys):
+                        raise AssertionError(f"{file_values!r} != {file.get_indexes(keys)!r}")
+                    if filter.check_from_indexes(name, file_values) != filter.check(name, file):
+                        raise AssertionError(
+                            f"index based filter {filter} "
+                            f"(values: {file_values}) not matching "
+                            "real file filter"
+                        )
+                if filter.check_from_indexes(name, file_values):
+                    file = self.get_file(name, content_type, etag)
+                    yield (name, file, etag)
+
+    def get_file(
+        self,
+        name: str,
+        content_type: Optional[str] = None,
+        etag: Optional[str] = None,
+    ) -> File:
+        """Get the contents of an object.
+
+        Returns: A File object
+        """
+        if content_type is None:
+            return open_by_extension(
+                self._get_raw(name, etag),
+                name,
+                extra_file_handlers=self.extra_file_handlers,
+            )
+        else:
+            return open_by_content_type(
+                self._get_raw(name, etag),
+                content_type,
+                extra_file_handlers=self.extra_file_handlers,
+            )
+
+    def get_type(self) -> str:
+        """Get type of this store.
+
+        Returns: one of VALID_STORE_TYPES
+        """
+        ret = STORE_TYPE_OTHER
+        for name, content_type, etag in self.iter_with_etag():
+            if content_type == "text/calendar":
+                ret = STORE_TYPE_CALENDAR
+            elif content_type == "text/vcard":
+                ret = STORE_TYPE_ADDRESSBOOK
+        return ret
+
     def iter_with_etag(self, ctag: T.Optional[str] = None) -> T.Iterator[tuple[str, str, str]]:
         """Iterate over all items in the store with etag.
 

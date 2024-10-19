@@ -19,3 +19,5 @@ This will create the doc in htmldoc
 
 A few guidelines for updating the doc
 https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html
+
+https://robyn.tech/documentation/api_reference

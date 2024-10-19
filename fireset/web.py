@@ -68,14 +68,12 @@ from .store import (
     InvalidCTag,
     InvalidFileContents,
     LockedError,
-    NoSuchItem,
     NotStoreError,
     OutOfSpaceError,
-    Store,
 )
 
 from .icalendar import CalendarFilter, ICalendarFile
-from .store.git import TreeGitStore, GitStore
+from .store.database import DatabaseStore
 from .vcard import VCardFile
 
 try:
@@ -155,7 +153,7 @@ class ObjectResource(webdav.Resource):
 
     def __init__(
         self,
-        store: Store,
+        store: DatabaseStore,
         name: str,
         content_type: str,
         etag: str,
@@ -360,12 +358,7 @@ class StoreBasedCollection:
 
     def delete_member(self, name, etag=None):
         assert name != ""
-        try:
-            self.store.delete_one(name, etag=extract_strong_etag(etag))
-        except NoSuchItem:
-            # TODO: Properly allow removing subcollections
-            # self.get_subcollection(name).destroy()
-            shutil.rmtree(os.path.join(self.store.path, name))
+        self.store.delete_one(name, etag=extract_strong_etag(etag))
 
     async def create_member(
         self, name: str, contents: Iterable[bytes], content_type: str
@@ -933,8 +926,7 @@ class PrincipalCollection(Collection, Principal):
 
 @functools.lru_cache(maxsize=STORE_CACHE_SIZE)
 def open_store_from_path(path: str, **kwargs):
-    store = GitStore.open_from_path(path, **kwargs)
-    # store = DatabaseStore.open_from_path(path, **kwargs)
+    store = DatabaseStore.open_from_path(path, **kwargs)
     store.load_extra_file_handler(ICalendarFile)
     store.load_extra_file_handler(VCardFile)
     return store
@@ -948,6 +940,7 @@ class FiresetBackend(webdav.Backend):
         self._user_principals: set[str] = set()
         self.paranoid = paranoid
         self.index_threshold = index_threshold
+        self.store = DatabaseStore.open_from_path(None)
 
     def _map_to_file_path(self, relpath):
         return os.path.join(self.path, relpath.lstrip("/"))
@@ -956,8 +949,7 @@ class FiresetBackend(webdav.Backend):
         self._user_principals.add(posixpath.normpath(path))
 
     def create_collection(self, relpath):
-        p = self._map_to_file_path(relpath)
-        return Collection(self, relpath, TreeGitStore.create(p))
+        return Collection(self, relpath, self.store)
 
     def create_principal(self, relpath, create_defaults=False):
         principal = PrincipalBare.create(self, relpath)
@@ -1129,33 +1121,15 @@ def create_principal_defaults(backend, principal):
     calendar_path = posixpath.join(
         principal.relpath, principal.get_calendar_home_set()[0], "calendar"
     )
-    try:
-        resource = backend.create_collection(calendar_path)
-    except FileExistsError:
-        pass
-    else:
-        resource.store.set_type(STORE_TYPE_CALENDAR)
-        logger.info("Create calendar in %s.", resource.store.path)
+    _ = backend.create_collection(calendar_path)
     addressbook_path = posixpath.join(
         principal.relpath,
         principal.get_addressbook_home_set()[0],
         "addressbook",
     )
-    try:
-        resource = backend.create_collection(addressbook_path)
-    except FileExistsError:
-        pass
-    else:
-        resource.store.set_type(STORE_TYPE_ADDRESSBOOK)
-        logger.info("Create addressbook in %s.", resource.store.path)
+    _ = backend.create_collection(addressbook_path)
     calendar_path = posixpath.join(principal.relpath, principal.get_schedule_inbox_url())
-    try:
-        resource = backend.create_collection(calendar_path)
-    except FileExistsError:
-        pass
-    else:
-        resource.store.set_type(STORE_TYPE_SCHEDULE_INBOX)
-        logger.info("Create inbox in %s.", resource.store.path)
+    _ = backend.create_collection(calendar_path)
 
 
 class RedirectDavHandler:

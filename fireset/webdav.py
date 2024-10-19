@@ -1601,10 +1601,10 @@ class Method:
     def name(self):
         return type(self).__name__.upper()[:-6]
 
-    async def handle(self, request, environ, app):
+    async def handle(self, request: Resource, environ: dict, app: "WebDAVApp"):
         raise NotImplementedError(self.handle)
 
-    def allow(self, request):
+    def allow(self, request: Resource):
         """Is this method allowed considering the specified request?"""
         return True
 
@@ -1872,7 +1872,7 @@ class OptionsMethod(Method):
 
 
 class HeadMethod(Method):
-    async def handle(self, request, environ, app):
+    async def handle(self, request: Resource, environ: dict, app: "WebDAVApp"):
         return await _do_get(request, environ, app, send_body=False)
 
 
@@ -1885,6 +1885,7 @@ async def _do_get(request: web.Request, environ: dict, app: "WebDAVApp", send_bo
     unused_href, unused_path, r = app._get_resource_from_environ(request, environ)
     if r is None:
         return _send_not_found(request)
+
     accept_content_types = parse_accept_header(request.headers.get("Accept", "*/*"))
     accept_content_languages = parse_accept_header(request.headers.get("Accept-Languages", "*"))
 
@@ -2037,6 +2038,7 @@ class WebDAVApp:
             do = self.methods[request.method]
         except KeyError:
             return _send_method_not_allowed(self._get_allowed_methods(request))
+
         try:
             return await do.handle(request, environ, self)
         except BadRequestError as e:

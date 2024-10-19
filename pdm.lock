@@ -5,7 +5,7 @@
 groups = ["default", "dev", "doc", "maintain", "quality", "test"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:2ffbc0f7c03fed117f03e79d2ccf9f15c85df6ec02e559004d2169155547fd55"
+content_hash = "sha256:14189af0bf183f839245a65ca9c552c4455ee33211944e8ecdcc9de0370cb5b7"
 
 [[metadata.targets]]
 requires_python = ">=3.10,<3.13"
@@ -992,7 +992,8 @@ files = [
 
 [[package]]
 name = "logfire"
-version = "1.0.1"
+version = "1.1.0"
+requires_python = ">=3.8"
 summary = "The best Python observability tool! 🪵🔥"
 groups = ["default"]
 dependencies = [
@@ -1006,8 +1007,24 @@ dependencies = [
     "typing-extensions>=4.1.0",
 ]
 files = [
-    {file = "logfire-1.0.1-py2.py3-none-any.whl", hash = "sha256:2da95d144337d5ddebdd4a5311f8982d4fc585358791f5ed98aa0d7e56acb801"},
-    {file = "logfire-1.0.1.tar.gz", hash = "sha256:9a7d2b073abd82657c5b36ac058f3a79dbf3fb249424492793b70e3283b2778f"},
+    {file = "logfire-1.1.0-py3-none-any.whl", hash = "sha256:fbe88af60394b8e072b37b717dffe5bd22587a1ac72ccee86dfeb5dcc7ea616b"},
+    {file = "logfire-1.1.0.tar.gz", hash = "sha256:2cc8cfad603e63e55757fca2cfcc7492e22707c3cd1c6bbf94100c27e597ade2"},
+]
+
+[[package]]
+name = "logfire"
+version = "1.1.0"
+extras = ["aiohttp"]
+requires_python = ">=3.8"
+summary = "The best Python observability tool! 🪵🔥"
+groups = ["default"]
+dependencies = [
+    "logfire==1.1.0",
+    "opentelemetry-instrumentation-aiohttp-client>=0.42b0",
+]
+files = [
+    {file = "logfire-1.1.0-py3-none-any.whl", hash = "sha256:fbe88af60394b8e072b37b717dffe5bd22587a1ac72ccee86dfeb5dcc7ea616b"},
+    {file = "logfire-1.1.0.tar.gz", hash = "sha256:2cc8cfad603e63e55757fca2cfcc7492e22707c3cd1c6bbf94100c27e597ade2"},
 ]
 
 [[package]]
@@ -1306,6 +1323,24 @@ files = [
 ]
 
 [[package]]
+name = "opentelemetry-instrumentation-aiohttp-client"
+version = "0.48b0"
+requires_python = ">=3.8"
+summary = "OpenTelemetry aiohttp client instrumentation"
+groups = ["default"]
+dependencies = [
+    "opentelemetry-api~=1.12",
+    "opentelemetry-instrumentation==0.48b0",
+    "opentelemetry-semantic-conventions==0.48b0",
+    "opentelemetry-util-http==0.48b0",
+    "wrapt<2.0.0,>=1.0.0",
+]
+files = [
+    {file = "opentelemetry_instrumentation_aiohttp_client-0.48b0-py3-none-any.whl", hash = "sha256:142314ccc6ed4743d18adf0d0cc9ed36fc0d8cacbe0b2365ce51913cce1c3ceb"},
+    {file = "opentelemetry_instrumentation_aiohttp_client-0.48b0.tar.gz", hash = "sha256:925e7b3286d083b4b1781720e1717fc22c15696649380e29e32f75fa50fe6570"},
+]
+
+[[package]]
 name = "opentelemetry-proto"
 version = "1.27.0"
 requires_python = ">=3.8"
@@ -1348,6 +1383,17 @@ dependencies = [
 files = [
     {file = "opentelemetry_semantic_conventions-0.48b0-py3-none-any.whl", hash = "sha256:a0de9f45c413a8669788a38569c7e0a11ce6ce97861a628cca785deecdc32a1f"},
     {file = "opentelemetry_semantic_conventions-0.48b0.tar.gz", hash = "sha256:12d74983783b6878162208be57c9effcb89dc88691c64992d70bb89dc00daa1a"},
+]
+
+[[package]]
+name = "opentelemetry-util-http"
+version = "0.48b0"
+requires_python = ">=3.8"
+summary = "Web util for OpenTelemetry"
+groups = ["default"]
+files = [
+    {file = "opentelemetry_util_http-0.48b0-py3-none-any.whl", hash = "sha256:76f598af93aab50328d2a69c786beaedc8b6a7770f7a818cc307eb353debfffb"},
+    {file = "opentelemetry_util_http-0.48b0.tar.gz", hash = "sha256:60312015153580cc20f322e5cdc3d3ecad80a71743235bdb77716e742814623c"},
 ]
 
 [[package]]
@@ -2224,7 +2270,7 @@ name = "tomli"
 version = "2.0.2"
 requires_python = ">=3.8"
 summary = "A lil' TOML parser"
-groups = ["default", "doc", "maintain", "quality", "test"]
+groups = ["default", "dev", "doc", "maintain", "quality", "test"]
 files = [
     {file = "tomli-2.0.2-py3-none-any.whl", hash = "sha256:2ebe24485c53d303f690b0ec092806a085f07af5a5aa1464f3931eec36caaa38"},
     {file = "tomli-2.0.2.tar.gz", hash = "sha256:d46d457a85337051c36524bc5349dd91b1877838e2979ac5ced3e710ed8a60ed"},
@@ -2339,6 +2385,20 @@ dependencies = [
 files = [
     {file = "vobject-0.9.8-py2.py3-none-any.whl", hash = "sha256:e6d8369b84462ddacef467fa667f25ba1e5f732d28f43f36fbd0079b2f8cb3b3"},
     {file = "vobject-0.9.8.tar.gz", hash = "sha256:db00a7f4db49397155dd8a6871e8a2a0175a6eba5a654c30e910f82b29514b58"},
+]
+
+[[package]]
+name = "vulture"
+version = "2.13"
+requires_python = ">=3.8"
+summary = "Find dead code"
+groups = ["dev"]
+dependencies = [
+    "tomli>=1.1.0; python_version < \"3.11\"",
+]
+files = [
+    {file = "vulture-2.13-py2.py3-none-any.whl", hash = "sha256:34793ba60488e7cccbecdef3a7fe151656372ef94fdac9fe004c52a4000a6d44"},
+    {file = "vulture-2.13.tar.gz", hash = "sha256:78248bf58f5eaffcc2ade306141ead73f437339950f80045dce7f8b078e5a1aa"},
 ]
 
 [[package]]

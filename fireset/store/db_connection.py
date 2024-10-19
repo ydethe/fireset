@@ -135,6 +135,9 @@ def contact_from_db(db_contact: DbContact) -> Contact:
 
 
 def list_vcard_ids() -> T.Iterator[int]:
+    from .. import logger
+
+    logger.info("Calling list_vcard_ids")
     with Session(engine) as session:
         statement = select(DbContact)
 
@@ -172,6 +175,9 @@ def get_db_vcard_by_id(card_id: int) -> Contact | None:
 
 
 def get_db_vcard_by_etag(etag: UUID) -> Contact | None:
+    from .. import logger
+
+    logger.info(f"Calling get_db_vcard_by_etag with etag='{str(etag)}")
     with Session(engine) as session:
         db_contact = session.query(DbContact).filter(DbContact.etag == etag).first()
 

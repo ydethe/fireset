@@ -1,5 +1,3 @@
-import asyncio
-
 from aiohttp import BasicAuth
 from aiohttp.test_utils import AioHTTPTestCase, TestClient, TestServer
 
@@ -59,8 +57,8 @@ async def main():
 
 
 if __name__ == "__main__":
-    from fireset.__main__ import runserver
+    from fireset.__main__ import main as run_main
 
-    asyncio.run(main())
+    # asyncio.run(main())
 
-    runserver()
+    run_main()
