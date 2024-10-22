@@ -4,8 +4,8 @@ services:
     volumes:
       # - $JOHNCLOUD_ROOT/$COMPOSE_PROJECT_NAME/data:/code/data
       - /home/yann/repos/fireset/data:/code/data
-    ports:
-      - 3665:3665
+    # ports:
+    #   - 3665:3665
     environment:
       - FIRESET_USER=$FIRESET_USER
       - FIRESET_PASSWORD=$FIRESET_PASSWORD

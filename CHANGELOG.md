@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Added sentry monitoring ([66861b3](https://github.com/ydethe/fireset/commit/66861b34934cc8d67ecd3d184e13dabd2027bc72) by Yann de The).
 - Added priority filter for LogPushoverHandler ([8d21a55](https://github.com/ydethe/fireset/commit/8d21a55a909fdc5c336ce43acd5de8aaca954056) by Yann de The).
 - Added pushover ([2ddff04](https://github.com/ydethe/fireset/commit/2ddff0465c8184a77853ba57144e961408529811) by Yann de The).
 - Added hypothesis based test ([1f5a4e3](https://github.com/ydethe/fireset/commit/1f5a4e3b942b024a210fdebf3ebaa4075303b6e3) by Yann de The).

@@ -6,7 +6,7 @@ from collections.abc import Iterator
 from typing import Optional
 
 from .db_connection import get_db_vcard_by_etag, list_vcard_ids
-from .index import MemoryIndex, AutoIndexManager
+from .index import Index, MemoryIndex, AutoIndexManager
 from . import File, Filter, InvalidFileContents, open_by_extension, open_by_content_type
 
 logger = logging.getLogger("fireset_logger")
@@ -43,7 +43,7 @@ class DatabaseStore(object):
 
     def __init__(
         self,
-        index,
+        index: Index,
         *,
         double_check_indexes: bool = False,
         index_threshold: Optional[int] = None,

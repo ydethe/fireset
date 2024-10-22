@@ -347,7 +347,7 @@ class StoreBasedCollection:
         for name in self.store.subdirectories():
             yield (name, self._get_subcollection(name))
 
-    def get_member(self, name):
+    def get_member(self, name: str):
         assert name != ""
         for fname, content_type, fetag in self.store.iter_with_etag():
             if name == fname:
@@ -356,7 +356,7 @@ class StoreBasedCollection:
             return self._get_subcollection(name)
         raise KeyError(name)
 
-    def delete_member(self, name, etag=None):
+    def delete_member(self, name: str, etag=None):
         assert name != ""
         self.store.delete_one(name, etag=extract_strong_etag(etag))
 
@@ -1142,7 +1142,7 @@ class RedirectDavHandler:
         return web.HTTPFound(self._dav_root)
 
 
-async def main_web_build_app():
+async def main_web_build_app() -> web.Application:
     if not settings.current_user_principal.startswith("/"):
         current_user_principal = "/" + settings.current_user_principal
 
@@ -1177,8 +1177,6 @@ async def main_web_build_app():
 
     async def fireset_handler(request):
         return await main_app.aiohttp_handler(request, "/")
-
-    from aiohttp import web
 
     app = web.Application()
 
