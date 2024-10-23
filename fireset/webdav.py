@@ -1604,10 +1604,6 @@ class Method:
     async def handle(self, request: Resource, environ: dict, app: "WebDAVApp"):
         raise NotImplementedError(self.handle)
 
-    def allow(self, request: Resource):
-        """Is this method allowed considering the specified request?"""
-        return True
-
 
 class DeleteMethod(Method):
     async def handle(self, request, environ, app):
@@ -1634,7 +1630,7 @@ class PostMethod(Method):
         if r is None:
             return _send_not_found(request)
         if COLLECTION_RESOURCE_TYPE not in r.resource_types:
-            return _send_method_not_allowed(app._get_allowed_methods(request))
+            return _send_method_not_allowed(app._get_allowed_methods())
         content_type, params = parse_type(request.content_type)
         try:
             (name, etag) = await r.create_member(None, new_contents, content_type)
@@ -1683,7 +1679,7 @@ class PutMethod(Method):
                     description=e.description,
                 )
             except NotImplementedError:
-                return _send_method_not_allowed(app._get_allowed_methods(request))
+                return _send_method_not_allowed(app._get_allowed_methods())
             else:
                 return Response(status="204 No Content", headers=[("ETag", new_etag)])
         content_type = request.content_type
@@ -1692,7 +1688,7 @@ class PutMethod(Method):
         if r is None:
             return _send_not_found(request)
         if COLLECTION_RESOURCE_TYPE not in r.resource_types:
-            return _send_method_not_allowed(app._get_allowed_methods(request))
+            return _send_method_not_allowed(app._get_allowed_methods())
         try:
             (new_name, new_etag) = await r.create_member(name, new_contents, content_type)
         except PreconditionFailure as e:
@@ -1824,7 +1820,7 @@ class MkcolMethod(Method):
             raise UnsupportedMediaType(base_content_type)
         href, path, resource = app._get_resource_from_environ(request, environ)
         if resource is not None:
-            return _send_method_not_allowed(app._get_allowed_methods(request))
+            return _send_method_not_allowed(app._get_allowed_methods())
         try:
             resource = app.backend.create_collection(path)
         except FileNotFoundError:
@@ -1857,7 +1853,7 @@ class OptionsMethod(Method):
                 return _send_not_found(request)
             dav_features = app._get_dav_features(r)
             headers.append(("DAV", ", ".join(dav_features)))
-            allowed_methods = app._get_allowed_methods(request)
+            allowed_methods = app._get_allowed_methods()
             headers.append(("Allow", ", ".join(allowed_methods)))
 
         # RFC7231 requires that if there is no response body,
@@ -2025,19 +2021,18 @@ class WebDAVApp:
             "quota",
         ]
 
-    def _get_allowed_methods(self, request):
+    def _get_allowed_methods(self):
         """List of supported methods on this endpoint."""
         ret = []
         for name in sorted(self.methods.keys()):
-            if self.methods[name].allow(request):
-                ret.append(name)
+            ret.append(name)
         return ret
 
-    async def _handle_request(self, request: web.Request, environ: dict):
+    async def _handle_request(self, request: web.Request, environ: dict) -> Response:
         try:
             do = self.methods[request.method]
         except KeyError:
-            return _send_method_not_allowed(self._get_allowed_methods(request))
+            return _send_method_not_allowed(self._get_allowed_methods())
 
         try:
             return await do.handle(request, environ, self)

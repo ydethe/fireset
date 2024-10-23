@@ -3,7 +3,7 @@ from aiohttp import BasicAuth
 from aiohttp.test_utils import AioHTTPTestCase, TestClient, TestServer
 
 from fireset import settings
-from fireset.web import main_web_build_app
+from fireset.web import build_aiohttp_app
 
 
 class MyAppTestCase(AioHTTPTestCase):
@@ -11,7 +11,7 @@ class MyAppTestCase(AioHTTPTestCase):
         """
         Override the get_application method to return your application.
         """
-        app = await main_web_build_app()
+        app = await build_aiohttp_app()
         return app
 
     async def get_client(self, server: TestServer) -> TestClient:

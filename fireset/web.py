@@ -1142,7 +1142,7 @@ class RedirectDavHandler:
         return web.HTTPFound(self._dav_root)
 
 
-async def main_web_build_app() -> web.Application:
+async def build_fireset_app() -> FiresetApp:
     if not settings.current_user_principal.startswith("/"):
         current_user_principal = "/" + settings.current_user_principal
 
@@ -1175,6 +1175,12 @@ async def main_web_build_app() -> web.Application:
         strict=settings.strict,
     )
 
+    return main_app
+
+
+async def build_aiohttp_app() -> web.Application:
+    main_app = await build_fireset_app()
+
     async def fireset_handler(request):
         return await main_app.aiohttp_handler(request, "/")
 
@@ -1196,7 +1202,7 @@ async def main_web_build_app() -> web.Application:
 
 
 def main_web_run():
-    app = main_web_build_app()
+    app = build_aiohttp_app()
     web.run_app(
         app=app,
         port=3665,
