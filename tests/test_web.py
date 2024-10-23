@@ -26,7 +26,7 @@ import unittest
 
 from fireset import caldav
 from fireset.icalendar import ICalendarFile
-from fireset.store.git import TreeGitStore
+from fireset.store.database import DatabaseStore
 from fireset.web import CalendarCollection, FiresetBackend
 
 EXAMPLE_VCALENDAR1 = b"""\
@@ -51,7 +51,7 @@ class CalendarCollectionTests(unittest.TestCase):
         self.tempdir = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, self.tempdir)
 
-        self.store = TreeGitStore.create(os.path.join(self.tempdir, "c"))
+        self.store = DatabaseStore.create(os.path.join(self.tempdir, "c"))
         self.store.load_extra_file_handler(ICalendarFile)
         self.backend = FiresetBackend(self.tempdir)
 

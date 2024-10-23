@@ -22,17 +22,7 @@
 import unittest
 
 from fireset.vcard import VCardFile
-
-EXAMPLE_VCARD1 = b"""\
-BEGIN:VCARD
-VERSION:3.0
-EMAIL;TYPE=INTERNET:jeffrey@osafoundation.org
-EMAIL;TYPE=INTERNET:jeffery@example.org
-ORG:Open Source Applications Foundation
-FN:Jeffrey Harris
-N:Harris;Jeffrey;;;
-END:VCARD
-"""
+from fireset.testing.base import EXAMPLE_VCARD1
 
 
 class ParseVcardTests(unittest.TestCase):

@@ -23,11 +23,11 @@ from wsgiref.util import setup_testing_defaults
 from icalendar.cal import Calendar as ICalendar
 
 from fireset import caldav
-from fireset.tests import test_webdav
+from fireset.testing.base import WebTestCase
 from fireset.webdav import ET, Property, WebDAVApp
 
 
-class WebTests(test_webdav.WebTestCase):
+class WebTests(WebTestCase):
     def makeApp(self, backend):
         app = WebDAVApp(backend)
         app.register_methods([caldav.MkcalendarMethod()])

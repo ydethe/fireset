@@ -22,10 +22,8 @@
 from io import StringIO
 from unittest import TestCase
 
-import dulwich.repo
 
 from fireset.store.config import FileBasedCollectionMetadata
-from fireset.store.git import RepoCollectionMetadata
 
 
 class FileBasedCollectionMetadataTests(TestCase):
@@ -131,10 +129,3 @@ class FileMetadataTests(TestCase, MetadataTests):
     def setUp(self):
         super().setUp()
         self._config = FileBasedCollectionMetadata()
-
-
-class RepoMetadataTests(TestCase, MetadataTests):
-    def setUp(self):
-        super().setUp()
-        self._repo = dulwich.repo.MemoryRepo()
-        self._config = RepoCollectionMetadata(self._repo)

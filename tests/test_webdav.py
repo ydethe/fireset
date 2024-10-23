@@ -17,28 +17,13 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA  02110-1301, USA.
 
-import logging
 import unittest
 from io import BytesIO
 from wsgiref.util import setup_testing_defaults
 
 from fireset import webdav
 from fireset.webdav import ET, Collection, Property, Resource, WebDAVApp, href_to_path
-
-
-class WebTestCase(unittest.TestCase):
-    def setUp(self):
-        super().setUp()
-        logging.disable(logging.WARNING)
-        self.addCleanup(logging.disable, logging.NOTSET)
-
-    def makeApp(self, resources, properties):
-        class Backend:
-            get_resource = resources.get
-
-        app = WebDAVApp(Backend())
-        app.register_properties(properties)
-        return app
+from fireset.testing.base import WebTestCase
 
 
 class WebTests(WebTestCase):

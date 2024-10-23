@@ -23,7 +23,7 @@ import unittest
 from fireset.carddav import NAMESPACE, apply_filter
 from fireset.vcard import VCardFile
 from fireset.webdav import ET
-from .test_vcard import EXAMPLE_VCARD1
+from fireset.testing.base import EXAMPLE_VCARD1
 
 
 class TestApplyFilter(unittest.TestCase):
