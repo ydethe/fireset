@@ -7,8 +7,8 @@ from ldaptor.interfaces import IConnectedLDAPEntry
 from ldaptor.protocols.ldap.ldapserver import LDAPServer
 
 from sqlalchemy import Column, Integer, String, create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, declarative_base
+from sqlalchemy import Engine
 
 from twisted.internet import reactor
 from twisted.internet.protocol import ServerFactory
@@ -22,7 +22,10 @@ Base = declarative_base()
 class LDAPServerFactory(ServerFactory):
     protocol = LDAPServer
 
-    def __init__(self, db_engine):
+    def __repr__(self):
+        return f"LDAPServerFactory '{self.db_engine.url}'"
+
+    def __init__(self, db_engine: Engine):
         self.db_engine = db_engine
         self.tree = None
         self.reload_tree()
@@ -48,10 +51,13 @@ class LDAPServerFactory(ServerFactory):
                     "email": [employee.email],
                 },
             )
+            print(f"   User {employee.uid} added")
 
         db_session.close()
 
         self.tree = com_tree
+
+        print("Directory initiated with mock data")
 
 
 class Employee(Base):
