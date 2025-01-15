@@ -25,6 +25,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added auth ([317c5cd](https://github.com/ydethe/fireset/commit/317c5cdcd727450540fee924ff0e4af9b11d9954) by Yann de The).
 - Added docker compose file ([f55f6ef](https://github.com/ydethe/fireset/commit/f55f6ef184e92132b9546347f87a0225985acbfd) by Yann de The).
 
+### Fixed
+
+- Fixed tests imports ([5bb4c74](https://github.com/ydethe/fireset/commit/5bb4c74c9f063ec4abff3c55ab95a2119f3ed482) by Yann de The).
+
 ### Removed
 
 - Removed all store except DatabaseStore ([56b68c2](https://github.com/ydethe/fireset/commit/56b68c224c455aced1271feff606e51f03861ea2) by Yann de The).
