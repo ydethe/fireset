@@ -1,5 +1,7 @@
 # https://github.com/twisted/ldaptor/issues/154
 
+import sys
+
 from ldaptor.inmemory import ReadOnlyInMemoryLDAPEntry
 from ldaptor.interfaces import IConnectedLDAPEntry
 from ldaptor.protocols.ldap.ldapserver import LDAPServer
@@ -12,6 +14,7 @@ from twisted.internet import reactor
 from twisted.internet.protocol import ServerFactory
 from twisted.python.components import registerAdapter
 from twisted.python import log
+
 
 Base = declarative_base()
 
@@ -65,7 +68,7 @@ def create_db():
     """Creating a database with a table of employees and a couple of rows"""
     db_engine = create_engine("sqlite://")
     Base.metadata.bind = db_engine
-    Employee.__table__.create()
+    Employee.__table__.create(bind=db_engine)
 
     db_session = Session(db_engine)
 
@@ -92,9 +95,9 @@ def create_db():
 if __name__ == "__main__":
     engine = create_db()
 
-    log.startLogging()
+    log.startLogging(sys.stdout)
 
     registerAdapter(lambda x: x.tree, LDAPServerFactory, IConnectedLDAPEntry)
     factory = LDAPServerFactory(engine)
-    reactor.listenTCP(8080, factory)
+    reactor.listenTCP(1346, factory)
     reactor.run()
