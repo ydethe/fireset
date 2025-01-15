@@ -11,6 +11,9 @@ authors = [
 ]
 # sudo apt install libpq5
 dependencies = [
+    "ldaptor>=21.2.0",
+    "sqlalchemy>=2.0.37",
+    "twisted>=24.11.0",
 ]
 requires-python = ">=3.10,<3.13"
 readme = "README.md"
