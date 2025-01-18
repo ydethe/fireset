@@ -1,20 +1,14 @@
 # https://github.com/twisted/ldaptor/issues/154
 
-import sys
-
-from ldaptor.inmemory import ReadOnlyInMemoryLDAPEntry
-from ldaptor.interfaces import IConnectedLDAPEntry
 from ldaptor.protocols.ldap.ldapserver import LDAPServer
 
 from sqlalchemy import Column, Integer, String, create_engine
 from sqlalchemy.orm import Session, declarative_base
 from sqlalchemy import Engine
 
-from twisted.internet import reactor
 from twisted.internet.protocol import ServerFactory
-from twisted.python.components import registerAdapter
-from twisted.python import log
 
+from .database import DatabaseLDAPEntry
 
 Base = declarative_base()
 
@@ -35,7 +29,7 @@ class LDAPServerFactory(ServerFactory):
         Building LDAP tree.
         Call this method if you need to reload data from the database.
         """
-        com_tree = ReadOnlyInMemoryLDAPEntry("dc=com")
+        com_tree = DatabaseLDAPEntry("dc=com")
         example_tree = com_tree.addChild("dc=example", {})
         users_tree = example_tree.addChild("ou=users", {})
 
@@ -96,14 +90,3 @@ def create_db():
     db_session.close()
 
     return db_engine
-
-
-if __name__ == "__main__":
-    engine = create_db()
-
-    log.startLogging(sys.stdout)
-
-    registerAdapter(lambda x: x.tree, LDAPServerFactory, IConnectedLDAPEntry)
-    factory = LDAPServerFactory(engine)
-    reactor.listenTCP(1346, factory)
-    reactor.run()

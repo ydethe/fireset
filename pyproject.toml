@@ -55,7 +55,7 @@ resolution = "highest"
 source = "uv-dynamic-versioning"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/linkedin_scraper"]
+packages = ["src/fireset"]
 
 excludes = [
     ".gitignore",

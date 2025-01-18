@@ -1,38 +1,21 @@
-import sys
-
+from twisted.internet import reactor
+from twisted.internet.endpoints import clientFromString, connectProtocol, TCP4ClientEndpoint
+from twisted.internet.defer import Deferred
+from ldaptor.protocols.ldap import distinguishedname
 from ldaptor.protocols.ldap.ldapclient import LDAPClient
-from ldaptor.protocols.ldap.ldapsyntax import LDAPEntry
-from twisted.internet.defer import inlineCallbacks
-from twisted.internet.endpoints import clientFromString, connectProtocol
-from twisted.internet.task import react
-from twisted.python import log
 
 
-@inlineCallbacks
-def onConnect(clientProtocol):
-    o = LDAPEntry(clientProtocol, "ou=users,dc=example,dc=com")
-    results = yield o.search()
-    results = list(results)
-    r = results[0]
-    print(r)
-    data = "".join([result.getLDIF() for result in results])
-    log.msg(f"LDIF formatted results:\n{data}")
+dn = distinguishedname.DistinguishedName("dc=example,dc=com")
+print(dn.getText())
 
+e: TCP4ClientEndpoint = clientFromString(reactor, "tcp:host=localhost:port=1346")
+d: Deferred = connectProtocol(e, LDAPClient())
+print(d)
 
-def onError(err, reactor):
-    if reactor.running:
-        log.err(err)
-        reactor.stop()
+# e.connect(LDAPClient)
 
-
-def main(reactor):
-    log.startLogging(sys.stdout)
-    endpoint_str = "tcp:host=localhost:port=1346"
-    e = clientFromString(reactor, endpoint_str)
-    d = connectProtocol(e, LDAPClient())
-    d.addCallback(onConnect)
-    d.addErrback(onError, reactor)
-    return d
-
-
-react(main)
+# proto = d.result
+# baseEntry = ldapsyntax.LDAPEntry(client=proto, dn=dn)
+# d2 = baseEntry.search(filterText="(uid=*)")
+# results = d2.result
+# print(results)

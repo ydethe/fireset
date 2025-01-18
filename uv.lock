@@ -484,7 +484,7 @@ wheels = [
 
 [[package]]
 name = "fireset"
-version = "0.2.11.post36.dev0+b0820f6"
+version = "0.2.11.post39.dev0+d0ea1ec"
 source = { editable = "." }
 dependencies = [
     { name = "ldaptor" },
