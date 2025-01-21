@@ -1,11 +1,6 @@
 [build-system]
-requires = [
-    "pdm-backend>=2.1.0,<3.0.0",
-    "setuptools>=67.0.0,<69.0.0",
-    "wheel",
-    "toml"
-]
-build-backend = "pdm.backend"
+requires = ["hatchling", "uv-dynamic-versioning"]
+build-backend = "hatchling.build"
 
 [project]
 name = "fireset"
@@ -42,6 +37,9 @@ line-length = 100
 [tool.ruff]
 line-length = 100
 
+[tool.uv]
+resolution = "highest"
+
 [tool.pytest.ini_options]
 addopts = [
     "--import-mode=importlib",
@@ -57,28 +55,10 @@ testpaths = [
     "tests/",
 ]
 
-[tool.pdm.version]
-source = "scm"
+[tool.hatch.version]
+source = "uv-dynamic-versioning"
 
-[tool.pdm.options]
-add = ["--save-compatible"]
-
-[tool.pdm.build]
-
-excludes = [
-    ".gitignore",
-    "pdm_build.py",
-    "tests",
-    "examples",
-    "build",
-    "dev",
-    "dist",
-    "mockup",
-    "ksy"
-]
-editable-backend = "editables"
-
-[tool.pdm.dev-dependencies]
+[dependency-groups]
 dev = [
     "coverage-badge>=1.1.0",
     "ipython~=7.23.1",
@@ -99,7 +79,6 @@ doc = [
     "pdoc3~=0.10.0",
     "genbadge[all]>=1.1.1,<2.0.0",
     "docstr-coverage>=2.2.0",
-    "pdm_template>=0.1.8",
 ]
 test = [
     "pytest~=7.1.3",
@@ -109,7 +88,6 @@ test = [
     "pytest-picked~=0.4.6",
     "pytest-sugar~=0.9.5",
     "pytest-html~=3.1.1",
-
 ]
 
 [tool.pdm.scripts]
@@ -121,6 +99,4 @@ doc.shell = """\
     coverage xml -o htmldoc/coverage/coverage.xml --rcfile tests/coverage.conf
     docstr-coverage src/fireset -miP -sp -is -idel --skip-file-doc --badge=htmldoc/fireset/doc_badge.svg
     genbadge coverage -l -i htmldoc/coverage/coverage.xml -o htmldoc/fireset/cov_badge.svg
-    fix-doc
 """
-serve = "python3 -m http.server 10124 -d htmldoc"
