@@ -24,54 +24,63 @@ from fireset.ldap_asn1.bindings import (
     OSS_OctetString,
 )
 
-# For the sake of keeping the sample short we instantiate the bindings from a dictionary.
-# See examples of setters for individual fields below.
-valued = json.loads(
-    r'{"messageID": 0,"protocolOp":{"bindRequest":{"version": 1,"name": "","authentication":{"simple": ""}}},"controls":[{"controlType": "","controlValue": ""}]}'
-)
 
-try:
-    print('Obtaining an instance of "LDAPMessage" ... ')
-    print()
+def test_asn1():
+    # For the sake of keeping the sample short we instantiate the bindings from a dictionary.
+    # See examples of setters for individual fields below.
+    valued = json.loads(
+        r'{"messageID": 0,"protocolOp":{"bindRequest":{"version": 1,"name": "","authentication":{"simple": ""}}},"controls":[{"controlType": "","controlValue": ""}]}'
+    )
 
-    value = LDAPMessage.from_native_type(valued)
+    try:
+        print('Obtaining an instance of "LDAPMessage" ... ')
+        print()
 
-    print('Pre-validating "Lightweight_Directory_Access_Protocol_V3.LDAPMessage":')
+        value = LDAPMessage.from_native_type(valued)
 
-    violations = Lightweight_Directory_Access_Protocol_V3.LDAPMessage.validate(value)
+        print('Pre-validating "Lightweight_Directory_Access_Protocol_V3.LDAPMessage":')
 
-    print("Constraint violations: {}".format(json.dumps(violations, default=str)))
-    print()
+        violations = Lightweight_Directory_Access_Protocol_V3.LDAPMessage.validate(value)
+        assert len(violations) == 0
 
-    # exercise bindings object creation and / or workings of the setter and getters
-    value.messageID = MessageID(0)
-    if value.protocolOp.has_BindRequest():
-        value.protocolOp.bindRequest.version = OSS_Integer(1)
-        value.protocolOp.bindRequest.name = AttributeDescription("")
-        if value.protocolOp.bindRequest.authentication.has_Simple():
-            value.protocolOp.bindRequest.authentication.simple = OSS_OctetString("")
+        print("Constraint violations: {}".format(json.dumps(violations, default=str)))
+        print()
 
-    print('Encoding "Lightweight_Directory_Access_Protocol_V3.LDAPMessage":')
+        # exercise bindings object creation and / or workings of the setter and getters
+        value.messageID = MessageID(0)
+        if value.protocolOp.has_BindRequest():
+            value.protocolOp.bindRequest.version = OSS_Integer(1)
+            value.protocolOp.bindRequest.name = AttributeDescription("")
+            if value.protocolOp.bindRequest.authentication.has_Simple():
+                value.protocolOp.bindRequest.authentication.simple = OSS_OctetString("")
 
-    encoded = Lightweight_Directory_Access_Protocol_V3.LDAPMessage.encode("BER", value)
+        print('Encoding "Lightweight_Directory_Access_Protocol_V3.LDAPMessage":')
 
-    print("Encoded HEX: " + ", ".join(["0x{:02X}".format(val) for val in encoded]))
-    print()
+        encoded = Lightweight_Directory_Access_Protocol_V3.LDAPMessage.encode("BER", value)
+        print(f"Encoded message size: {len(encoded)} bytes")
 
-    print('Decoding "Lightweight_Directory_Access_Protocol_V3.LDAPMessage":')
+        print("Encoded HEX: " + ", ".join(["0x{:02X}".format(val) for val in encoded]))
+        print()
 
-    decoded = Lightweight_Directory_Access_Protocol_V3.LDAPMessage.decode("BER", encoded)
+        print('Decoding "Lightweight_Directory_Access_Protocol_V3.LDAPMessage":')
 
-    print("Decoded value: {}".format(decoded))
-    print()
+        decoded = Lightweight_Directory_Access_Protocol_V3.LDAPMessage.decode("BER", encoded)
 
-    print('Validating "Lightweight_Directory_Access_Protocol_V3.LDAPMessage":')
+        print("Decoded value: {}".format(decoded))
+        print()
 
-    # the 'field reference' property can be used with a tool implementing the JSON Pointer spec
-    violations = Lightweight_Directory_Access_Protocol_V3.LDAPMessage.validate(decoded)
+        print('Validating "Lightweight_Directory_Access_Protocol_V3.LDAPMessage":')
 
-    print("Constraint violations: {}".format(json.dumps(violations, default=str)))
-    print()
+        # the 'field reference' property can be used with a tool implementing the JSON Pointer spec
+        violations = Lightweight_Directory_Access_Protocol_V3.LDAPMessage.validate(decoded)
+        assert len(violations) == 0
 
-except NotImplementedError as e:
-    print("Not Implemented Error : {}".format(format(e)))
+        print("Constraint violations: {}".format(json.dumps(violations, default=str)))
+        print()
+
+    except NotImplementedError as e:
+        print("Not Implemented Error : {}".format(format(e)))
+
+
+if __name__ == "__main__":
+    test_asn1()

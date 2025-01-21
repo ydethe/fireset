@@ -11,11 +11,7 @@ authors = [
 ]
 # sudo apt install libpq5
 dependencies = [
-    "asn1tools>=0.167.0",
-    "ldaptor>=21.2.0",
-    "pyasn1>=0.6.1",
     "sqlalchemy>=2.0.37",
-    "twisted>=24.11.0",
 ]
 requires-python = ">=3.10,<3.13"
 readme = "README.md"
@@ -101,6 +97,7 @@ test = [
     "pytest-html~=3.1.1",
     "pytest-aiohttp~=1.0",
     "hypothesis~=6.115",
+    "ldap3>=2.9.1",
 ]
 
 [tool.pdm.scripts]
