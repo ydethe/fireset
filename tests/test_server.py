@@ -9,7 +9,7 @@ from twisted.python import log
 from fireset.server import create_db, LDAPServerFactory
 
 
-if __name__ == "__main__":
+def ntest_server():
     engine = create_db()
 
     log.startLogging(sys.stdout)
@@ -18,3 +18,7 @@ if __name__ == "__main__":
     factory = LDAPServerFactory(engine)
     reactor.listenTCP(1346, factory)
     reactor.run()
+
+
+if __name__ == "__main__":
+    ntest_server()

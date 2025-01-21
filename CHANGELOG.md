@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Added server test ([7bc05a7](https://github.com/ydethe/fireset/commit/7bc05a76ab095b1744c6ee6744f9f37bbffc79b1) by Yann de The).
 - Added test client ([d0ea1ec](https://github.com/ydethe/fireset/commit/d0ea1ece180f2fc148deafbd58a52c07576d31dd) by Yann de The).
 - Added ldaptor + sql example ([4a8782f](https://github.com/ydethe/fireset/commit/4a8782f7f71797c45e605beacdd9d8e7f02ede6b) by Yann de The).
 - Added legacy tests To be adapted ([612ac2b](https://github.com/ydethe/fireset/commit/612ac2beb8c24a85b2507b7ac6bfbeda16c63e5f) by Yann de The).
