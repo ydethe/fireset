@@ -1,17 +1,6 @@
 """
 Test cases for ldaptor.protocols.ldap.ldapsyntax module.
 """
-from twisted.trial import unittest
-from twisted.test import proto_helpers
-from twisted.internet import defer
-from twisted.internet.task import Clock
-from ldaptor.protocols.ldap import ldapclient, ldaperrors
-from ldaptor.protocols import (
-    pureber,
-    pureldap,
-)
-from ldaptor import testutil
-from ldaptor._encoder import WireStrAlias, to_bytes
 
 
 class SillyMessage(WireStrAlias):

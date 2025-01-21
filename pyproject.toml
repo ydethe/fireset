@@ -12,6 +12,7 @@ authors = [
 # sudo apt install libpq5
 dependencies = [
     "sqlalchemy>=2.0.37",
+    "twisted>=24.11.0",
 ]
 requires-python = ">=3.10,<3.13"
 readme = "README.md"
@@ -29,6 +30,9 @@ line-length = 100
 
 [tool.ruff]
 line-length = 100
+exclude = [
+    "test_ldapclient.py",
+]
 
 [tool.pytest.ini_options]
 addopts = [
