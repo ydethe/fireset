@@ -14,8 +14,15 @@
 #   This file was generated for 'Yann de The' by 'https://asn1.io/ASN1-Python-Compiler/' at '1/20/2025 11:36:56 AM'
 
 import json
-import mycodec
-import bindings
+
+from fireset.ldap_asn1.mycodec import Lightweight_Directory_Access_Protocol_V3
+from fireset.ldap_asn1.bindings import (
+    LDAPMessage,
+    MessageID,
+    OSS_Integer,
+    AttributeDescription,
+    OSS_OctetString,
+)
 
 # For the sake of keeping the sample short we instantiate the bindings from a dictionary.
 # See examples of setters for individual fields below.
@@ -27,33 +34,33 @@ try:
     print('Obtaining an instance of "LDAPMessage" ... ')
     print()
 
-    value = bindings.LDAPMessage.from_native_type(valued)
+    value = LDAPMessage.from_native_type(valued)
 
     print('Pre-validating "Lightweight_Directory_Access_Protocol_V3.LDAPMessage":')
 
-    violations = mycodec.Lightweight_Directory_Access_Protocol_V3.LDAPMessage.validate(value)
+    violations = Lightweight_Directory_Access_Protocol_V3.LDAPMessage.validate(value)
 
     print("Constraint violations: {}".format(json.dumps(violations, default=str)))
     print()
 
     # exercise bindings object creation and / or workings of the setter and getters
-    value.messageID = bindings.MessageID(0)
+    value.messageID = MessageID(0)
     if value.protocolOp.has_BindRequest():
-        value.protocolOp.bindRequest.version = bindings.OSS_Integer(1)
-        value.protocolOp.bindRequest.name = bindings.AttributeDescription("")
+        value.protocolOp.bindRequest.version = OSS_Integer(1)
+        value.protocolOp.bindRequest.name = AttributeDescription("")
         if value.protocolOp.bindRequest.authentication.has_Simple():
-            value.protocolOp.bindRequest.authentication.simple = bindings.OSS_OctetString("")
+            value.protocolOp.bindRequest.authentication.simple = OSS_OctetString("")
 
     print('Encoding "Lightweight_Directory_Access_Protocol_V3.LDAPMessage":')
 
-    encoded = mycodec.Lightweight_Directory_Access_Protocol_V3.LDAPMessage.encode("BER", value)
+    encoded = Lightweight_Directory_Access_Protocol_V3.LDAPMessage.encode("BER", value)
 
     print("Encoded HEX: " + ", ".join(["0x{:02X}".format(val) for val in encoded]))
     print()
 
     print('Decoding "Lightweight_Directory_Access_Protocol_V3.LDAPMessage":')
 
-    decoded = mycodec.Lightweight_Directory_Access_Protocol_V3.LDAPMessage.decode("BER", encoded)
+    decoded = Lightweight_Directory_Access_Protocol_V3.LDAPMessage.decode("BER", encoded)
 
     print("Decoded value: {}".format(decoded))
     print()
@@ -61,7 +68,7 @@ try:
     print('Validating "Lightweight_Directory_Access_Protocol_V3.LDAPMessage":')
 
     # the 'field reference' property can be used with a tool implementing the JSON Pointer spec
-    violations = mycodec.Lightweight_Directory_Access_Protocol_V3.LDAPMessage.validate(decoded)
+    violations = Lightweight_Directory_Access_Protocol_V3.LDAPMessage.validate(decoded)
 
     print("Constraint violations: {}".format(json.dumps(violations, default=str)))
     print()

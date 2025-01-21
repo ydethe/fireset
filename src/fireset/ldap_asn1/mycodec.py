@@ -116,7 +116,7 @@ class Lightweight_Directory_Access_Protocol_V3:
                     return errors
                 except ImportError as exc:
                     raise ImportError(
-                        "Could not load 'LDAPMessage' from 'private.mycodec_der' codec file"
+                        f"Could not load 'LDAPMessage' from 'private.mycodec_der' codec file: {exc}"
                     ) from exc
             else:
                 raise ValueError(

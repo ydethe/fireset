@@ -15,8 +15,8 @@
 
 from warnings import warn
 from typing import Union
-import private.osspy_der as osspy
-from private.ossvalidate import (
+from .osspy_der import der
+from .ossvalidate import (
     Asn1Type,
     validate_value_type,
     validate_value,
@@ -38,37 +38,37 @@ class AbsoluteOidType:
         value: Union[str, list],
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         simple_type = AbsoluteOidType()
         return simple_type.encode_value(value, tag, stream)
 
     def encode_value(
-        self, value: Union[str, list], tag: list, stream: osspy.der.encodingstream
-    ) -> osspy.der.encodingstream:
+        self, value: Union[str, list], tag: list, stream: der.encodingstream
+    ) -> der.encodingstream:
         used_tag = [[0x06]]
         if tag is None:
             tag = []
         elif len(tag) > 0:
             used_tag = tag
 
-        osspy.der.encode_absolute_oid(stream, value, used_tag)
+        der.encode_absolute_oid(stream, value, used_tag)
         return stream
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker_: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker_: dict, tag: list = None
     ) -> Union[str, list]:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         simple_type = AbsoluteOidType()
         return simple_type.decode_value(stream, tag)
 
-    def decode_value(self, stream: osspy.der.decodingstream, tag: list) -> Union[str, list]:
+    def decode_value(self, stream: der.decodingstream, tag: list) -> Union[str, list]:
         used_tag = [[0x06]]
         c_tag = None
         if tag is None:
@@ -76,7 +76,7 @@ class AbsoluteOidType:
         elif len(tag) > 0:
             used_tag = tag
 
-        return osspy.der.decode_absolute_oid(stream, used_tag, c_tag)
+        return der.decode_absolute_oid(stream, used_tag, c_tag)
 
     @staticmethod
     def validate(value, errors: list, comp_path: str = "") -> list:
@@ -111,10 +111,10 @@ class LDAPMessage:
         value: object,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         seq_type = LDAPMessage()
         return seq_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -125,9 +125,9 @@ class LDAPMessage:
         value: object,
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
-        tmpstream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
+        tmpstream = der.encodingstream(encoding_rule)
 
         if not isinstance(value, object):
             raise TypeError(
@@ -166,7 +166,7 @@ class LDAPMessage:
                 ).get_buffer()
             )
         if "_unknown_extensions" in value:
-            tmpstream.append(osspy.der.encode_unknown_extensions(value["_unknown_extensions"]))
+            tmpstream.append(der.encode_unknown_extensions(value["_unknown_extensions"]))
 
         used_tag = [[0x30]]
         if tag is None:
@@ -176,11 +176,9 @@ class LDAPMessage:
 
         buffer = tmpstream.get_buffer()
         if stream.canonical:
-            osspy.der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
+            der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
         else:
-            osspy.der.encode_tags_lens_ber(
-                stream.buffer, used_tag, buffer, data_map["encoding_form"]
-            )
+            der.encode_tags_lens_ber(stream.buffer, used_tag, buffer, data_map["encoding_form"])
         stream.append(buffer)
 
         value_tracker.remove_ancestor()
@@ -189,16 +187,16 @@ class LDAPMessage:
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> dict:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         seq_type = LDAPMessage()
         return seq_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> dict:
         value = {}
         used_tag = [[0x30]]
@@ -209,7 +207,7 @@ class LDAPMessage:
 
         value_tracker.add_ancestor(value)
 
-        correct, length, num_indefs = osspy.der.decode_tags(stream, used_tag)
+        correct, length, num_indefs = der.decode_tags(stream, used_tag)
         if correct == 0:
             value_tracker.remove_ancestor()
             raise ValueError(
@@ -218,30 +216,28 @@ class LDAPMessage:
         start_pos = stream.get_pos()
 
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x02]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x02]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["messageID"] = MessageID.decode(encoding_rule, stream, value_tracker, [[0x02]])
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x22], [0x02]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x22], [0x02]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["messageID"] = MessageID.decode(
                 encoding_rule, stream, value_tracker, [[0x22], [0x02]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "messageID" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x22]])[0]
+            and der.peek_tags(stream, [[0x22]])[0]
         ):
             value["messageID"] = MessageID.decode(encoding_rule, stream, value_tracker, [[0x02]])
         else:
@@ -250,9 +246,8 @@ class LDAPMessage:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_discriminating_tags(
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_discriminating_tags(
             stream,
             [
                 [[0x60]],
@@ -282,24 +277,21 @@ class LDAPMessage:
         ]:
             value["protocolOp"] = LDAPMessage__23.decode(encoding_rule, stream, value_tracker, [])
         elif stream.get_pos() < start_pos + length or (
-            length < 0 and not osspy.der.is_eoc(stream, length)
+            length < 0 and not der.is_eoc(stream, length)
         ):
             value["protocolOp"] = LDAPMessage__23.decode(encoding_rule, stream, value_tracker, [])
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0xA0]])[0]:
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0xA0]])[0]:
             value["controls"] = LDAPMessage__24.decode(
                 encoding_rule, stream, value_tracker, [[0xA0]]
             )
-        if stream.get_pos() < start_pos + length or (
-            length < 0 and not osspy.der.is_eoc(stream, length)
-        ):
+        if stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length)):
             position = stream.get_pos()
             while position < (start_pos + length) or (
-                length < 0 and not osspy.der.is_eoc(stream, length)
+                length < 0 and not der.is_eoc(stream, length)
             ):
-                octets = osspy.der.decode_undecoded_type(stream)
+                octets = der.decode_undecoded_type(stream)
                 position = position + len(octets)
 
                 if len(octets) > 0:
@@ -307,8 +299,8 @@ class LDAPMessage:
                         value["_unknown_extensions"] = ""
                     value["_unknown_extensions"] += octets.hex().upper()
 
-        if length < 0 and osspy.der.is_eoc(stream):
-            osspy.der.skip_eoc(stream, num_indefs)
+        if length < 0 and der.is_eoc(stream):
+            der.skip_eoc(stream, num_indefs)
 
         if len(self._def_vals) > 0:
             for key, val in self._def_vals.items():
@@ -361,10 +353,10 @@ class LDAPMessage__23:
         value: object,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         choice_type = LDAPMessage__23()
         return choice_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -375,9 +367,9 @@ class LDAPMessage__23:
         value: object,
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
-        tmpstream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
+        tmpstream = der.encodingstream(encoding_rule)
         is_encoded = False
 
         if not isinstance(value, dict) or len(value.keys()) != 1:
@@ -562,7 +554,7 @@ class LDAPMessage__23:
 
         if not is_encoded:
             if "_unknown_extension" in value:
-                tmpstream.append(osspy.der.encode_unknown_extensions(value["_unknown_extension"]))
+                tmpstream.append(der.encode_unknown_extensions(value["_unknown_extension"]))
                 is_encoded = True
             else:
                 raise ValueError(
@@ -577,11 +569,9 @@ class LDAPMessage__23:
 
         buffer = tmpstream.get_buffer()
         if stream.canonical:
-            osspy.der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
+            der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
         else:
-            osspy.der.encode_tags_lens_ber(
-                stream.buffer, used_tag, buffer, data_map["encoding_form"]
-            )
+            der.encode_tags_lens_ber(stream.buffer, used_tag, buffer, data_map["encoding_form"])
         stream.append(buffer)
 
         value_tracker.remove_ancestor()
@@ -590,16 +580,16 @@ class LDAPMessage__23:
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> dict:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         choice_type = LDAPMessage__23()
         return choice_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> dict:
         value = {}
         used_tag = []
@@ -612,173 +602,173 @@ class LDAPMessage__23:
 
         value_tracker.add_ancestor(value)
 
-        correct, length, offset = osspy.der.peek_tags(stream, used_tag)
+        correct, length, offset = der.peek_tags(stream, used_tag)
         if correct == 1:
             stream.skip_bytes(offset)
 
         if not is_decoded and (
-            osspy.der.peek_tags(stream, [[0x60]])[0] or osspy.der.peek_tags(stream, [[0x60]])[0]
+            der.peek_tags(stream, [[0x60]])[0] or der.peek_tags(stream, [[0x60]])[0]
         ):
             value["bindRequest"] = BindRequest.decode(
                 encoding_rule, stream, value_tracker, [[0x60]]
             )
             is_decoded = True
         if not is_decoded and (
-            osspy.der.peek_tags(stream, [[0x61]])[0] or osspy.der.peek_tags(stream, [[0x61]])[0]
+            der.peek_tags(stream, [[0x61]])[0] or der.peek_tags(stream, [[0x61]])[0]
         ):
             value["bindResponse"] = BindResponse.decode(
                 encoding_rule, stream, value_tracker, [[0x61]]
             )
             is_decoded = True
-        if not is_decoded and (osspy.der.peek_tags(stream, [[0x42]])[0]):
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+        if not is_decoded and (der.peek_tags(stream, [[0x42]])[0]):
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["unbindRequest"] = UnbindRequest.decode(
                 encoding_rule, stream, value_tracker, [[0x42]]
             )
             is_decoded = True
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
-        elif not is_decoded and (osspy.der.peek_tags(stream, [[0x62]])[0]):
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
+        elif not is_decoded and (der.peek_tags(stream, [[0x62]])[0]):
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["unbindRequest"] = UnbindRequest.decode(
                 encoding_rule, stream, value_tracker, [[0x42]]
             )
             is_decoded = True
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         if not is_decoded and (
-            osspy.der.peek_tags(stream, [[0x63]])[0] or osspy.der.peek_tags(stream, [[0x63]])[0]
+            der.peek_tags(stream, [[0x63]])[0] or der.peek_tags(stream, [[0x63]])[0]
         ):
             value["searchRequest"] = SearchRequest.decode(
                 encoding_rule, stream, value_tracker, [[0x63]]
             )
             is_decoded = True
         if not is_decoded and (
-            osspy.der.peek_tags(stream, [[0x64]])[0] or osspy.der.peek_tags(stream, [[0x64]])[0]
+            der.peek_tags(stream, [[0x64]])[0] or der.peek_tags(stream, [[0x64]])[0]
         ):
             value["searchResEntry"] = SearchResultEntry.decode(
                 encoding_rule, stream, value_tracker, [[0x64]]
             )
             is_decoded = True
         if not is_decoded and (
-            osspy.der.peek_tags(stream, [[0x65]])[0] or osspy.der.peek_tags(stream, [[0x65]])[0]
+            der.peek_tags(stream, [[0x65]])[0] or der.peek_tags(stream, [[0x65]])[0]
         ):
             value["searchResDone"] = SearchResultDone.decode(
                 encoding_rule, stream, value_tracker, [[0x65]]
             )
             is_decoded = True
         if not is_decoded and (
-            osspy.der.peek_tags(stream, [[0x73]])[0] or osspy.der.peek_tags(stream, [[0x73]])[0]
+            der.peek_tags(stream, [[0x73]])[0] or der.peek_tags(stream, [[0x73]])[0]
         ):
             value["searchResRef"] = SearchResultReference.decode(
                 encoding_rule, stream, value_tracker, [[0x73]]
             )
             is_decoded = True
         if not is_decoded and (
-            osspy.der.peek_tags(stream, [[0x66]])[0] or osspy.der.peek_tags(stream, [[0x66]])[0]
+            der.peek_tags(stream, [[0x66]])[0] or der.peek_tags(stream, [[0x66]])[0]
         ):
             value["modifyRequest"] = ModifyRequest.decode(
                 encoding_rule, stream, value_tracker, [[0x66]]
             )
             is_decoded = True
         if not is_decoded and (
-            osspy.der.peek_tags(stream, [[0x67]])[0] or osspy.der.peek_tags(stream, [[0x67]])[0]
+            der.peek_tags(stream, [[0x67]])[0] or der.peek_tags(stream, [[0x67]])[0]
         ):
             value["modifyResponse"] = ModifyResponse.decode(
                 encoding_rule, stream, value_tracker, [[0x67]]
             )
             is_decoded = True
         if not is_decoded and (
-            osspy.der.peek_tags(stream, [[0x68]])[0] or osspy.der.peek_tags(stream, [[0x68]])[0]
+            der.peek_tags(stream, [[0x68]])[0] or der.peek_tags(stream, [[0x68]])[0]
         ):
             value["addRequest"] = AddRequest.decode(encoding_rule, stream, value_tracker, [[0x68]])
             is_decoded = True
         if not is_decoded and (
-            osspy.der.peek_tags(stream, [[0x69]])[0] or osspy.der.peek_tags(stream, [[0x69]])[0]
+            der.peek_tags(stream, [[0x69]])[0] or der.peek_tags(stream, [[0x69]])[0]
         ):
             value["addResponse"] = AddResponse.decode(
                 encoding_rule, stream, value_tracker, [[0x69]]
             )
             is_decoded = True
-        if not is_decoded and (osspy.der.peek_tags(stream, [[0x4A]])[0]):
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+        if not is_decoded and (der.peek_tags(stream, [[0x4A]])[0]):
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["delRequest"] = DelRequest.decode(encoding_rule, stream, value_tracker, [[0x4A]])
             is_decoded = True
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
-        elif not is_decoded and (osspy.der.peek_tags(stream, [[0x6A]])[0]):
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
+        elif not is_decoded and (der.peek_tags(stream, [[0x6A]])[0]):
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["delRequest"] = DelRequest.decode(encoding_rule, stream, value_tracker, [[0x4A]])
             is_decoded = True
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         if not is_decoded and (
-            osspy.der.peek_tags(stream, [[0x6B]])[0] or osspy.der.peek_tags(stream, [[0x6B]])[0]
+            der.peek_tags(stream, [[0x6B]])[0] or der.peek_tags(stream, [[0x6B]])[0]
         ):
             value["delResponse"] = DelResponse.decode(
                 encoding_rule, stream, value_tracker, [[0x6B]]
             )
             is_decoded = True
         if not is_decoded and (
-            osspy.der.peek_tags(stream, [[0x6C]])[0] or osspy.der.peek_tags(stream, [[0x6C]])[0]
+            der.peek_tags(stream, [[0x6C]])[0] or der.peek_tags(stream, [[0x6C]])[0]
         ):
             value["modDNRequest"] = ModifyDNRequest.decode(
                 encoding_rule, stream, value_tracker, [[0x6C]]
             )
             is_decoded = True
         if not is_decoded and (
-            osspy.der.peek_tags(stream, [[0x6D]])[0] or osspy.der.peek_tags(stream, [[0x6D]])[0]
+            der.peek_tags(stream, [[0x6D]])[0] or der.peek_tags(stream, [[0x6D]])[0]
         ):
             value["modDNResponse"] = ModifyDNResponse.decode(
                 encoding_rule, stream, value_tracker, [[0x6D]]
             )
             is_decoded = True
         if not is_decoded and (
-            osspy.der.peek_tags(stream, [[0x6E]])[0] or osspy.der.peek_tags(stream, [[0x6E]])[0]
+            der.peek_tags(stream, [[0x6E]])[0] or der.peek_tags(stream, [[0x6E]])[0]
         ):
             value["compareRequest"] = CompareRequest.decode(
                 encoding_rule, stream, value_tracker, [[0x6E]]
             )
             is_decoded = True
         if not is_decoded and (
-            osspy.der.peek_tags(stream, [[0x6F]])[0] or osspy.der.peek_tags(stream, [[0x6F]])[0]
+            der.peek_tags(stream, [[0x6F]])[0] or der.peek_tags(stream, [[0x6F]])[0]
         ):
             value["compareResponse"] = CompareResponse.decode(
                 encoding_rule, stream, value_tracker, [[0x6F]]
             )
             is_decoded = True
-        if not is_decoded and (osspy.der.peek_tags(stream, [[0x50]])[0]):
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+        if not is_decoded and (der.peek_tags(stream, [[0x50]])[0]):
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["abandonRequest"] = AbandonRequest.decode(
                 encoding_rule, stream, value_tracker, [[0x50]]
             )
             is_decoded = True
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
-        elif not is_decoded and (osspy.der.peek_tags(stream, [[0x70]])[0]):
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
+        elif not is_decoded and (der.peek_tags(stream, [[0x70]])[0]):
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["abandonRequest"] = AbandonRequest.decode(
                 encoding_rule, stream, value_tracker, [[0x50]]
             )
             is_decoded = True
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         if not is_decoded and (
-            osspy.der.peek_tags(stream, [[0x77]])[0] or osspy.der.peek_tags(stream, [[0x77]])[0]
+            der.peek_tags(stream, [[0x77]])[0] or der.peek_tags(stream, [[0x77]])[0]
         ):
             value["extendedReq"] = ExtendedRequest.decode(
                 encoding_rule, stream, value_tracker, [[0x77]]
             )
             is_decoded = True
         if not is_decoded and (
-            osspy.der.peek_tags(stream, [[0x78]])[0] or osspy.der.peek_tags(stream, [[0x78]])[0]
+            der.peek_tags(stream, [[0x78]])[0] or der.peek_tags(stream, [[0x78]])[0]
         ):
             value["extendedResp"] = ExtendedResponse.decode(
                 encoding_rule, stream, value_tracker, [[0x78]]
             )
             is_decoded = True
         if not is_decoded and (
-            osspy.der.peek_tags(stream, [[0x79]])[0] or osspy.der.peek_tags(stream, [[0x79]])[0]
+            der.peek_tags(stream, [[0x79]])[0] or der.peek_tags(stream, [[0x79]])[0]
         ):
             value["intermediateResponse"] = IntermediateResponse.decode(
                 encoding_rule, stream, value_tracker, [[0x79]]
@@ -786,10 +776,10 @@ class LDAPMessage__23:
             is_decoded = True
 
         if not is_decoded:
-            value["_unknown_extension"] = osspy.der.decode_undecoded_type(stream).hex().upper()
+            value["_unknown_extension"] = der.decode_undecoded_type(stream).hex().upper()
 
-        if length < 0 and osspy.der.is_eoc(stream):
-            osspy.der.skip_eoc(stream, len(used_tag))
+        if length < 0 and der.is_eoc(stream):
+            der.skip_eoc(stream, len(used_tag))
 
         value = value_tracker.execute_deferred(value)
         return value
@@ -933,10 +923,10 @@ class LDAPMessage__24:
         value: list,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         seqof_type = LDAPMessage__24()
         return seqof_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -947,9 +937,9 @@ class LDAPMessage__24:
         value: list,
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
-        tmpstream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
+        tmpstream = der.encodingstream(encoding_rule)
         data_map = {}
 
         if not isinstance(value, list):
@@ -987,27 +977,25 @@ class LDAPMessage__24:
 
         buffer = tmpstream.get_buffer()
         if stream.canonical:
-            osspy.der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
+            der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
         else:
-            osspy.der.encode_tags_lens_ber(
-                stream.buffer, used_tag, buffer, data_map["encoding_form"]
-            )
+            der.encode_tags_lens_ber(stream.buffer, used_tag, buffer, data_map["encoding_form"])
         stream.append(buffer)
 
         return stream
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> list:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         seqof_type = LDAPMessage__24()
         return seqof_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> list:
         components = []
         used_tag = [[0xA0]]
@@ -1017,7 +1005,7 @@ class LDAPMessage__24:
             used_tag = tag
         idx = 0
 
-        correct, length, num_indefs = osspy.der.decode_tags(stream, used_tag)
+        correct, length, num_indefs = der.decode_tags(stream, used_tag)
         if correct == 0:
             raise ValueError(
                 "70003: The next tag present in the encoding does not match the tag of the type to be decoded!"
@@ -1025,12 +1013,12 @@ class LDAPMessage__24:
 
         position = stream.get_pos()
         if length == -1:
-            while not osspy.der.is_eoc(stream) and not stream.is_eof():
+            while not der.is_eoc(stream) and not stream.is_eof():
                 value_tracker.add_ancestor(idx)
                 components.append(Control.decode(encoding_rule, stream, value_tracker, [[0x30]]))
                 value_tracker.remove_ancestor()
                 idx += 1
-            osspy.der.skip_eoc(stream, num_indefs)
+            der.skip_eoc(stream, num_indefs)
         else:
             while stream.get_pos() < position + length:
                 value_tracker.add_ancestor(idx)
@@ -1069,37 +1057,35 @@ class maxInt__1:
         value: int,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         simple_type = maxInt__1()
         return simple_type.encode_value(value, tag, stream)
 
-    def encode_value(
-        self, value: int, tag: list, stream: osspy.der.encodingstream
-    ) -> osspy.der.encodingstream:
+    def encode_value(self, value: int, tag: list, stream: der.encodingstream) -> der.encodingstream:
         used_tag = [[0x02]]
         if tag is None:
             tag = []
         elif len(tag) > 0:
             used_tag = tag
 
-        osspy.der.encode_integer(stream, value, used_tag)
+        der.encode_integer(stream, value, used_tag)
         return stream
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker_: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker_: dict, tag: list = None
     ) -> int:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         simple_type = maxInt__1()
         return simple_type.decode_value(stream, tag)
 
-    def decode_value(self, stream: osspy.der.decodingstream, tag: list) -> int:
+    def decode_value(self, stream: der.decodingstream, tag: list) -> int:
         used_tag = [[0x02]]
         c_tag = None
         if tag is None:
@@ -1107,7 +1093,7 @@ class maxInt__1:
         elif len(tag) > 0:
             used_tag = tag
 
-        return osspy.der.decode_integer(stream, used_tag, c_tag)
+        return der.decode_integer(stream, used_tag, c_tag)
 
     @staticmethod
     def validate(value, errors: list, comp_path: str = "") -> list:
@@ -1138,10 +1124,10 @@ class AttributeValueAssertion:
         value: object,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         seq_type = AttributeValueAssertion()
         return seq_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -1152,9 +1138,9 @@ class AttributeValueAssertion:
         value: object,
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
-        tmpstream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
+        tmpstream = der.encodingstream(encoding_rule)
 
         if not isinstance(value, object):
             raise TypeError(
@@ -1187,7 +1173,7 @@ class AttributeValueAssertion:
                 "63803: A mandatory component is missing from the sequence or set value!"
             )
         if "_unknown_extensions" in value:
-            tmpstream.append(osspy.der.encode_unknown_extensions(value["_unknown_extensions"]))
+            tmpstream.append(der.encode_unknown_extensions(value["_unknown_extensions"]))
 
         used_tag = [[0x30]]
         if tag is None:
@@ -1197,11 +1183,9 @@ class AttributeValueAssertion:
 
         buffer = tmpstream.get_buffer()
         if stream.canonical:
-            osspy.der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
+            der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
         else:
-            osspy.der.encode_tags_lens_ber(
-                stream.buffer, used_tag, buffer, data_map["encoding_form"]
-            )
+            der.encode_tags_lens_ber(stream.buffer, used_tag, buffer, data_map["encoding_form"])
         stream.append(buffer)
 
         value_tracker.remove_ancestor()
@@ -1210,16 +1194,16 @@ class AttributeValueAssertion:
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> dict:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         seq_type = AttributeValueAssertion()
         return seq_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> dict:
         value = {}
         used_tag = [[0x30]]
@@ -1230,7 +1214,7 @@ class AttributeValueAssertion:
 
         value_tracker.add_ancestor(value)
 
-        correct, length, num_indefs = osspy.der.decode_tags(stream, used_tag)
+        correct, length, num_indefs = der.decode_tags(stream, used_tag)
         if correct == 0:
             value_tracker.remove_ancestor()
             raise ValueError(
@@ -1239,32 +1223,30 @@ class AttributeValueAssertion:
         start_pos = stream.get_pos()
 
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["attributeDesc"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x24], [0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x24], [0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["attributeDesc"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x24], [0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "attributeDesc" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x24]])[0]
+            and der.peek_tags(stream, [[0x24]])[0]
         ):
             value["attributeDesc"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
@@ -1275,32 +1257,30 @@ class AttributeValueAssertion:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["assertionValue"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x24], [0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x24], [0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["assertionValue"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x24], [0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "assertionValue" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x24]])[0]
+            and der.peek_tags(stream, [[0x24]])[0]
         ):
             value["assertionValue"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
@@ -1310,14 +1290,12 @@ class AttributeValueAssertion:
             raise ValueError(
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
-        if stream.get_pos() < start_pos + length or (
-            length < 0 and not osspy.der.is_eoc(stream, length)
-        ):
+        if stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length)):
             position = stream.get_pos()
             while position < (start_pos + length) or (
-                length < 0 and not osspy.der.is_eoc(stream, length)
+                length < 0 and not der.is_eoc(stream, length)
             ):
-                octets = osspy.der.decode_undecoded_type(stream)
+                octets = der.decode_undecoded_type(stream)
                 position = position + len(octets)
 
                 if len(octets) > 0:
@@ -1325,8 +1303,8 @@ class AttributeValueAssertion:
                         value["_unknown_extensions"] = ""
                     value["_unknown_extensions"] += octets.hex().upper()
 
-        if length < 0 and osspy.der.is_eoc(stream):
-            osspy.der.skip_eoc(stream, num_indefs)
+        if length < 0 and der.is_eoc(stream):
+            der.skip_eoc(stream, num_indefs)
 
         if len(self._def_vals) > 0:
             for key, val in self._def_vals.items():
@@ -1380,10 +1358,10 @@ class PartialAttribute:
         value: object,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         seq_type = PartialAttribute()
         return seq_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -1394,9 +1372,9 @@ class PartialAttribute:
         value: object,
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
-        tmpstream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
+        tmpstream = der.encodingstream(encoding_rule)
 
         if not isinstance(value, object):
             raise TypeError(
@@ -1429,7 +1407,7 @@ class PartialAttribute:
                 "63803: A mandatory component is missing from the sequence or set value!"
             )
         if "_unknown_extensions" in value:
-            tmpstream.append(osspy.der.encode_unknown_extensions(value["_unknown_extensions"]))
+            tmpstream.append(der.encode_unknown_extensions(value["_unknown_extensions"]))
 
         used_tag = [[0x30]]
         if tag is None:
@@ -1439,11 +1417,9 @@ class PartialAttribute:
 
         buffer = tmpstream.get_buffer()
         if stream.canonical:
-            osspy.der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
+            der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
         else:
-            osspy.der.encode_tags_lens_ber(
-                stream.buffer, used_tag, buffer, data_map["encoding_form"]
-            )
+            der.encode_tags_lens_ber(stream.buffer, used_tag, buffer, data_map["encoding_form"])
         stream.append(buffer)
 
         value_tracker.remove_ancestor()
@@ -1452,16 +1428,16 @@ class PartialAttribute:
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> dict:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         seq_type = PartialAttribute()
         return seq_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> dict:
         value = {}
         used_tag = [[0x30]]
@@ -1472,7 +1448,7 @@ class PartialAttribute:
 
         value_tracker.add_ancestor(value)
 
-        correct, length, num_indefs = osspy.der.decode_tags(stream, used_tag)
+        correct, length, num_indefs = der.decode_tags(stream, used_tag)
         if correct == 0:
             value_tracker.remove_ancestor()
             raise ValueError(
@@ -1481,30 +1457,28 @@ class PartialAttribute:
         start_pos = stream.get_pos()
 
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["type"] = AssertionValue.decode(encoding_rule, stream, value_tracker, [[0x04]])
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x24], [0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x24], [0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["type"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x24], [0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "type" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x24]])[0]
+            and der.peek_tags(stream, [[0x24]])[0]
         ):
             value["type"] = AssertionValue.decode(encoding_rule, stream, value_tracker, [[0x04]])
         else:
@@ -1513,9 +1487,8 @@ class PartialAttribute:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x31]])[0]:
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x31]])[0]:
             value["vals"] = PartialAttribute__3.decode(
                 encoding_rule, stream, value_tracker, [[0x31]]
             )
@@ -1524,14 +1497,12 @@ class PartialAttribute:
             raise ValueError(
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
-        if stream.get_pos() < start_pos + length or (
-            length < 0 and not osspy.der.is_eoc(stream, length)
-        ):
+        if stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length)):
             position = stream.get_pos()
             while position < (start_pos + length) or (
-                length < 0 and not osspy.der.is_eoc(stream, length)
+                length < 0 and not der.is_eoc(stream, length)
             ):
-                octets = osspy.der.decode_undecoded_type(stream)
+                octets = der.decode_undecoded_type(stream)
                 position = position + len(octets)
 
                 if len(octets) > 0:
@@ -1539,8 +1510,8 @@ class PartialAttribute:
                         value["_unknown_extensions"] = ""
                     value["_unknown_extensions"] += octets.hex().upper()
 
-        if length < 0 and osspy.der.is_eoc(stream):
-            osspy.der.skip_eoc(stream, num_indefs)
+        if length < 0 and der.is_eoc(stream):
+            der.skip_eoc(stream, num_indefs)
 
         if len(self._def_vals) > 0:
             for key, val in self._def_vals.items():
@@ -1587,10 +1558,10 @@ class PartialAttribute__3:
         value: list,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         seqof_type = PartialAttribute__3()
         return seqof_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -1601,9 +1572,9 @@ class PartialAttribute__3:
         value: list,
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
-        tmpstream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
+        tmpstream = der.encodingstream(encoding_rule)
         data_map = {}
 
         if not isinstance(value, list):
@@ -1641,27 +1612,25 @@ class PartialAttribute__3:
 
         buffer = tmpstream.get_buffer()
         if stream.canonical:
-            osspy.der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
+            der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
         else:
-            osspy.der.encode_tags_lens_ber(
-                stream.buffer, used_tag, buffer, data_map["encoding_form"]
-            )
+            der.encode_tags_lens_ber(stream.buffer, used_tag, buffer, data_map["encoding_form"])
         stream.append(buffer)
 
         return stream
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> list:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         seqof_type = PartialAttribute__3()
         return seqof_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> list:
         components = []
         used_tag = [[0x31]]
@@ -1671,7 +1640,7 @@ class PartialAttribute__3:
             used_tag = tag
         idx = 0
 
-        correct, length, num_indefs = osspy.der.decode_tags(stream, used_tag)
+        correct, length, num_indefs = der.decode_tags(stream, used_tag)
         if correct == 0:
             raise ValueError(
                 "70003: The next tag present in the encoding does not match the tag of the type to be decoded!"
@@ -1679,17 +1648,17 @@ class PartialAttribute__3:
 
         position = stream.get_pos()
         if length == -1:
-            while not osspy.der.is_eoc(stream) and not stream.is_eof():
+            while not der.is_eoc(stream) and not stream.is_eof():
                 value_tracker.add_ancestor(idx)
-                is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+                is_indefinite = der.is_indefinite(stream, stream.get_pos())
                 components.append(
                     AssertionValue.decode(encoding_rule, stream, value_tracker, [[0x04]])
                 )
-                if is_indefinite and osspy.der.is_eoc(stream):
-                    osspy.der.skip_eoc(stream, 1)
+                if is_indefinite and der.is_eoc(stream):
+                    der.skip_eoc(stream, 1)
                 value_tracker.remove_ancestor()
                 idx += 1
-            osspy.der.skip_eoc(stream, num_indefs)
+            der.skip_eoc(stream, num_indefs)
         else:
             while stream.get_pos() < position + length:
                 value_tracker.add_ancestor(idx)
@@ -1738,10 +1707,10 @@ class Attribute:
         value: object,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         seq_type = Attribute()
         return seq_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -1752,9 +1721,9 @@ class Attribute:
         value: object,
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
-        tmpstream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
+        tmpstream = der.encodingstream(encoding_rule)
 
         if not isinstance(value, object):
             raise TypeError(
@@ -1787,7 +1756,7 @@ class Attribute:
                 "63803: A mandatory component is missing from the sequence or set value!"
             )
         if "_unknown_extensions" in value:
-            tmpstream.append(osspy.der.encode_unknown_extensions(value["_unknown_extensions"]))
+            tmpstream.append(der.encode_unknown_extensions(value["_unknown_extensions"]))
 
         used_tag = [[0x30]]
         if tag is None:
@@ -1797,11 +1766,9 @@ class Attribute:
 
         buffer = tmpstream.get_buffer()
         if stream.canonical:
-            osspy.der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
+            der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
         else:
-            osspy.der.encode_tags_lens_ber(
-                stream.buffer, used_tag, buffer, data_map["encoding_form"]
-            )
+            der.encode_tags_lens_ber(stream.buffer, used_tag, buffer, data_map["encoding_form"])
         stream.append(buffer)
 
         value_tracker.remove_ancestor()
@@ -1810,16 +1777,16 @@ class Attribute:
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> dict:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         seq_type = Attribute()
         return seq_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> dict:
         value = {}
         used_tag = [[0x30]]
@@ -1830,7 +1797,7 @@ class Attribute:
 
         value_tracker.add_ancestor(value)
 
-        correct, length, num_indefs = osspy.der.decode_tags(stream, used_tag)
+        correct, length, num_indefs = der.decode_tags(stream, used_tag)
         if correct == 0:
             value_tracker.remove_ancestor()
             raise ValueError(
@@ -1839,30 +1806,28 @@ class Attribute:
         start_pos = stream.get_pos()
 
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["type"] = AssertionValue.decode(encoding_rule, stream, value_tracker, [[0x04]])
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x24], [0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x24], [0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["type"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x24], [0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "type" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x24]])[0]
+            and der.peek_tags(stream, [[0x24]])[0]
         ):
             value["type"] = AssertionValue.decode(encoding_rule, stream, value_tracker, [[0x04]])
         else:
@@ -1871,9 +1836,8 @@ class Attribute:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x31]])[0]:
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x31]])[0]:
             value["vals"] = PartialAttribute_1__2.decode(
                 encoding_rule, stream, value_tracker, [[0x31]]
             )
@@ -1882,14 +1846,12 @@ class Attribute:
             raise ValueError(
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
-        if stream.get_pos() < start_pos + length or (
-            length < 0 and not osspy.der.is_eoc(stream, length)
-        ):
+        if stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length)):
             position = stream.get_pos()
             while position < (start_pos + length) or (
-                length < 0 and not osspy.der.is_eoc(stream, length)
+                length < 0 and not der.is_eoc(stream, length)
             ):
-                octets = osspy.der.decode_undecoded_type(stream)
+                octets = der.decode_undecoded_type(stream)
                 position = position + len(octets)
 
                 if len(octets) > 0:
@@ -1897,8 +1859,8 @@ class Attribute:
                         value["_unknown_extensions"] = ""
                     value["_unknown_extensions"] += octets.hex().upper()
 
-        if length < 0 and osspy.der.is_eoc(stream):
-            osspy.der.skip_eoc(stream, num_indefs)
+        if length < 0 and der.is_eoc(stream):
+            der.skip_eoc(stream, num_indefs)
 
         if len(self._def_vals) > 0:
             for key, val in self._def_vals.items():
@@ -1953,10 +1915,10 @@ class LDAPResult:
         value: object,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         seq_type = LDAPResult()
         return seq_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -1967,9 +1929,9 @@ class LDAPResult:
         value: object,
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
-        tmpstream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
+        tmpstream = der.encodingstream(encoding_rule)
 
         if not isinstance(value, object):
             raise TypeError(
@@ -2018,7 +1980,7 @@ class LDAPResult:
                 ).get_buffer()
             )
         if "_unknown_extensions" in value:
-            tmpstream.append(osspy.der.encode_unknown_extensions(value["_unknown_extensions"]))
+            tmpstream.append(der.encode_unknown_extensions(value["_unknown_extensions"]))
 
         used_tag = [[0x30]]
         if tag is None:
@@ -2028,11 +1990,9 @@ class LDAPResult:
 
         buffer = tmpstream.get_buffer()
         if stream.canonical:
-            osspy.der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
+            der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
         else:
-            osspy.der.encode_tags_lens_ber(
-                stream.buffer, used_tag, buffer, data_map["encoding_form"]
-            )
+            der.encode_tags_lens_ber(stream.buffer, used_tag, buffer, data_map["encoding_form"])
         stream.append(buffer)
 
         value_tracker.remove_ancestor()
@@ -2041,16 +2001,16 @@ class LDAPResult:
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> dict:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         seq_type = LDAPResult()
         return seq_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> dict:
         value = {}
         used_tag = [[0x30]]
@@ -2061,7 +2021,7 @@ class LDAPResult:
 
         value_tracker.add_ancestor(value)
 
-        correct, length, num_indefs = osspy.der.decode_tags(stream, used_tag)
+        correct, length, num_indefs = der.decode_tags(stream, used_tag)
         if correct == 0:
             value_tracker.remove_ancestor()
             raise ValueError(
@@ -2070,32 +2030,30 @@ class LDAPResult:
         start_pos = stream.get_pos()
 
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x0A]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x0A]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["resultCode"] = LDAPResult__1.decode(
                 encoding_rule, stream, value_tracker, [[0x0A]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x2A], [0x0A]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x2A], [0x0A]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["resultCode"] = LDAPResult__1.decode(
                 encoding_rule, stream, value_tracker, [[0x2A], [0x0A]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "resultCode" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x2A]])[0]
+            and der.peek_tags(stream, [[0x2A]])[0]
         ):
             value["resultCode"] = LDAPResult__1.decode(
                 encoding_rule, stream, value_tracker, [[0x0A]]
@@ -2106,32 +2064,30 @@ class LDAPResult:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["matchedDN"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x24], [0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x24], [0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["matchedDN"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x24], [0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "matchedDN" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x24]])[0]
+            and der.peek_tags(stream, [[0x24]])[0]
         ):
             value["matchedDN"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
@@ -2142,32 +2098,30 @@ class LDAPResult:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["diagnosticMessage"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x24], [0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x24], [0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["diagnosticMessage"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x24], [0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "diagnosticMessage" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x24]])[0]
+            and der.peek_tags(stream, [[0x24]])[0]
         ):
             value["diagnosticMessage"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
@@ -2178,18 +2132,15 @@ class LDAPResult:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0xA3]])[0]:
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0xA3]])[0]:
             value["referral"] = LDAPResult__4.decode(encoding_rule, stream, value_tracker, [[0xA3]])
-        if stream.get_pos() < start_pos + length or (
-            length < 0 and not osspy.der.is_eoc(stream, length)
-        ):
+        if stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length)):
             position = stream.get_pos()
             while position < (start_pos + length) or (
-                length < 0 and not osspy.der.is_eoc(stream, length)
+                length < 0 and not der.is_eoc(stream, length)
             ):
-                octets = osspy.der.decode_undecoded_type(stream)
+                octets = der.decode_undecoded_type(stream)
                 position = position + len(octets)
 
                 if len(octets) > 0:
@@ -2197,8 +2148,8 @@ class LDAPResult:
                         value["_unknown_extensions"] = ""
                     value["_unknown_extensions"] += octets.hex().upper()
 
-        if length < 0 and osspy.der.is_eoc(stream):
-            osspy.der.skip_eoc(stream, num_indefs)
+        if length < 0 and der.is_eoc(stream):
+            der.skip_eoc(stream, num_indefs)
 
         if len(self._def_vals) > 0:
             for key, val in self._def_vals.items():
@@ -2298,17 +2249,17 @@ class LDAPResult__1:
         value: Union[str, int],
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         enum_type = LDAPResult__1()
         return enum_type.encode_value(value, tag, stream)
 
     def encode_value(
-        self, value: Union[str, int], tag: list, stream: osspy.der.encodingstream
-    ) -> osspy.der.encodingstream:
+        self, value: Union[str, int], tag: list, stream: der.encodingstream
+    ) -> der.encodingstream:
         if not isinstance(value, int) and not isinstance(value, str):
             raise TypeError(
                 "65201: The value class containing the value to be encoded does not match the type specified in the schema!"
@@ -2334,27 +2285,27 @@ class LDAPResult__1:
             tag = []
         elif len(tag) > 0:
             used_tag = tag
-        osspy.der.encode_integer(stream, int_val, used_tag)
+        der.encode_integer(stream, int_val, used_tag)
         return stream
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> Union[str, int]:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         enum_type = LDAPResult__1()
         return enum_type.decode_value(stream, tag)
 
-    def decode_value(self, stream: osspy.der.decodingstream, tag: list) -> Union[str, int]:
+    def decode_value(self, stream: der.decodingstream, tag: list) -> Union[str, int]:
         used_tag = [[0x0A]]
         if tag is None:
             tag = []
         elif len(tag) > 0:
             used_tag = tag
 
-        value = osspy.der.decode_integer(stream, used_tag)
+        value = der.decode_integer(stream, used_tag)
 
         identifier = None
         for item in self._identifiers:
@@ -2401,10 +2352,10 @@ class LDAPResult__4:
         value: list,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         seqof_type = LDAPResult__4()
         return seqof_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -2415,9 +2366,9 @@ class LDAPResult__4:
         value: list,
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
-        tmpstream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
+        tmpstream = der.encodingstream(encoding_rule)
         data_map = {}
 
         if not isinstance(value, list):
@@ -2455,27 +2406,25 @@ class LDAPResult__4:
 
         buffer = tmpstream.get_buffer()
         if stream.canonical:
-            osspy.der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
+            der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
         else:
-            osspy.der.encode_tags_lens_ber(
-                stream.buffer, used_tag, buffer, data_map["encoding_form"]
-            )
+            der.encode_tags_lens_ber(stream.buffer, used_tag, buffer, data_map["encoding_form"])
         stream.append(buffer)
 
         return stream
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> list:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         seqof_type = LDAPResult__4()
         return seqof_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> list:
         components = []
         used_tag = [[0xA3]]
@@ -2485,7 +2434,7 @@ class LDAPResult__4:
             used_tag = tag
         idx = 0
 
-        correct, length, num_indefs = osspy.der.decode_tags(stream, used_tag)
+        correct, length, num_indefs = der.decode_tags(stream, used_tag)
         if correct == 0:
             raise ValueError(
                 "70003: The next tag present in the encoding does not match the tag of the type to be decoded!"
@@ -2493,17 +2442,17 @@ class LDAPResult__4:
 
         position = stream.get_pos()
         if length == -1:
-            while not osspy.der.is_eoc(stream) and not stream.is_eof():
+            while not der.is_eoc(stream) and not stream.is_eof():
                 value_tracker.add_ancestor(idx)
-                is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+                is_indefinite = der.is_indefinite(stream, stream.get_pos())
                 components.append(
                     AssertionValue.decode(encoding_rule, stream, value_tracker, [[0x04]])
                 )
-                if is_indefinite and osspy.der.is_eoc(stream):
-                    osspy.der.skip_eoc(stream, 1)
+                if is_indefinite and der.is_eoc(stream):
+                    der.skip_eoc(stream, 1)
                 value_tracker.remove_ancestor()
                 idx += 1
-            osspy.der.skip_eoc(stream, num_indefs)
+            der.skip_eoc(stream, num_indefs)
         else:
             while stream.get_pos() < position + length:
                 value_tracker.add_ancestor(idx)
@@ -2549,10 +2498,10 @@ class Referral:
         value: list,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         seqof_type = Referral()
         return seqof_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -2563,9 +2512,9 @@ class Referral:
         value: list,
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
-        tmpstream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
+        tmpstream = der.encodingstream(encoding_rule)
         data_map = {}
 
         if not isinstance(value, list):
@@ -2603,27 +2552,25 @@ class Referral:
 
         buffer = tmpstream.get_buffer()
         if stream.canonical:
-            osspy.der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
+            der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
         else:
-            osspy.der.encode_tags_lens_ber(
-                stream.buffer, used_tag, buffer, data_map["encoding_form"]
-            )
+            der.encode_tags_lens_ber(stream.buffer, used_tag, buffer, data_map["encoding_form"])
         stream.append(buffer)
 
         return stream
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> list:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         seqof_type = Referral()
         return seqof_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> list:
         components = []
         used_tag = [[0x30]]
@@ -2633,7 +2580,7 @@ class Referral:
             used_tag = tag
         idx = 0
 
-        correct, length, num_indefs = osspy.der.decode_tags(stream, used_tag)
+        correct, length, num_indefs = der.decode_tags(stream, used_tag)
         if correct == 0:
             raise ValueError(
                 "70003: The next tag present in the encoding does not match the tag of the type to be decoded!"
@@ -2641,17 +2588,17 @@ class Referral:
 
         position = stream.get_pos()
         if length == -1:
-            while not osspy.der.is_eoc(stream) and not stream.is_eof():
+            while not der.is_eoc(stream) and not stream.is_eof():
                 value_tracker.add_ancestor(idx)
-                is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+                is_indefinite = der.is_indefinite(stream, stream.get_pos())
                 components.append(
                     AssertionValue.decode(encoding_rule, stream, value_tracker, [[0x04]])
                 )
-                if is_indefinite and osspy.der.is_eoc(stream):
-                    osspy.der.skip_eoc(stream, 1)
+                if is_indefinite and der.is_eoc(stream):
+                    der.skip_eoc(stream, 1)
                 value_tracker.remove_ancestor()
                 idx += 1
-            osspy.der.skip_eoc(stream, num_indefs)
+            der.skip_eoc(stream, num_indefs)
         else:
             while stream.get_pos() < position + length:
                 value_tracker.add_ancestor(idx)
@@ -2692,10 +2639,10 @@ class Controls:
         value: list,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         seqof_type = Controls()
         return seqof_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -2706,9 +2653,9 @@ class Controls:
         value: list,
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
-        tmpstream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
+        tmpstream = der.encodingstream(encoding_rule)
         data_map = {}
 
         if not isinstance(value, list):
@@ -2746,27 +2693,25 @@ class Controls:
 
         buffer = tmpstream.get_buffer()
         if stream.canonical:
-            osspy.der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
+            der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
         else:
-            osspy.der.encode_tags_lens_ber(
-                stream.buffer, used_tag, buffer, data_map["encoding_form"]
-            )
+            der.encode_tags_lens_ber(stream.buffer, used_tag, buffer, data_map["encoding_form"])
         stream.append(buffer)
 
         return stream
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> list:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         seqof_type = Controls()
         return seqof_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> list:
         components = []
         used_tag = [[0x30]]
@@ -2776,7 +2721,7 @@ class Controls:
             used_tag = tag
         idx = 0
 
-        correct, length, num_indefs = osspy.der.decode_tags(stream, used_tag)
+        correct, length, num_indefs = der.decode_tags(stream, used_tag)
         if correct == 0:
             raise ValueError(
                 "70003: The next tag present in the encoding does not match the tag of the type to be decoded!"
@@ -2784,12 +2729,12 @@ class Controls:
 
         position = stream.get_pos()
         if length == -1:
-            while not osspy.der.is_eoc(stream) and not stream.is_eof():
+            while not der.is_eoc(stream) and not stream.is_eof():
                 value_tracker.add_ancestor(idx)
                 components.append(Control.decode(encoding_rule, stream, value_tracker, [[0x30]]))
                 value_tracker.remove_ancestor()
                 idx += 1
-            osspy.der.skip_eoc(stream, num_indefs)
+            der.skip_eoc(stream, num_indefs)
         else:
             while stream.get_pos() < position + length:
                 value_tracker.add_ancestor(idx)
@@ -2835,10 +2780,10 @@ class Control:
         value: object,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         seq_type = Control()
         return seq_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -2849,9 +2794,9 @@ class Control:
         value: object,
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
-        tmpstream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
+        tmpstream = der.encodingstream(encoding_rule)
 
         if not isinstance(value, object):
             raise TypeError(
@@ -2889,7 +2834,7 @@ class Control:
                 ).get_buffer()
             )
         if "_unknown_extensions" in value:
-            tmpstream.append(osspy.der.encode_unknown_extensions(value["_unknown_extensions"]))
+            tmpstream.append(der.encode_unknown_extensions(value["_unknown_extensions"]))
 
         used_tag = [[0x30]]
         if tag is None:
@@ -2899,11 +2844,9 @@ class Control:
 
         buffer = tmpstream.get_buffer()
         if stream.canonical:
-            osspy.der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
+            der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
         else:
-            osspy.der.encode_tags_lens_ber(
-                stream.buffer, used_tag, buffer, data_map["encoding_form"]
-            )
+            der.encode_tags_lens_ber(stream.buffer, used_tag, buffer, data_map["encoding_form"])
         stream.append(buffer)
 
         value_tracker.remove_ancestor()
@@ -2912,16 +2855,16 @@ class Control:
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> dict:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         seq_type = Control()
         return seq_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> dict:
         value = {}
         used_tag = [[0x30]]
@@ -2932,7 +2875,7 @@ class Control:
 
         value_tracker.add_ancestor(value)
 
-        correct, length, num_indefs = osspy.der.decode_tags(stream, used_tag)
+        correct, length, num_indefs = der.decode_tags(stream, used_tag)
         if correct == 0:
             value_tracker.remove_ancestor()
             raise ValueError(
@@ -2941,32 +2884,30 @@ class Control:
         start_pos = stream.get_pos()
 
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["controlType"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x24], [0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x24], [0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["controlType"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x24], [0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "controlType" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x24]])[0]
+            and der.peek_tags(stream, [[0x24]])[0]
         ):
             value["controlType"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
@@ -2977,71 +2918,65 @@ class Control:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x01]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x01]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["criticality"] = Control__2.decode(encoding_rule, stream, value_tracker, [[0x01]])
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x21], [0x01]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x21], [0x01]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["criticality"] = Control__2.decode(
                 encoding_rule, stream, value_tracker, [[0x21], [0x01]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "criticality" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x21]])[0]
+            and der.peek_tags(stream, [[0x21]])[0]
         ):
             value["criticality"] = Control__2.decode(encoding_rule, stream, value_tracker, [[0x01]])
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["controlValue"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x24], [0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x24], [0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["controlValue"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x24], [0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "controlValue" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x24]])[0]
+            and der.peek_tags(stream, [[0x24]])[0]
         ):
             value["controlValue"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
             )
-        if stream.get_pos() < start_pos + length or (
-            length < 0 and not osspy.der.is_eoc(stream, length)
-        ):
+        if stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length)):
             position = stream.get_pos()
             while position < (start_pos + length) or (
-                length < 0 and not osspy.der.is_eoc(stream, length)
+                length < 0 and not der.is_eoc(stream, length)
             ):
-                octets = osspy.der.decode_undecoded_type(stream)
+                octets = der.decode_undecoded_type(stream)
                 position = position + len(octets)
 
                 if len(octets) > 0:
@@ -3049,8 +2984,8 @@ class Control:
                         value["_unknown_extensions"] = ""
                     value["_unknown_extensions"] += octets.hex().upper()
 
-        if length < 0 and osspy.der.is_eoc(stream):
-            osspy.der.skip_eoc(stream, num_indefs)
+        if length < 0 and der.is_eoc(stream):
+            der.skip_eoc(stream, num_indefs)
 
         if len(self._def_vals) > 0:
             for key, val in self._def_vals.items():
@@ -3110,10 +3045,10 @@ class BindRequest:
         value: object,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         seq_type = BindRequest()
         return seq_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -3124,9 +3059,9 @@ class BindRequest:
         value: object,
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
-        tmpstream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
+        tmpstream = der.encodingstream(encoding_rule)
 
         if not isinstance(value, object):
             raise TypeError(
@@ -3169,7 +3104,7 @@ class BindRequest:
                 "63803: A mandatory component is missing from the sequence or set value!"
             )
         if "_unknown_extensions" in value:
-            tmpstream.append(osspy.der.encode_unknown_extensions(value["_unknown_extensions"]))
+            tmpstream.append(der.encode_unknown_extensions(value["_unknown_extensions"]))
 
         used_tag = [[0x60]]
         if tag is None:
@@ -3179,11 +3114,9 @@ class BindRequest:
 
         buffer = tmpstream.get_buffer()
         if stream.canonical:
-            osspy.der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
+            der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
         else:
-            osspy.der.encode_tags_lens_ber(
-                stream.buffer, used_tag, buffer, data_map["encoding_form"]
-            )
+            der.encode_tags_lens_ber(stream.buffer, used_tag, buffer, data_map["encoding_form"])
         stream.append(buffer)
 
         value_tracker.remove_ancestor()
@@ -3192,16 +3125,16 @@ class BindRequest:
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> dict:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         seq_type = BindRequest()
         return seq_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> dict:
         value = {}
         used_tag = [[0x60]]
@@ -3212,7 +3145,7 @@ class BindRequest:
 
         value_tracker.add_ancestor(value)
 
-        correct, length, num_indefs = osspy.der.decode_tags(stream, used_tag)
+        correct, length, num_indefs = der.decode_tags(stream, used_tag)
         if correct == 0:
             value_tracker.remove_ancestor()
             raise ValueError(
@@ -3221,30 +3154,28 @@ class BindRequest:
         start_pos = stream.get_pos()
 
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x02]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x02]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["version"] = BindRequest__1.decode(encoding_rule, stream, value_tracker, [[0x02]])
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x22], [0x02]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x22], [0x02]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["version"] = BindRequest__1.decode(
                 encoding_rule, stream, value_tracker, [[0x22], [0x02]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "version" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x22]])[0]
+            and der.peek_tags(stream, [[0x22]])[0]
         ):
             value["version"] = BindRequest__1.decode(encoding_rule, stream, value_tracker, [[0x02]])
         else:
@@ -3253,30 +3184,28 @@ class BindRequest:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["name"] = AssertionValue.decode(encoding_rule, stream, value_tracker, [[0x04]])
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x24], [0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x24], [0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["name"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x24], [0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "name" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x24]])[0]
+            and der.peek_tags(stream, [[0x24]])[0]
         ):
             value["name"] = AssertionValue.decode(encoding_rule, stream, value_tracker, [[0x04]])
         else:
@@ -3285,26 +3214,23 @@ class BindRequest:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_discriminating_tags(stream, [[[0x80]], [[0xA3]]])[0]:
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_discriminating_tags(stream, [[[0x80]], [[0xA3]]])[0]:
             value["authentication"] = AuthenticationChoice.decode(
                 encoding_rule, stream, value_tracker, []
             )
         elif stream.get_pos() < start_pos + length or (
-            length < 0 and not osspy.der.is_eoc(stream, length)
+            length < 0 and not der.is_eoc(stream, length)
         ):
             value["authentication"] = AuthenticationChoice.decode(
                 encoding_rule, stream, value_tracker, []
             )
-        if stream.get_pos() < start_pos + length or (
-            length < 0 and not osspy.der.is_eoc(stream, length)
-        ):
+        if stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length)):
             position = stream.get_pos()
             while position < (start_pos + length) or (
-                length < 0 and not osspy.der.is_eoc(stream, length)
+                length < 0 and not der.is_eoc(stream, length)
             ):
-                octets = osspy.der.decode_undecoded_type(stream)
+                octets = der.decode_undecoded_type(stream)
                 position = position + len(octets)
 
                 if len(octets) > 0:
@@ -3312,8 +3238,8 @@ class BindRequest:
                         value["_unknown_extensions"] = ""
                     value["_unknown_extensions"] += octets.hex().upper()
 
-        if length < 0 and osspy.der.is_eoc(stream):
-            osspy.der.skip_eoc(stream, num_indefs)
+        if length < 0 and der.is_eoc(stream):
+            der.skip_eoc(stream, num_indefs)
 
         if len(self._def_vals) > 0:
             for key, val in self._def_vals.items():
@@ -3375,37 +3301,35 @@ class BindRequest__1:
         value: int,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         simple_type = BindRequest__1()
         return simple_type.encode_value(value, tag, stream)
 
-    def encode_value(
-        self, value: int, tag: list, stream: osspy.der.encodingstream
-    ) -> osspy.der.encodingstream:
+    def encode_value(self, value: int, tag: list, stream: der.encodingstream) -> der.encodingstream:
         used_tag = [[0x02]]
         if tag is None:
             tag = []
         elif len(tag) > 0:
             used_tag = tag
 
-        osspy.der.encode_integer(stream, value, used_tag)
+        der.encode_integer(stream, value, used_tag)
         return stream
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker_: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker_: dict, tag: list = None
     ) -> int:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         simple_type = BindRequest__1()
         return simple_type.decode_value(stream, tag)
 
-    def decode_value(self, stream: osspy.der.decodingstream, tag: list) -> int:
+    def decode_value(self, stream: der.decodingstream, tag: list) -> int:
         used_tag = [[0x02]]
         c_tag = None
         if tag is None:
@@ -3413,7 +3337,7 @@ class BindRequest__1:
         elif len(tag) > 0:
             used_tag = tag
 
-        return osspy.der.decode_integer(stream, used_tag, c_tag)
+        return der.decode_integer(stream, used_tag, c_tag)
 
     @staticmethod
     def validate(value, errors: list, comp_path: str = "") -> list:
@@ -3441,10 +3365,10 @@ class AuthenticationChoice:
         value: object,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         choice_type = AuthenticationChoice()
         return choice_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -3455,9 +3379,9 @@ class AuthenticationChoice:
         value: object,
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
-        tmpstream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
+        tmpstream = der.encodingstream(encoding_rule)
         is_encoded = False
 
         if not isinstance(value, dict) or len(value.keys()) != 1:
@@ -3490,7 +3414,7 @@ class AuthenticationChoice:
 
         if not is_encoded:
             if "_unknown_extension" in value:
-                tmpstream.append(osspy.der.encode_unknown_extensions(value["_unknown_extension"]))
+                tmpstream.append(der.encode_unknown_extensions(value["_unknown_extension"]))
                 is_encoded = True
             else:
                 raise ValueError(
@@ -3505,11 +3429,9 @@ class AuthenticationChoice:
 
         buffer = tmpstream.get_buffer()
         if stream.canonical:
-            osspy.der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
+            der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
         else:
-            osspy.der.encode_tags_lens_ber(
-                stream.buffer, used_tag, buffer, data_map["encoding_form"]
-            )
+            der.encode_tags_lens_ber(stream.buffer, used_tag, buffer, data_map["encoding_form"])
         stream.append(buffer)
 
         value_tracker.remove_ancestor()
@@ -3518,16 +3440,16 @@ class AuthenticationChoice:
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> dict:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         choice_type = AuthenticationChoice()
         return choice_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> dict:
         value = {}
         used_tag = []
@@ -3540,28 +3462,28 @@ class AuthenticationChoice:
 
         value_tracker.add_ancestor(value)
 
-        correct, length, offset = osspy.der.peek_tags(stream, used_tag)
+        correct, length, offset = der.peek_tags(stream, used_tag)
         if correct == 1:
             stream.skip_bytes(offset)
 
-        if not is_decoded and (osspy.der.peek_tags(stream, [[0x80]])[0]):
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+        if not is_decoded and (der.peek_tags(stream, [[0x80]])[0]):
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["simple"] = AuthenticationChoice__1.decode(
                 encoding_rule, stream, value_tracker, [[0x80]]
             )
             is_decoded = True
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
-        elif not is_decoded and (osspy.der.peek_tags(stream, [[0xA0]])[0]):
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
+        elif not is_decoded and (der.peek_tags(stream, [[0xA0]])[0]):
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["simple"] = AuthenticationChoice__1.decode(
                 encoding_rule, stream, value_tracker, [[0x80]]
             )
             is_decoded = True
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         if not is_decoded and (
-            osspy.der.peek_tags(stream, [[0xA3]])[0] or osspy.der.peek_tags(stream, [[0xA3]])[0]
+            der.peek_tags(stream, [[0xA3]])[0] or der.peek_tags(stream, [[0xA3]])[0]
         ):
             value["sasl"] = AuthenticationChoice__2.decode(
                 encoding_rule, stream, value_tracker, [[0xA3]]
@@ -3569,10 +3491,10 @@ class AuthenticationChoice:
             is_decoded = True
 
         if not is_decoded:
-            value["_unknown_extension"] = osspy.der.decode_undecoded_type(stream).hex().upper()
+            value["_unknown_extension"] = der.decode_undecoded_type(stream).hex().upper()
 
-        if length < 0 and osspy.der.is_eoc(stream):
-            osspy.der.skip_eoc(stream, len(used_tag))
+        if length < 0 and der.is_eoc(stream):
+            der.skip_eoc(stream, len(used_tag))
 
         value = value_tracker.execute_deferred(value)
         return value
@@ -3624,10 +3546,10 @@ class AuthenticationChoice__2:
         value: object,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         seq_type = AuthenticationChoice__2()
         return seq_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -3638,9 +3560,9 @@ class AuthenticationChoice__2:
         value: object,
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
-        tmpstream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
+        tmpstream = der.encodingstream(encoding_rule)
 
         if not isinstance(value, object):
             raise TypeError(
@@ -3669,7 +3591,7 @@ class AuthenticationChoice__2:
                 ).get_buffer()
             )
         if "_unknown_extensions" in value:
-            tmpstream.append(osspy.der.encode_unknown_extensions(value["_unknown_extensions"]))
+            tmpstream.append(der.encode_unknown_extensions(value["_unknown_extensions"]))
 
         used_tag = [[0xA3]]
         if tag is None:
@@ -3679,11 +3601,9 @@ class AuthenticationChoice__2:
 
         buffer = tmpstream.get_buffer()
         if stream.canonical:
-            osspy.der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
+            der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
         else:
-            osspy.der.encode_tags_lens_ber(
-                stream.buffer, used_tag, buffer, data_map["encoding_form"]
-            )
+            der.encode_tags_lens_ber(stream.buffer, used_tag, buffer, data_map["encoding_form"])
         stream.append(buffer)
 
         value_tracker.remove_ancestor()
@@ -3692,16 +3612,16 @@ class AuthenticationChoice__2:
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> dict:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         seq_type = AuthenticationChoice__2()
         return seq_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> dict:
         value = {}
         used_tag = [[0xA3]]
@@ -3712,7 +3632,7 @@ class AuthenticationChoice__2:
 
         value_tracker.add_ancestor(value)
 
-        correct, length, num_indefs = osspy.der.decode_tags(stream, used_tag)
+        correct, length, num_indefs = der.decode_tags(stream, used_tag)
         if correct == 0:
             value_tracker.remove_ancestor()
             raise ValueError(
@@ -3721,32 +3641,30 @@ class AuthenticationChoice__2:
         start_pos = stream.get_pos()
 
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["mechanism"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x24], [0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x24], [0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["mechanism"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x24], [0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "mechanism" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x24]])[0]
+            and der.peek_tags(stream, [[0x24]])[0]
         ):
             value["mechanism"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
@@ -3757,44 +3675,40 @@ class AuthenticationChoice__2:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["credentials"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x24], [0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x24], [0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["credentials"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x24], [0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "credentials" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x24]])[0]
+            and der.peek_tags(stream, [[0x24]])[0]
         ):
             value["credentials"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
             )
-        if stream.get_pos() < start_pos + length or (
-            length < 0 and not osspy.der.is_eoc(stream, length)
-        ):
+        if stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length)):
             position = stream.get_pos()
             while position < (start_pos + length) or (
-                length < 0 and not osspy.der.is_eoc(stream, length)
+                length < 0 and not der.is_eoc(stream, length)
             ):
-                octets = osspy.der.decode_undecoded_type(stream)
+                octets = der.decode_undecoded_type(stream)
                 position = position + len(octets)
 
                 if len(octets) > 0:
@@ -3802,8 +3716,8 @@ class AuthenticationChoice__2:
                         value["_unknown_extensions"] = ""
                     value["_unknown_extensions"] += octets.hex().upper()
 
-        if length < 0 and osspy.der.is_eoc(stream):
-            osspy.der.skip_eoc(stream, num_indefs)
+        if length < 0 and der.is_eoc(stream):
+            der.skip_eoc(stream, num_indefs)
 
         if len(self._def_vals) > 0:
             for key, val in self._def_vals.items():
@@ -3855,10 +3769,10 @@ class SaslCredentials:
         value: object,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         seq_type = SaslCredentials()
         return seq_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -3869,9 +3783,9 @@ class SaslCredentials:
         value: object,
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
-        tmpstream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
+        tmpstream = der.encodingstream(encoding_rule)
 
         if not isinstance(value, object):
             raise TypeError(
@@ -3900,7 +3814,7 @@ class SaslCredentials:
                 ).get_buffer()
             )
         if "_unknown_extensions" in value:
-            tmpstream.append(osspy.der.encode_unknown_extensions(value["_unknown_extensions"]))
+            tmpstream.append(der.encode_unknown_extensions(value["_unknown_extensions"]))
 
         used_tag = [[0x30]]
         if tag is None:
@@ -3910,11 +3824,9 @@ class SaslCredentials:
 
         buffer = tmpstream.get_buffer()
         if stream.canonical:
-            osspy.der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
+            der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
         else:
-            osspy.der.encode_tags_lens_ber(
-                stream.buffer, used_tag, buffer, data_map["encoding_form"]
-            )
+            der.encode_tags_lens_ber(stream.buffer, used_tag, buffer, data_map["encoding_form"])
         stream.append(buffer)
 
         value_tracker.remove_ancestor()
@@ -3923,16 +3835,16 @@ class SaslCredentials:
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> dict:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         seq_type = SaslCredentials()
         return seq_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> dict:
         value = {}
         used_tag = [[0x30]]
@@ -3943,7 +3855,7 @@ class SaslCredentials:
 
         value_tracker.add_ancestor(value)
 
-        correct, length, num_indefs = osspy.der.decode_tags(stream, used_tag)
+        correct, length, num_indefs = der.decode_tags(stream, used_tag)
         if correct == 0:
             value_tracker.remove_ancestor()
             raise ValueError(
@@ -3952,32 +3864,30 @@ class SaslCredentials:
         start_pos = stream.get_pos()
 
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["mechanism"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x24], [0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x24], [0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["mechanism"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x24], [0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "mechanism" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x24]])[0]
+            and der.peek_tags(stream, [[0x24]])[0]
         ):
             value["mechanism"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
@@ -3988,44 +3898,40 @@ class SaslCredentials:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["credentials"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x24], [0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x24], [0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["credentials"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x24], [0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "credentials" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x24]])[0]
+            and der.peek_tags(stream, [[0x24]])[0]
         ):
             value["credentials"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
             )
-        if stream.get_pos() < start_pos + length or (
-            length < 0 and not osspy.der.is_eoc(stream, length)
-        ):
+        if stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length)):
             position = stream.get_pos()
             while position < (start_pos + length) or (
-                length < 0 and not osspy.der.is_eoc(stream, length)
+                length < 0 and not der.is_eoc(stream, length)
             ):
-                octets = osspy.der.decode_undecoded_type(stream)
+                octets = der.decode_undecoded_type(stream)
                 position = position + len(octets)
 
                 if len(octets) > 0:
@@ -4033,8 +3939,8 @@ class SaslCredentials:
                         value["_unknown_extensions"] = ""
                     value["_unknown_extensions"] += octets.hex().upper()
 
-        if length < 0 and osspy.der.is_eoc(stream):
-            osspy.der.skip_eoc(stream, num_indefs)
+        if length < 0 and der.is_eoc(stream):
+            der.skip_eoc(stream, num_indefs)
 
         if len(self._def_vals) > 0:
             for key, val in self._def_vals.items():
@@ -4090,10 +3996,10 @@ class AssertionValue:
         value: Union[str, dict],
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         octetstring_type = AssertionValue()
         return octetstring_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -4104,8 +4010,8 @@ class AssertionValue:
         value: Union[str, dict],
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
         if not isinstance(value, str) and not isinstance(value, dict):
             raise ValueError(
                 "65201: The value class containing the value to be encoded does not match the type specified in the schema!"
@@ -4133,22 +4039,22 @@ class AssertionValue:
         elif len(tag) > 0:
             used_tag = tag
 
-        osspy.der.encode_octet_string(stream, bin_val, used_tag)
+        der.encode_octet_string(stream, bin_val, used_tag)
 
         return stream
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> Union[str, dict]:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         octetstring_type = AssertionValue()
         return octetstring_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> Union[str, dict]:
         used_tag = [[0x04]]
         c_tag = [[0x24]]
@@ -4157,13 +4063,13 @@ class AssertionValue:
         elif len(tag) > 0:
             used_tag = tag
 
-        value = osspy.der.decode_octet_string(stream, used_tag, c_tag)
+        value = der.decode_octet_string(stream, used_tag, c_tag)
 
         constraint = self._contents_constrait
         if constraint is not None:
             func = getattr(constraint, "decode")
             bin_val = bytearray.fromhex(value)
-            tmpstream = osspy.der.decodingstream(bin_val, encoding_rule)
+            tmpstream = der.decodingstream(bin_val, encoding_rule)
             try:
                 valcontaining = {}
                 current_depth = value_tracker.depth
@@ -4223,10 +4129,10 @@ class BindResponse:
         value: object,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         seq_type = BindResponse()
         return seq_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -4237,9 +4143,9 @@ class BindResponse:
         value: object,
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
-        tmpstream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
+        tmpstream = der.encodingstream(encoding_rule)
 
         if not isinstance(value, object):
             raise TypeError(
@@ -4294,7 +4200,7 @@ class BindResponse:
                 ).get_buffer()
             )
         if "_unknown_extensions" in value:
-            tmpstream.append(osspy.der.encode_unknown_extensions(value["_unknown_extensions"]))
+            tmpstream.append(der.encode_unknown_extensions(value["_unknown_extensions"]))
 
         used_tag = [[0x61]]
         if tag is None:
@@ -4304,11 +4210,9 @@ class BindResponse:
 
         buffer = tmpstream.get_buffer()
         if stream.canonical:
-            osspy.der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
+            der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
         else:
-            osspy.der.encode_tags_lens_ber(
-                stream.buffer, used_tag, buffer, data_map["encoding_form"]
-            )
+            der.encode_tags_lens_ber(stream.buffer, used_tag, buffer, data_map["encoding_form"])
         stream.append(buffer)
 
         value_tracker.remove_ancestor()
@@ -4317,16 +4221,16 @@ class BindResponse:
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> dict:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         seq_type = BindResponse()
         return seq_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> dict:
         value = {}
         used_tag = [[0x61]]
@@ -4337,7 +4241,7 @@ class BindResponse:
 
         value_tracker.add_ancestor(value)
 
-        correct, length, num_indefs = osspy.der.decode_tags(stream, used_tag)
+        correct, length, num_indefs = der.decode_tags(stream, used_tag)
         if correct == 0:
             value_tracker.remove_ancestor()
             raise ValueError(
@@ -4346,32 +4250,30 @@ class BindResponse:
         start_pos = stream.get_pos()
 
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x0A]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x0A]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["resultCode"] = LDAPResult__1.decode(
                 encoding_rule, stream, value_tracker, [[0x0A]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x2A], [0x0A]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x2A], [0x0A]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["resultCode"] = LDAPResult__1.decode(
                 encoding_rule, stream, value_tracker, [[0x2A], [0x0A]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "resultCode" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x2A]])[0]
+            and der.peek_tags(stream, [[0x2A]])[0]
         ):
             value["resultCode"] = LDAPResult__1.decode(
                 encoding_rule, stream, value_tracker, [[0x0A]]
@@ -4382,32 +4284,30 @@ class BindResponse:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["matchedDN"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x24], [0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x24], [0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["matchedDN"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x24], [0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "matchedDN" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x24]])[0]
+            and der.peek_tags(stream, [[0x24]])[0]
         ):
             value["matchedDN"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
@@ -4418,32 +4318,30 @@ class BindResponse:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["diagnosticMessage"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x24], [0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x24], [0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["diagnosticMessage"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x24], [0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "diagnosticMessage" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x24]])[0]
+            and der.peek_tags(stream, [[0x24]])[0]
         ):
             value["diagnosticMessage"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
@@ -4454,49 +4352,44 @@ class BindResponse:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0xA3]])[0]:
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0xA3]])[0]:
             value["referral"] = LDAPResult__4.decode(encoding_rule, stream, value_tracker, [[0xA3]])
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x87]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x87]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["serverSaslCreds"] = Filter__14.decode(
                 encoding_rule, stream, value_tracker, [[0x87]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0xA7], [0x87]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0xA7], [0x87]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["serverSaslCreds"] = Filter__14.decode(
                 encoding_rule, stream, value_tracker, [[0xA7], [0x87]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "serverSaslCreds" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0xA7]])[0]
+            and der.peek_tags(stream, [[0xA7]])[0]
         ):
             value["serverSaslCreds"] = Filter__14.decode(
                 encoding_rule, stream, value_tracker, [[0x87]]
             )
-        if stream.get_pos() < start_pos + length or (
-            length < 0 and not osspy.der.is_eoc(stream, length)
-        ):
+        if stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length)):
             position = stream.get_pos()
             while position < (start_pos + length) or (
-                length < 0 and not osspy.der.is_eoc(stream, length)
+                length < 0 and not der.is_eoc(stream, length)
             ):
-                octets = osspy.der.decode_undecoded_type(stream)
+                octets = der.decode_undecoded_type(stream)
                 position = position + len(octets)
 
                 if len(octets) > 0:
@@ -4504,8 +4397,8 @@ class BindResponse:
                         value["_unknown_extensions"] = ""
                     value["_unknown_extensions"] += octets.hex().upper()
 
-        if length < 0 and osspy.der.is_eoc(stream):
-            osspy.der.skip_eoc(stream, num_indefs)
+        if length < 0 and der.is_eoc(stream):
+            der.skip_eoc(stream, num_indefs)
 
         if len(self._def_vals) > 0:
             for key, val in self._def_vals.items():
@@ -4568,37 +4461,37 @@ class UnbindRequest:
         value: None,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         simple_type = UnbindRequest()
         return simple_type.encode_value(value, tag, stream)
 
     def encode_value(
-        self, value: None, tag: list, stream: osspy.der.encodingstream
-    ) -> osspy.der.encodingstream:
+        self, value: None, tag: list, stream: der.encodingstream
+    ) -> der.encodingstream:
         used_tag = [[0x42]]
         if tag is None:
             tag = []
         elif len(tag) > 0:
             used_tag = tag
 
-        osspy.der.encode_null(stream, value, used_tag)
+        der.encode_null(stream, value, used_tag)
         return stream
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker_: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker_: dict, tag: list = None
     ) -> None:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         simple_type = UnbindRequest()
         return simple_type.decode_value(stream, tag)
 
-    def decode_value(self, stream: osspy.der.decodingstream, tag: list) -> None:
+    def decode_value(self, stream: der.decodingstream, tag: list) -> None:
         used_tag = [[0x42]]
         c_tag = None
         if tag is None:
@@ -4606,7 +4499,7 @@ class UnbindRequest:
         elif len(tag) > 0:
             used_tag = tag
 
-        return osspy.der.decode_null(stream, used_tag, c_tag)
+        return der.decode_null(stream, used_tag, c_tag)
 
     @staticmethod
     def validate(value, errors: list, comp_path: str = "") -> list:
@@ -4646,10 +4539,10 @@ class SearchRequest:
         value: object,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         seq_type = SearchRequest()
         return seq_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -4660,9 +4553,9 @@ class SearchRequest:
         value: object,
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
-        tmpstream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
+        tmpstream = der.encodingstream(encoding_rule)
 
         if not isinstance(value, object):
             raise TypeError(
@@ -4753,7 +4646,7 @@ class SearchRequest:
                 "63803: A mandatory component is missing from the sequence or set value!"
             )
         if "_unknown_extensions" in value:
-            tmpstream.append(osspy.der.encode_unknown_extensions(value["_unknown_extensions"]))
+            tmpstream.append(der.encode_unknown_extensions(value["_unknown_extensions"]))
 
         used_tag = [[0x63]]
         if tag is None:
@@ -4763,11 +4656,9 @@ class SearchRequest:
 
         buffer = tmpstream.get_buffer()
         if stream.canonical:
-            osspy.der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
+            der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
         else:
-            osspy.der.encode_tags_lens_ber(
-                stream.buffer, used_tag, buffer, data_map["encoding_form"]
-            )
+            der.encode_tags_lens_ber(stream.buffer, used_tag, buffer, data_map["encoding_form"])
         stream.append(buffer)
 
         value_tracker.remove_ancestor()
@@ -4776,16 +4667,16 @@ class SearchRequest:
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> dict:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         seq_type = SearchRequest()
         return seq_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> dict:
         value = {}
         used_tag = [[0x63]]
@@ -4796,7 +4687,7 @@ class SearchRequest:
 
         value_tracker.add_ancestor(value)
 
-        correct, length, num_indefs = osspy.der.decode_tags(stream, used_tag)
+        correct, length, num_indefs = der.decode_tags(stream, used_tag)
         if correct == 0:
             value_tracker.remove_ancestor()
             raise ValueError(
@@ -4805,32 +4696,30 @@ class SearchRequest:
         start_pos = stream.get_pos()
 
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["baseObject"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x24], [0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x24], [0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["baseObject"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x24], [0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "baseObject" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x24]])[0]
+            and der.peek_tags(stream, [[0x24]])[0]
         ):
             value["baseObject"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
@@ -4841,30 +4730,28 @@ class SearchRequest:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x0A]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x0A]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["scope"] = SearchRequest__2.decode(encoding_rule, stream, value_tracker, [[0x0A]])
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x2A], [0x0A]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x2A], [0x0A]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["scope"] = SearchRequest__2.decode(
                 encoding_rule, stream, value_tracker, [[0x2A], [0x0A]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "scope" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x2A]])[0]
+            and der.peek_tags(stream, [[0x2A]])[0]
         ):
             value["scope"] = SearchRequest__2.decode(encoding_rule, stream, value_tracker, [[0x0A]])
         else:
@@ -4873,32 +4760,30 @@ class SearchRequest:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x0A]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x0A]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["derefAliases"] = SearchRequest__3.decode(
                 encoding_rule, stream, value_tracker, [[0x0A]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x2A], [0x0A]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x2A], [0x0A]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["derefAliases"] = SearchRequest__3.decode(
                 encoding_rule, stream, value_tracker, [[0x2A], [0x0A]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "derefAliases" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x2A]])[0]
+            and der.peek_tags(stream, [[0x2A]])[0]
         ):
             value["derefAliases"] = SearchRequest__3.decode(
                 encoding_rule, stream, value_tracker, [[0x0A]]
@@ -4909,30 +4794,28 @@ class SearchRequest:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x02]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x02]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["sizeLimit"] = MessageID.decode(encoding_rule, stream, value_tracker, [[0x02]])
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x22], [0x02]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x22], [0x02]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["sizeLimit"] = MessageID.decode(
                 encoding_rule, stream, value_tracker, [[0x22], [0x02]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "sizeLimit" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x22]])[0]
+            and der.peek_tags(stream, [[0x22]])[0]
         ):
             value["sizeLimit"] = MessageID.decode(encoding_rule, stream, value_tracker, [[0x02]])
         else:
@@ -4941,30 +4824,28 @@ class SearchRequest:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x02]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x02]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["timeLimit"] = MessageID.decode(encoding_rule, stream, value_tracker, [[0x02]])
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x22], [0x02]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x22], [0x02]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["timeLimit"] = MessageID.decode(
                 encoding_rule, stream, value_tracker, [[0x22], [0x02]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "timeLimit" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x22]])[0]
+            and der.peek_tags(stream, [[0x22]])[0]
         ):
             value["timeLimit"] = MessageID.decode(encoding_rule, stream, value_tracker, [[0x02]])
         else:
@@ -4973,30 +4854,28 @@ class SearchRequest:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x01]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x01]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["typesOnly"] = Control__2.decode(encoding_rule, stream, value_tracker, [[0x01]])
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x21], [0x01]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x21], [0x01]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["typesOnly"] = Control__2.decode(
                 encoding_rule, stream, value_tracker, [[0x21], [0x01]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "typesOnly" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x21]])[0]
+            and der.peek_tags(stream, [[0x21]])[0]
         ):
             value["typesOnly"] = Control__2.decode(encoding_rule, stream, value_tracker, [[0x01]])
         else:
@@ -5005,9 +4884,8 @@ class SearchRequest:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_discriminating_tags(
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_discriminating_tags(
             stream,
             [
                 [[0xA0]],
@@ -5026,13 +4904,12 @@ class SearchRequest:
         ]:
             value["filter"] = Filter.decode(encoding_rule, stream, value_tracker, [])
         elif stream.get_pos() < start_pos + length or (
-            length < 0 and not osspy.der.is_eoc(stream, length)
+            length < 0 and not der.is_eoc(stream, length)
         ):
             value["filter"] = Filter.decode(encoding_rule, stream, value_tracker, [])
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x30]])[0]:
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x30]])[0]:
             value["attributes"] = AttributeSelection.decode(
                 encoding_rule, stream, value_tracker, [[0x30]]
             )
@@ -5041,14 +4918,12 @@ class SearchRequest:
             raise ValueError(
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
-        if stream.get_pos() < start_pos + length or (
-            length < 0 and not osspy.der.is_eoc(stream, length)
-        ):
+        if stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length)):
             position = stream.get_pos()
             while position < (start_pos + length) or (
-                length < 0 and not osspy.der.is_eoc(stream, length)
+                length < 0 and not der.is_eoc(stream, length)
             ):
-                octets = osspy.der.decode_undecoded_type(stream)
+                octets = der.decode_undecoded_type(stream)
                 position = position + len(octets)
 
                 if len(octets) > 0:
@@ -5056,8 +4931,8 @@ class SearchRequest:
                         value["_unknown_extensions"] = ""
                     value["_unknown_extensions"] += octets.hex().upper()
 
-        if length < 0 and osspy.der.is_eoc(stream):
-            osspy.der.skip_eoc(stream, num_indefs)
+        if length < 0 and der.is_eoc(stream):
+            der.skip_eoc(stream, num_indefs)
 
         if len(self._def_vals) > 0:
             for key, val in self._def_vals.items():
@@ -5135,17 +5010,17 @@ class SearchRequest__2:
         value: Union[str, int],
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         enum_type = SearchRequest__2()
         return enum_type.encode_value(value, tag, stream)
 
     def encode_value(
-        self, value: Union[str, int], tag: list, stream: osspy.der.encodingstream
-    ) -> osspy.der.encodingstream:
+        self, value: Union[str, int], tag: list, stream: der.encodingstream
+    ) -> der.encodingstream:
         if not isinstance(value, int) and not isinstance(value, str):
             raise TypeError(
                 "65201: The value class containing the value to be encoded does not match the type specified in the schema!"
@@ -5171,27 +5046,27 @@ class SearchRequest__2:
             tag = []
         elif len(tag) > 0:
             used_tag = tag
-        osspy.der.encode_integer(stream, int_val, used_tag)
+        der.encode_integer(stream, int_val, used_tag)
         return stream
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> Union[str, int]:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         enum_type = SearchRequest__2()
         return enum_type.decode_value(stream, tag)
 
-    def decode_value(self, stream: osspy.der.decodingstream, tag: list) -> Union[str, int]:
+    def decode_value(self, stream: der.decodingstream, tag: list) -> Union[str, int]:
         used_tag = [[0x0A]]
         if tag is None:
             tag = []
         elif len(tag) > 0:
             used_tag = tag
 
-        value = osspy.der.decode_integer(stream, used_tag)
+        value = der.decode_integer(stream, used_tag)
 
         identifier = None
         for item in self._identifiers:
@@ -5241,17 +5116,17 @@ class SearchRequest__3:
         value: Union[str, int],
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         enum_type = SearchRequest__3()
         return enum_type.encode_value(value, tag, stream)
 
     def encode_value(
-        self, value: Union[str, int], tag: list, stream: osspy.der.encodingstream
-    ) -> osspy.der.encodingstream:
+        self, value: Union[str, int], tag: list, stream: der.encodingstream
+    ) -> der.encodingstream:
         if not isinstance(value, int) and not isinstance(value, str):
             raise TypeError(
                 "65201: The value class containing the value to be encoded does not match the type specified in the schema!"
@@ -5277,27 +5152,27 @@ class SearchRequest__3:
             tag = []
         elif len(tag) > 0:
             used_tag = tag
-        osspy.der.encode_integer(stream, int_val, used_tag)
+        der.encode_integer(stream, int_val, used_tag)
         return stream
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> Union[str, int]:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         enum_type = SearchRequest__3()
         return enum_type.decode_value(stream, tag)
 
-    def decode_value(self, stream: osspy.der.decodingstream, tag: list) -> Union[str, int]:
+    def decode_value(self, stream: der.decodingstream, tag: list) -> Union[str, int]:
         used_tag = [[0x0A]]
         if tag is None:
             tag = []
         elif len(tag) > 0:
             used_tag = tag
 
-        value = osspy.der.decode_integer(stream, used_tag)
+        value = der.decode_integer(stream, used_tag)
 
         identifier = None
         for item in self._identifiers:
@@ -5348,37 +5223,35 @@ class MessageID:
         value: int,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         simple_type = MessageID()
         return simple_type.encode_value(value, tag, stream)
 
-    def encode_value(
-        self, value: int, tag: list, stream: osspy.der.encodingstream
-    ) -> osspy.der.encodingstream:
+    def encode_value(self, value: int, tag: list, stream: der.encodingstream) -> der.encodingstream:
         used_tag = [[0x02]]
         if tag is None:
             tag = []
         elif len(tag) > 0:
             used_tag = tag
 
-        osspy.der.encode_integer(stream, value, used_tag)
+        der.encode_integer(stream, value, used_tag)
         return stream
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker_: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker_: dict, tag: list = None
     ) -> int:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         simple_type = MessageID()
         return simple_type.decode_value(stream, tag)
 
-    def decode_value(self, stream: osspy.der.decodingstream, tag: list) -> int:
+    def decode_value(self, stream: der.decodingstream, tag: list) -> int:
         used_tag = [[0x02]]
         c_tag = None
         if tag is None:
@@ -5386,7 +5259,7 @@ class MessageID:
         elif len(tag) > 0:
             used_tag = tag
 
-        return osspy.der.decode_integer(stream, used_tag, c_tag)
+        return der.decode_integer(stream, used_tag, c_tag)
 
     @staticmethod
     def validate(value, errors: list, comp_path: str = "") -> list:
@@ -5418,10 +5291,10 @@ class AttributeSelection:
         value: list,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         seqof_type = AttributeSelection()
         return seqof_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -5432,9 +5305,9 @@ class AttributeSelection:
         value: list,
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
-        tmpstream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
+        tmpstream = der.encodingstream(encoding_rule)
         data_map = {}
 
         if not isinstance(value, list):
@@ -5472,27 +5345,25 @@ class AttributeSelection:
 
         buffer = tmpstream.get_buffer()
         if stream.canonical:
-            osspy.der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
+            der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
         else:
-            osspy.der.encode_tags_lens_ber(
-                stream.buffer, used_tag, buffer, data_map["encoding_form"]
-            )
+            der.encode_tags_lens_ber(stream.buffer, used_tag, buffer, data_map["encoding_form"])
         stream.append(buffer)
 
         return stream
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> list:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         seqof_type = AttributeSelection()
         return seqof_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> list:
         components = []
         used_tag = [[0x30]]
@@ -5502,7 +5373,7 @@ class AttributeSelection:
             used_tag = tag
         idx = 0
 
-        correct, length, num_indefs = osspy.der.decode_tags(stream, used_tag)
+        correct, length, num_indefs = der.decode_tags(stream, used_tag)
         if correct == 0:
             raise ValueError(
                 "70003: The next tag present in the encoding does not match the tag of the type to be decoded!"
@@ -5510,17 +5381,17 @@ class AttributeSelection:
 
         position = stream.get_pos()
         if length == -1:
-            while not osspy.der.is_eoc(stream) and not stream.is_eof():
+            while not der.is_eoc(stream) and not stream.is_eof():
                 value_tracker.add_ancestor(idx)
-                is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+                is_indefinite = der.is_indefinite(stream, stream.get_pos())
                 components.append(
                     AssertionValue.decode(encoding_rule, stream, value_tracker, [[0x04]])
                 )
-                if is_indefinite and osspy.der.is_eoc(stream):
-                    osspy.der.skip_eoc(stream, 1)
+                if is_indefinite and der.is_eoc(stream):
+                    der.skip_eoc(stream, 1)
                 value_tracker.remove_ancestor()
                 idx += 1
-            osspy.der.skip_eoc(stream, num_indefs)
+            der.skip_eoc(stream, num_indefs)
         else:
             while stream.get_pos() < position + length:
                 value_tracker.add_ancestor(idx)
@@ -5561,10 +5432,10 @@ class Filter:
         value: object,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         choice_type = Filter()
         return choice_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -5575,9 +5446,9 @@ class Filter:
         value: object,
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
-        tmpstream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
+        tmpstream = der.encodingstream(encoding_rule)
         is_encoded = False
 
         if not isinstance(value, dict) or len(value.keys()) != 1:
@@ -5674,7 +5545,7 @@ class Filter:
 
         if not is_encoded:
             if "_unknown_extension" in value:
-                tmpstream.append(osspy.der.encode_unknown_extensions(value["_unknown_extension"]))
+                tmpstream.append(der.encode_unknown_extensions(value["_unknown_extension"]))
                 is_encoded = True
             else:
                 raise ValueError(
@@ -5689,11 +5560,9 @@ class Filter:
 
         buffer = tmpstream.get_buffer()
         if stream.canonical:
-            osspy.der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
+            der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
         else:
-            osspy.der.encode_tags_lens_ber(
-                stream.buffer, used_tag, buffer, data_map["encoding_form"]
-            )
+            der.encode_tags_lens_ber(stream.buffer, used_tag, buffer, data_map["encoding_form"])
         stream.append(buffer)
 
         value_tracker.remove_ancestor()
@@ -5702,16 +5571,16 @@ class Filter:
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> dict:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         choice_type = Filter()
         return choice_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> dict:
         value = {}
         used_tag = []
@@ -5724,68 +5593,68 @@ class Filter:
 
         value_tracker.add_ancestor(value)
 
-        correct, length, offset = osspy.der.peek_tags(stream, used_tag)
+        correct, length, offset = der.peek_tags(stream, used_tag)
         if correct == 1:
             stream.skip_bytes(offset)
 
         if not is_decoded and (
-            osspy.der.peek_tags(stream, [[0xA0]])[0] or osspy.der.peek_tags(stream, [[0xA0]])[0]
+            der.peek_tags(stream, [[0xA0]])[0] or der.peek_tags(stream, [[0xA0]])[0]
         ):
             value["and"] = Filter__2.decode(encoding_rule, stream, value_tracker, [[0xA0]])
             is_decoded = True
         if not is_decoded and (
-            osspy.der.peek_tags(stream, [[0xA1]])[0] or osspy.der.peek_tags(stream, [[0xA1]])[0]
+            der.peek_tags(stream, [[0xA1]])[0] or der.peek_tags(stream, [[0xA1]])[0]
         ):
             value["or"] = Filter__5.decode(encoding_rule, stream, value_tracker, [[0xA1]])
             is_decoded = True
         if not is_decoded and (
-            osspy.der.peek_tags(stream, [[0xA2]])[0] or osspy.der.peek_tags(stream, [[0xA2]])[0]
+            der.peek_tags(stream, [[0xA2]])[0] or der.peek_tags(stream, [[0xA2]])[0]
         ):
             value["not"] = Filter__9.decode(encoding_rule, stream, value_tracker, [[0xA2]])
             is_decoded = True
         if not is_decoded and (
-            osspy.der.peek_tags(stream, [[0xA3]])[0] or osspy.der.peek_tags(stream, [[0xA3]])[0]
+            der.peek_tags(stream, [[0xA3]])[0] or der.peek_tags(stream, [[0xA3]])[0]
         ):
             value["equalityMatch"] = Filter__10.decode(
                 encoding_rule, stream, value_tracker, [[0xA3]]
             )
             is_decoded = True
         if not is_decoded and (
-            osspy.der.peek_tags(stream, [[0xA4]])[0] or osspy.der.peek_tags(stream, [[0xA4]])[0]
+            der.peek_tags(stream, [[0xA4]])[0] or der.peek_tags(stream, [[0xA4]])[0]
         ):
             value["substrings"] = Filter__11.decode(encoding_rule, stream, value_tracker, [[0xA4]])
             is_decoded = True
         if not is_decoded and (
-            osspy.der.peek_tags(stream, [[0xA5]])[0] or osspy.der.peek_tags(stream, [[0xA5]])[0]
+            der.peek_tags(stream, [[0xA5]])[0] or der.peek_tags(stream, [[0xA5]])[0]
         ):
             value["greaterOrEqual"] = Filter__12.decode(
                 encoding_rule, stream, value_tracker, [[0xA5]]
             )
             is_decoded = True
         if not is_decoded and (
-            osspy.der.peek_tags(stream, [[0xA6]])[0] or osspy.der.peek_tags(stream, [[0xA6]])[0]
+            der.peek_tags(stream, [[0xA6]])[0] or der.peek_tags(stream, [[0xA6]])[0]
         ):
             value["lessOrEqual"] = Filter__13.decode(encoding_rule, stream, value_tracker, [[0xA6]])
             is_decoded = True
-        if not is_decoded and (osspy.der.peek_tags(stream, [[0x87]])[0]):
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+        if not is_decoded and (der.peek_tags(stream, [[0x87]])[0]):
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["present"] = Filter__14.decode(encoding_rule, stream, value_tracker, [[0x87]])
             is_decoded = True
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
-        elif not is_decoded and (osspy.der.peek_tags(stream, [[0xA7]])[0]):
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
+        elif not is_decoded and (der.peek_tags(stream, [[0xA7]])[0]):
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["present"] = Filter__14.decode(encoding_rule, stream, value_tracker, [[0x87]])
             is_decoded = True
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         if not is_decoded and (
-            osspy.der.peek_tags(stream, [[0xA8]])[0] or osspy.der.peek_tags(stream, [[0xA8]])[0]
+            der.peek_tags(stream, [[0xA8]])[0] or der.peek_tags(stream, [[0xA8]])[0]
         ):
             value["approxMatch"] = Filter__15.decode(encoding_rule, stream, value_tracker, [[0xA8]])
             is_decoded = True
         if not is_decoded and (
-            osspy.der.peek_tags(stream, [[0xA9]])[0] or osspy.der.peek_tags(stream, [[0xA9]])[0]
+            der.peek_tags(stream, [[0xA9]])[0] or der.peek_tags(stream, [[0xA9]])[0]
         ):
             value["extensibleMatch"] = Filter__16.decode(
                 encoding_rule, stream, value_tracker, [[0xA9]]
@@ -5793,10 +5662,10 @@ class Filter:
             is_decoded = True
 
         if not is_decoded:
-            value["_unknown_extension"] = osspy.der.decode_undecoded_type(stream).hex().upper()
+            value["_unknown_extension"] = der.decode_undecoded_type(stream).hex().upper()
 
-        if length < 0 and osspy.der.is_eoc(stream):
-            osspy.der.skip_eoc(stream, len(used_tag))
+        if length < 0 and der.is_eoc(stream):
+            der.skip_eoc(stream, len(used_tag))
 
         value = value_tracker.execute_deferred(value)
         return value
@@ -5880,10 +5749,10 @@ class Filter__2:
         value: list,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         seqof_type = Filter__2()
         return seqof_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -5894,9 +5763,9 @@ class Filter__2:
         value: list,
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
-        tmpstream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
+        tmpstream = der.encodingstream(encoding_rule)
         data_map = {}
 
         if not isinstance(value, list):
@@ -5930,27 +5799,25 @@ class Filter__2:
 
         buffer = tmpstream.get_buffer()
         if stream.canonical:
-            osspy.der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
+            der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
         else:
-            osspy.der.encode_tags_lens_ber(
-                stream.buffer, used_tag, buffer, data_map["encoding_form"]
-            )
+            der.encode_tags_lens_ber(stream.buffer, used_tag, buffer, data_map["encoding_form"])
         stream.append(buffer)
 
         return stream
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> list:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         seqof_type = Filter__2()
         return seqof_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> list:
         components = []
         used_tag = [[0xA0]]
@@ -5960,7 +5827,7 @@ class Filter__2:
             used_tag = tag
         idx = 0
 
-        correct, length, num_indefs = osspy.der.decode_tags(stream, used_tag)
+        correct, length, num_indefs = der.decode_tags(stream, used_tag)
         if correct == 0:
             raise ValueError(
                 "70003: The next tag present in the encoding does not match the tag of the type to be decoded!"
@@ -5968,12 +5835,12 @@ class Filter__2:
 
         position = stream.get_pos()
         if length == -1:
-            while not osspy.der.is_eoc(stream) and not stream.is_eof():
+            while not der.is_eoc(stream) and not stream.is_eof():
                 value_tracker.add_ancestor(idx)
                 components.append(Filter.decode(encoding_rule, stream, value_tracker, []))
                 value_tracker.remove_ancestor()
                 idx += 1
-            osspy.der.skip_eoc(stream, num_indefs)
+            der.skip_eoc(stream, num_indefs)
         else:
             while stream.get_pos() < position + length:
                 value_tracker.add_ancestor(idx)
@@ -6017,10 +5884,10 @@ class Filter__5:
         value: list,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         seqof_type = Filter__5()
         return seqof_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -6031,9 +5898,9 @@ class Filter__5:
         value: list,
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
-        tmpstream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
+        tmpstream = der.encodingstream(encoding_rule)
         data_map = {}
 
         if not isinstance(value, list):
@@ -6067,27 +5934,25 @@ class Filter__5:
 
         buffer = tmpstream.get_buffer()
         if stream.canonical:
-            osspy.der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
+            der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
         else:
-            osspy.der.encode_tags_lens_ber(
-                stream.buffer, used_tag, buffer, data_map["encoding_form"]
-            )
+            der.encode_tags_lens_ber(stream.buffer, used_tag, buffer, data_map["encoding_form"])
         stream.append(buffer)
 
         return stream
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> list:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         seqof_type = Filter__5()
         return seqof_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> list:
         components = []
         used_tag = [[0xA1]]
@@ -6097,7 +5962,7 @@ class Filter__5:
             used_tag = tag
         idx = 0
 
-        correct, length, num_indefs = osspy.der.decode_tags(stream, used_tag)
+        correct, length, num_indefs = der.decode_tags(stream, used_tag)
         if correct == 0:
             raise ValueError(
                 "70003: The next tag present in the encoding does not match the tag of the type to be decoded!"
@@ -6105,12 +5970,12 @@ class Filter__5:
 
         position = stream.get_pos()
         if length == -1:
-            while not osspy.der.is_eoc(stream) and not stream.is_eof():
+            while not der.is_eoc(stream) and not stream.is_eof():
                 value_tracker.add_ancestor(idx)
                 components.append(Filter.decode(encoding_rule, stream, value_tracker, []))
                 value_tracker.remove_ancestor()
                 idx += 1
-            osspy.der.skip_eoc(stream, num_indefs)
+            der.skip_eoc(stream, num_indefs)
         else:
             while stream.get_pos() < position + length:
                 value_tracker.add_ancestor(idx)
@@ -6149,10 +6014,10 @@ class Filter__9:
         value: object,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         choice_type = Filter__9()
         return choice_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -6163,9 +6028,9 @@ class Filter__9:
         value: object,
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
-        tmpstream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
+        tmpstream = der.encodingstream(encoding_rule)
         is_encoded = False
 
         if not isinstance(value, dict) or len(value.keys()) != 1:
@@ -6262,7 +6127,7 @@ class Filter__9:
 
         if not is_encoded:
             if "_unknown_extension" in value:
-                tmpstream.append(osspy.der.encode_unknown_extensions(value["_unknown_extension"]))
+                tmpstream.append(der.encode_unknown_extensions(value["_unknown_extension"]))
                 is_encoded = True
             else:
                 raise ValueError(
@@ -6277,11 +6142,9 @@ class Filter__9:
 
         buffer = tmpstream.get_buffer()
         if stream.canonical:
-            osspy.der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
+            der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
         else:
-            osspy.der.encode_tags_lens_ber(
-                stream.buffer, used_tag, buffer, data_map["encoding_form"]
-            )
+            der.encode_tags_lens_ber(stream.buffer, used_tag, buffer, data_map["encoding_form"])
         stream.append(buffer)
 
         value_tracker.remove_ancestor()
@@ -6290,16 +6153,16 @@ class Filter__9:
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> dict:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         choice_type = Filter__9()
         return choice_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> dict:
         value = {}
         used_tag = [[0xA2]]
@@ -6312,68 +6175,68 @@ class Filter__9:
 
         value_tracker.add_ancestor(value)
 
-        correct, length, offset = osspy.der.peek_tags(stream, used_tag)
+        correct, length, offset = der.peek_tags(stream, used_tag)
         if correct == 1:
             stream.skip_bytes(offset)
 
         if not is_decoded and (
-            osspy.der.peek_tags(stream, [[0xA0]])[0] or osspy.der.peek_tags(stream, [[0xA0]])[0]
+            der.peek_tags(stream, [[0xA0]])[0] or der.peek_tags(stream, [[0xA0]])[0]
         ):
             value["and"] = Filter__2.decode(encoding_rule, stream, value_tracker, [[0xA0]])
             is_decoded = True
         if not is_decoded and (
-            osspy.der.peek_tags(stream, [[0xA1]])[0] or osspy.der.peek_tags(stream, [[0xA1]])[0]
+            der.peek_tags(stream, [[0xA1]])[0] or der.peek_tags(stream, [[0xA1]])[0]
         ):
             value["or"] = Filter__5.decode(encoding_rule, stream, value_tracker, [[0xA1]])
             is_decoded = True
         if not is_decoded and (
-            osspy.der.peek_tags(stream, [[0xA2]])[0] or osspy.der.peek_tags(stream, [[0xA2]])[0]
+            der.peek_tags(stream, [[0xA2]])[0] or der.peek_tags(stream, [[0xA2]])[0]
         ):
             value["not"] = Filter__9.decode(encoding_rule, stream, value_tracker, [[0xA2]])
             is_decoded = True
         if not is_decoded and (
-            osspy.der.peek_tags(stream, [[0xA3]])[0] or osspy.der.peek_tags(stream, [[0xA3]])[0]
+            der.peek_tags(stream, [[0xA3]])[0] or der.peek_tags(stream, [[0xA3]])[0]
         ):
             value["equalityMatch"] = Filter__10.decode(
                 encoding_rule, stream, value_tracker, [[0xA3]]
             )
             is_decoded = True
         if not is_decoded and (
-            osspy.der.peek_tags(stream, [[0xA4]])[0] or osspy.der.peek_tags(stream, [[0xA4]])[0]
+            der.peek_tags(stream, [[0xA4]])[0] or der.peek_tags(stream, [[0xA4]])[0]
         ):
             value["substrings"] = Filter__11.decode(encoding_rule, stream, value_tracker, [[0xA4]])
             is_decoded = True
         if not is_decoded and (
-            osspy.der.peek_tags(stream, [[0xA5]])[0] or osspy.der.peek_tags(stream, [[0xA5]])[0]
+            der.peek_tags(stream, [[0xA5]])[0] or der.peek_tags(stream, [[0xA5]])[0]
         ):
             value["greaterOrEqual"] = Filter__12.decode(
                 encoding_rule, stream, value_tracker, [[0xA5]]
             )
             is_decoded = True
         if not is_decoded and (
-            osspy.der.peek_tags(stream, [[0xA6]])[0] or osspy.der.peek_tags(stream, [[0xA6]])[0]
+            der.peek_tags(stream, [[0xA6]])[0] or der.peek_tags(stream, [[0xA6]])[0]
         ):
             value["lessOrEqual"] = Filter__13.decode(encoding_rule, stream, value_tracker, [[0xA6]])
             is_decoded = True
-        if not is_decoded and (osspy.der.peek_tags(stream, [[0x87]])[0]):
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+        if not is_decoded and (der.peek_tags(stream, [[0x87]])[0]):
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["present"] = Filter__14.decode(encoding_rule, stream, value_tracker, [[0x87]])
             is_decoded = True
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
-        elif not is_decoded and (osspy.der.peek_tags(stream, [[0xA7]])[0]):
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
+        elif not is_decoded and (der.peek_tags(stream, [[0xA7]])[0]):
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["present"] = Filter__14.decode(encoding_rule, stream, value_tracker, [[0x87]])
             is_decoded = True
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         if not is_decoded and (
-            osspy.der.peek_tags(stream, [[0xA8]])[0] or osspy.der.peek_tags(stream, [[0xA8]])[0]
+            der.peek_tags(stream, [[0xA8]])[0] or der.peek_tags(stream, [[0xA8]])[0]
         ):
             value["approxMatch"] = Filter__15.decode(encoding_rule, stream, value_tracker, [[0xA8]])
             is_decoded = True
         if not is_decoded and (
-            osspy.der.peek_tags(stream, [[0xA9]])[0] or osspy.der.peek_tags(stream, [[0xA9]])[0]
+            der.peek_tags(stream, [[0xA9]])[0] or der.peek_tags(stream, [[0xA9]])[0]
         ):
             value["extensibleMatch"] = Filter__16.decode(
                 encoding_rule, stream, value_tracker, [[0xA9]]
@@ -6381,10 +6244,10 @@ class Filter__9:
             is_decoded = True
 
         if not is_decoded:
-            value["_unknown_extension"] = osspy.der.decode_undecoded_type(stream).hex().upper()
+            value["_unknown_extension"] = der.decode_undecoded_type(stream).hex().upper()
 
-        if length < 0 and osspy.der.is_eoc(stream):
-            osspy.der.skip_eoc(stream, len(used_tag))
+        if length < 0 and der.is_eoc(stream):
+            der.skip_eoc(stream, len(used_tag))
 
         value = value_tracker.execute_deferred(value)
         return value
@@ -6466,10 +6329,10 @@ class Filter__10:
         value: object,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         seq_type = Filter__10()
         return seq_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -6480,9 +6343,9 @@ class Filter__10:
         value: object,
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
-        tmpstream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
+        tmpstream = der.encodingstream(encoding_rule)
 
         if not isinstance(value, object):
             raise TypeError(
@@ -6515,7 +6378,7 @@ class Filter__10:
                 "63803: A mandatory component is missing from the sequence or set value!"
             )
         if "_unknown_extensions" in value:
-            tmpstream.append(osspy.der.encode_unknown_extensions(value["_unknown_extensions"]))
+            tmpstream.append(der.encode_unknown_extensions(value["_unknown_extensions"]))
 
         used_tag = [[0xA3]]
         if tag is None:
@@ -6525,11 +6388,9 @@ class Filter__10:
 
         buffer = tmpstream.get_buffer()
         if stream.canonical:
-            osspy.der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
+            der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
         else:
-            osspy.der.encode_tags_lens_ber(
-                stream.buffer, used_tag, buffer, data_map["encoding_form"]
-            )
+            der.encode_tags_lens_ber(stream.buffer, used_tag, buffer, data_map["encoding_form"])
         stream.append(buffer)
 
         value_tracker.remove_ancestor()
@@ -6538,16 +6399,16 @@ class Filter__10:
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> dict:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         seq_type = Filter__10()
         return seq_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> dict:
         value = {}
         used_tag = [[0xA3]]
@@ -6558,7 +6419,7 @@ class Filter__10:
 
         value_tracker.add_ancestor(value)
 
-        correct, length, num_indefs = osspy.der.decode_tags(stream, used_tag)
+        correct, length, num_indefs = der.decode_tags(stream, used_tag)
         if correct == 0:
             value_tracker.remove_ancestor()
             raise ValueError(
@@ -6567,32 +6428,30 @@ class Filter__10:
         start_pos = stream.get_pos()
 
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["attributeDesc"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x24], [0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x24], [0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["attributeDesc"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x24], [0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "attributeDesc" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x24]])[0]
+            and der.peek_tags(stream, [[0x24]])[0]
         ):
             value["attributeDesc"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
@@ -6603,32 +6462,30 @@ class Filter__10:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["assertionValue"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x24], [0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x24], [0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["assertionValue"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x24], [0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "assertionValue" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x24]])[0]
+            and der.peek_tags(stream, [[0x24]])[0]
         ):
             value["assertionValue"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
@@ -6638,14 +6495,12 @@ class Filter__10:
             raise ValueError(
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
-        if stream.get_pos() < start_pos + length or (
-            length < 0 and not osspy.der.is_eoc(stream, length)
-        ):
+        if stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length)):
             position = stream.get_pos()
             while position < (start_pos + length) or (
-                length < 0 and not osspy.der.is_eoc(stream, length)
+                length < 0 and not der.is_eoc(stream, length)
             ):
-                octets = osspy.der.decode_undecoded_type(stream)
+                octets = der.decode_undecoded_type(stream)
                 position = position + len(octets)
 
                 if len(octets) > 0:
@@ -6653,8 +6508,8 @@ class Filter__10:
                         value["_unknown_extensions"] = ""
                     value["_unknown_extensions"] += octets.hex().upper()
 
-        if length < 0 and osspy.der.is_eoc(stream):
-            osspy.der.skip_eoc(stream, num_indefs)
+        if length < 0 and der.is_eoc(stream):
+            der.skip_eoc(stream, num_indefs)
 
         if len(self._def_vals) > 0:
             for key, val in self._def_vals.items():
@@ -6708,10 +6563,10 @@ class Filter__11:
         value: object,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         seq_type = Filter__11()
         return seq_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -6722,9 +6577,9 @@ class Filter__11:
         value: object,
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
-        tmpstream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
+        tmpstream = der.encodingstream(encoding_rule)
 
         if not isinstance(value, object):
             raise TypeError(
@@ -6757,7 +6612,7 @@ class Filter__11:
                 "63803: A mandatory component is missing from the sequence or set value!"
             )
         if "_unknown_extensions" in value:
-            tmpstream.append(osspy.der.encode_unknown_extensions(value["_unknown_extensions"]))
+            tmpstream.append(der.encode_unknown_extensions(value["_unknown_extensions"]))
 
         used_tag = [[0xA4]]
         if tag is None:
@@ -6767,11 +6622,9 @@ class Filter__11:
 
         buffer = tmpstream.get_buffer()
         if stream.canonical:
-            osspy.der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
+            der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
         else:
-            osspy.der.encode_tags_lens_ber(
-                stream.buffer, used_tag, buffer, data_map["encoding_form"]
-            )
+            der.encode_tags_lens_ber(stream.buffer, used_tag, buffer, data_map["encoding_form"])
         stream.append(buffer)
 
         value_tracker.remove_ancestor()
@@ -6780,16 +6633,16 @@ class Filter__11:
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> dict:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         seq_type = Filter__11()
         return seq_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> dict:
         value = {}
         used_tag = [[0xA4]]
@@ -6800,7 +6653,7 @@ class Filter__11:
 
         value_tracker.add_ancestor(value)
 
-        correct, length, num_indefs = osspy.der.decode_tags(stream, used_tag)
+        correct, length, num_indefs = der.decode_tags(stream, used_tag)
         if correct == 0:
             value_tracker.remove_ancestor()
             raise ValueError(
@@ -6809,30 +6662,28 @@ class Filter__11:
         start_pos = stream.get_pos()
 
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["type"] = AssertionValue.decode(encoding_rule, stream, value_tracker, [[0x04]])
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x24], [0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x24], [0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["type"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x24], [0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "type" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x24]])[0]
+            and der.peek_tags(stream, [[0x24]])[0]
         ):
             value["type"] = AssertionValue.decode(encoding_rule, stream, value_tracker, [[0x04]])
         else:
@@ -6841,9 +6692,8 @@ class Filter__11:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x30]])[0]:
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x30]])[0]:
             value["substrings"] = SubstringFilter__6.decode(
                 encoding_rule, stream, value_tracker, [[0x30]]
             )
@@ -6852,14 +6702,12 @@ class Filter__11:
             raise ValueError(
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
-        if stream.get_pos() < start_pos + length or (
-            length < 0 and not osspy.der.is_eoc(stream, length)
-        ):
+        if stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length)):
             position = stream.get_pos()
             while position < (start_pos + length) or (
-                length < 0 and not osspy.der.is_eoc(stream, length)
+                length < 0 and not der.is_eoc(stream, length)
             ):
-                octets = osspy.der.decode_undecoded_type(stream)
+                octets = der.decode_undecoded_type(stream)
                 position = position + len(octets)
 
                 if len(octets) > 0:
@@ -6867,8 +6715,8 @@ class Filter__11:
                         value["_unknown_extensions"] = ""
                     value["_unknown_extensions"] += octets.hex().upper()
 
-        if length < 0 and osspy.der.is_eoc(stream):
-            osspy.der.skip_eoc(stream, num_indefs)
+        if length < 0 and der.is_eoc(stream):
+            der.skip_eoc(stream, num_indefs)
 
         if len(self._def_vals) > 0:
             for key, val in self._def_vals.items():
@@ -6920,10 +6768,10 @@ class Filter__12:
         value: object,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         seq_type = Filter__12()
         return seq_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -6934,9 +6782,9 @@ class Filter__12:
         value: object,
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
-        tmpstream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
+        tmpstream = der.encodingstream(encoding_rule)
 
         if not isinstance(value, object):
             raise TypeError(
@@ -6969,7 +6817,7 @@ class Filter__12:
                 "63803: A mandatory component is missing from the sequence or set value!"
             )
         if "_unknown_extensions" in value:
-            tmpstream.append(osspy.der.encode_unknown_extensions(value["_unknown_extensions"]))
+            tmpstream.append(der.encode_unknown_extensions(value["_unknown_extensions"]))
 
         used_tag = [[0xA5]]
         if tag is None:
@@ -6979,11 +6827,9 @@ class Filter__12:
 
         buffer = tmpstream.get_buffer()
         if stream.canonical:
-            osspy.der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
+            der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
         else:
-            osspy.der.encode_tags_lens_ber(
-                stream.buffer, used_tag, buffer, data_map["encoding_form"]
-            )
+            der.encode_tags_lens_ber(stream.buffer, used_tag, buffer, data_map["encoding_form"])
         stream.append(buffer)
 
         value_tracker.remove_ancestor()
@@ -6992,16 +6838,16 @@ class Filter__12:
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> dict:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         seq_type = Filter__12()
         return seq_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> dict:
         value = {}
         used_tag = [[0xA5]]
@@ -7012,7 +6858,7 @@ class Filter__12:
 
         value_tracker.add_ancestor(value)
 
-        correct, length, num_indefs = osspy.der.decode_tags(stream, used_tag)
+        correct, length, num_indefs = der.decode_tags(stream, used_tag)
         if correct == 0:
             value_tracker.remove_ancestor()
             raise ValueError(
@@ -7021,32 +6867,30 @@ class Filter__12:
         start_pos = stream.get_pos()
 
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["attributeDesc"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x24], [0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x24], [0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["attributeDesc"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x24], [0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "attributeDesc" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x24]])[0]
+            and der.peek_tags(stream, [[0x24]])[0]
         ):
             value["attributeDesc"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
@@ -7057,32 +6901,30 @@ class Filter__12:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["assertionValue"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x24], [0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x24], [0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["assertionValue"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x24], [0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "assertionValue" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x24]])[0]
+            and der.peek_tags(stream, [[0x24]])[0]
         ):
             value["assertionValue"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
@@ -7092,14 +6934,12 @@ class Filter__12:
             raise ValueError(
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
-        if stream.get_pos() < start_pos + length or (
-            length < 0 and not osspy.der.is_eoc(stream, length)
-        ):
+        if stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length)):
             position = stream.get_pos()
             while position < (start_pos + length) or (
-                length < 0 and not osspy.der.is_eoc(stream, length)
+                length < 0 and not der.is_eoc(stream, length)
             ):
-                octets = osspy.der.decode_undecoded_type(stream)
+                octets = der.decode_undecoded_type(stream)
                 position = position + len(octets)
 
                 if len(octets) > 0:
@@ -7107,8 +6947,8 @@ class Filter__12:
                         value["_unknown_extensions"] = ""
                     value["_unknown_extensions"] += octets.hex().upper()
 
-        if length < 0 and osspy.der.is_eoc(stream):
-            osspy.der.skip_eoc(stream, num_indefs)
+        if length < 0 and der.is_eoc(stream):
+            der.skip_eoc(stream, num_indefs)
 
         if len(self._def_vals) > 0:
             for key, val in self._def_vals.items():
@@ -7162,10 +7002,10 @@ class Filter__13:
         value: object,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         seq_type = Filter__13()
         return seq_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -7176,9 +7016,9 @@ class Filter__13:
         value: object,
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
-        tmpstream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
+        tmpstream = der.encodingstream(encoding_rule)
 
         if not isinstance(value, object):
             raise TypeError(
@@ -7211,7 +7051,7 @@ class Filter__13:
                 "63803: A mandatory component is missing from the sequence or set value!"
             )
         if "_unknown_extensions" in value:
-            tmpstream.append(osspy.der.encode_unknown_extensions(value["_unknown_extensions"]))
+            tmpstream.append(der.encode_unknown_extensions(value["_unknown_extensions"]))
 
         used_tag = [[0xA6]]
         if tag is None:
@@ -7221,11 +7061,9 @@ class Filter__13:
 
         buffer = tmpstream.get_buffer()
         if stream.canonical:
-            osspy.der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
+            der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
         else:
-            osspy.der.encode_tags_lens_ber(
-                stream.buffer, used_tag, buffer, data_map["encoding_form"]
-            )
+            der.encode_tags_lens_ber(stream.buffer, used_tag, buffer, data_map["encoding_form"])
         stream.append(buffer)
 
         value_tracker.remove_ancestor()
@@ -7234,16 +7072,16 @@ class Filter__13:
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> dict:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         seq_type = Filter__13()
         return seq_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> dict:
         value = {}
         used_tag = [[0xA6]]
@@ -7254,7 +7092,7 @@ class Filter__13:
 
         value_tracker.add_ancestor(value)
 
-        correct, length, num_indefs = osspy.der.decode_tags(stream, used_tag)
+        correct, length, num_indefs = der.decode_tags(stream, used_tag)
         if correct == 0:
             value_tracker.remove_ancestor()
             raise ValueError(
@@ -7263,32 +7101,30 @@ class Filter__13:
         start_pos = stream.get_pos()
 
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["attributeDesc"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x24], [0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x24], [0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["attributeDesc"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x24], [0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "attributeDesc" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x24]])[0]
+            and der.peek_tags(stream, [[0x24]])[0]
         ):
             value["attributeDesc"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
@@ -7299,32 +7135,30 @@ class Filter__13:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["assertionValue"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x24], [0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x24], [0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["assertionValue"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x24], [0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "assertionValue" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x24]])[0]
+            and der.peek_tags(stream, [[0x24]])[0]
         ):
             value["assertionValue"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
@@ -7334,14 +7168,12 @@ class Filter__13:
             raise ValueError(
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
-        if stream.get_pos() < start_pos + length or (
-            length < 0 and not osspy.der.is_eoc(stream, length)
-        ):
+        if stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length)):
             position = stream.get_pos()
             while position < (start_pos + length) or (
-                length < 0 and not osspy.der.is_eoc(stream, length)
+                length < 0 and not der.is_eoc(stream, length)
             ):
-                octets = osspy.der.decode_undecoded_type(stream)
+                octets = der.decode_undecoded_type(stream)
                 position = position + len(octets)
 
                 if len(octets) > 0:
@@ -7349,8 +7181,8 @@ class Filter__13:
                         value["_unknown_extensions"] = ""
                     value["_unknown_extensions"] += octets.hex().upper()
 
-        if length < 0 and osspy.der.is_eoc(stream):
-            osspy.der.skip_eoc(stream, num_indefs)
+        if length < 0 and der.is_eoc(stream):
+            der.skip_eoc(stream, num_indefs)
 
         if len(self._def_vals) > 0:
             for key, val in self._def_vals.items():
@@ -7408,10 +7240,10 @@ class Filter__14:
         value: Union[str, dict],
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         octetstring_type = Filter__14()
         return octetstring_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -7422,8 +7254,8 @@ class Filter__14:
         value: Union[str, dict],
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
         if not isinstance(value, str) and not isinstance(value, dict):
             raise ValueError(
                 "65201: The value class containing the value to be encoded does not match the type specified in the schema!"
@@ -7451,22 +7283,22 @@ class Filter__14:
         elif len(tag) > 0:
             used_tag = tag
 
-        osspy.der.encode_octet_string(stream, bin_val, used_tag)
+        der.encode_octet_string(stream, bin_val, used_tag)
 
         return stream
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> Union[str, dict]:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         octetstring_type = Filter__14()
         return octetstring_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> Union[str, dict]:
         used_tag = [[0x87]]
         c_tag = [[0xA7]]
@@ -7475,13 +7307,13 @@ class Filter__14:
         elif len(tag) > 0:
             used_tag = tag
 
-        value = osspy.der.decode_octet_string(stream, used_tag, c_tag)
+        value = der.decode_octet_string(stream, used_tag, c_tag)
 
         constraint = self._contents_constrait
         if constraint is not None:
             func = getattr(constraint, "decode")
             bin_val = bytearray.fromhex(value)
-            tmpstream = osspy.der.decodingstream(bin_val, encoding_rule)
+            tmpstream = der.decodingstream(bin_val, encoding_rule)
             try:
                 valcontaining = {}
                 current_depth = value_tracker.depth
@@ -7526,10 +7358,10 @@ class Filter__15:
         value: object,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         seq_type = Filter__15()
         return seq_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -7540,9 +7372,9 @@ class Filter__15:
         value: object,
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
-        tmpstream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
+        tmpstream = der.encodingstream(encoding_rule)
 
         if not isinstance(value, object):
             raise TypeError(
@@ -7575,7 +7407,7 @@ class Filter__15:
                 "63803: A mandatory component is missing from the sequence or set value!"
             )
         if "_unknown_extensions" in value:
-            tmpstream.append(osspy.der.encode_unknown_extensions(value["_unknown_extensions"]))
+            tmpstream.append(der.encode_unknown_extensions(value["_unknown_extensions"]))
 
         used_tag = [[0xA8]]
         if tag is None:
@@ -7585,11 +7417,9 @@ class Filter__15:
 
         buffer = tmpstream.get_buffer()
         if stream.canonical:
-            osspy.der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
+            der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
         else:
-            osspy.der.encode_tags_lens_ber(
-                stream.buffer, used_tag, buffer, data_map["encoding_form"]
-            )
+            der.encode_tags_lens_ber(stream.buffer, used_tag, buffer, data_map["encoding_form"])
         stream.append(buffer)
 
         value_tracker.remove_ancestor()
@@ -7598,16 +7428,16 @@ class Filter__15:
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> dict:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         seq_type = Filter__15()
         return seq_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> dict:
         value = {}
         used_tag = [[0xA8]]
@@ -7618,7 +7448,7 @@ class Filter__15:
 
         value_tracker.add_ancestor(value)
 
-        correct, length, num_indefs = osspy.der.decode_tags(stream, used_tag)
+        correct, length, num_indefs = der.decode_tags(stream, used_tag)
         if correct == 0:
             value_tracker.remove_ancestor()
             raise ValueError(
@@ -7627,32 +7457,30 @@ class Filter__15:
         start_pos = stream.get_pos()
 
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["attributeDesc"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x24], [0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x24], [0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["attributeDesc"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x24], [0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "attributeDesc" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x24]])[0]
+            and der.peek_tags(stream, [[0x24]])[0]
         ):
             value["attributeDesc"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
@@ -7663,32 +7491,30 @@ class Filter__15:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["assertionValue"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x24], [0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x24], [0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["assertionValue"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x24], [0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "assertionValue" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x24]])[0]
+            and der.peek_tags(stream, [[0x24]])[0]
         ):
             value["assertionValue"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
@@ -7698,14 +7524,12 @@ class Filter__15:
             raise ValueError(
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
-        if stream.get_pos() < start_pos + length or (
-            length < 0 and not osspy.der.is_eoc(stream, length)
-        ):
+        if stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length)):
             position = stream.get_pos()
             while position < (start_pos + length) or (
-                length < 0 and not osspy.der.is_eoc(stream, length)
+                length < 0 and not der.is_eoc(stream, length)
             ):
-                octets = osspy.der.decode_undecoded_type(stream)
+                octets = der.decode_undecoded_type(stream)
                 position = position + len(octets)
 
                 if len(octets) > 0:
@@ -7713,8 +7537,8 @@ class Filter__15:
                         value["_unknown_extensions"] = ""
                     value["_unknown_extensions"] += octets.hex().upper()
 
-        if length < 0 and osspy.der.is_eoc(stream):
-            osspy.der.skip_eoc(stream, num_indefs)
+        if length < 0 and der.is_eoc(stream):
+            der.skip_eoc(stream, num_indefs)
 
         if len(self._def_vals) > 0:
             for key, val in self._def_vals.items():
@@ -7773,10 +7597,10 @@ class Filter__16:
         value: object,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         seq_type = Filter__16()
         return seq_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -7787,9 +7611,9 @@ class Filter__16:
         value: object,
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
-        tmpstream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
+        tmpstream = der.encodingstream(encoding_rule)
 
         if not isinstance(value, object):
             raise TypeError(
@@ -7835,7 +7659,7 @@ class Filter__16:
                     ).get_buffer()
                 )
         if "_unknown_extensions" in value:
-            tmpstream.append(osspy.der.encode_unknown_extensions(value["_unknown_extensions"]))
+            tmpstream.append(der.encode_unknown_extensions(value["_unknown_extensions"]))
 
         used_tag = [[0xA9]]
         if tag is None:
@@ -7845,11 +7669,9 @@ class Filter__16:
 
         buffer = tmpstream.get_buffer()
         if stream.canonical:
-            osspy.der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
+            der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
         else:
-            osspy.der.encode_tags_lens_ber(
-                stream.buffer, used_tag, buffer, data_map["encoding_form"]
-            )
+            der.encode_tags_lens_ber(stream.buffer, used_tag, buffer, data_map["encoding_form"])
         stream.append(buffer)
 
         value_tracker.remove_ancestor()
@@ -7858,16 +7680,16 @@ class Filter__16:
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> dict:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         seq_type = Filter__16()
         return seq_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> dict:
         value = {}
         used_tag = [[0xA9]]
@@ -7878,7 +7700,7 @@ class Filter__16:
 
         value_tracker.add_ancestor(value)
 
-        correct, length, num_indefs = osspy.der.decode_tags(stream, used_tag)
+        correct, length, num_indefs = der.decode_tags(stream, used_tag)
         if correct == 0:
             value_tracker.remove_ancestor()
             raise ValueError(
@@ -7887,94 +7709,88 @@ class Filter__16:
         start_pos = stream.get_pos()
 
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x81]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x81]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["matchingRule"] = ExtendedRequest__2.decode(
                 encoding_rule, stream, value_tracker, [[0x81]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0xA1], [0x81]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0xA1], [0x81]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["matchingRule"] = ExtendedRequest__2.decode(
                 encoding_rule, stream, value_tracker, [[0xA1], [0x81]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "matchingRule" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0xA1]])[0]
+            and der.peek_tags(stream, [[0xA1]])[0]
         ):
             value["matchingRule"] = ExtendedRequest__2.decode(
                 encoding_rule, stream, value_tracker, [[0x81]]
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x82]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x82]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["type"] = MatchingRuleAssertion__2.decode(
                 encoding_rule, stream, value_tracker, [[0x82]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0xA2], [0x82]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0xA2], [0x82]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["type"] = MatchingRuleAssertion__2.decode(
                 encoding_rule, stream, value_tracker, [[0xA2], [0x82]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "type" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0xA2]])[0]
+            and der.peek_tags(stream, [[0xA2]])[0]
         ):
             value["type"] = MatchingRuleAssertion__2.decode(
                 encoding_rule, stream, value_tracker, [[0x82]]
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x83]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x83]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["matchValue"] = MatchingRuleAssertion__3.decode(
                 encoding_rule, stream, value_tracker, [[0x83]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0xA3], [0x83]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0xA3], [0x83]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["matchValue"] = MatchingRuleAssertion__3.decode(
                 encoding_rule, stream, value_tracker, [[0xA3], [0x83]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "matchValue" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0xA3]])[0]
+            and der.peek_tags(stream, [[0xA3]])[0]
         ):
             value["matchValue"] = MatchingRuleAssertion__3.decode(
                 encoding_rule, stream, value_tracker, [[0x83]]
@@ -7985,44 +7801,40 @@ class Filter__16:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x84]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x84]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["dnAttributes"] = MatchingRuleAssertion__4.decode(
                 encoding_rule, stream, value_tracker, [[0x84]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0xA4], [0x84]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0xA4], [0x84]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["dnAttributes"] = MatchingRuleAssertion__4.decode(
                 encoding_rule, stream, value_tracker, [[0xA4], [0x84]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "dnAttributes" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0xA4]])[0]
+            and der.peek_tags(stream, [[0xA4]])[0]
         ):
             value["dnAttributes"] = MatchingRuleAssertion__4.decode(
                 encoding_rule, stream, value_tracker, [[0x84]]
             )
-        if stream.get_pos() < start_pos + length or (
-            length < 0 and not osspy.der.is_eoc(stream, length)
-        ):
+        if stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length)):
             position = stream.get_pos()
             while position < (start_pos + length) or (
-                length < 0 and not osspy.der.is_eoc(stream, length)
+                length < 0 and not der.is_eoc(stream, length)
             ):
-                octets = osspy.der.decode_undecoded_type(stream)
+                octets = der.decode_undecoded_type(stream)
                 position = position + len(octets)
 
                 if len(octets) > 0:
@@ -8030,8 +7842,8 @@ class Filter__16:
                         value["_unknown_extensions"] = ""
                     value["_unknown_extensions"] += octets.hex().upper()
 
-        if length < 0 and osspy.der.is_eoc(stream):
-            osspy.der.skip_eoc(stream, num_indefs)
+        if length < 0 and der.is_eoc(stream):
+            der.skip_eoc(stream, num_indefs)
 
         if len(self._def_vals) > 0:
             for key, val in self._def_vals.items():
@@ -8091,10 +7903,10 @@ class SubstringFilter:
         value: object,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         seq_type = SubstringFilter()
         return seq_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -8105,9 +7917,9 @@ class SubstringFilter:
         value: object,
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
-        tmpstream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
+        tmpstream = der.encodingstream(encoding_rule)
 
         if not isinstance(value, object):
             raise TypeError(
@@ -8140,7 +7952,7 @@ class SubstringFilter:
                 "63803: A mandatory component is missing from the sequence or set value!"
             )
         if "_unknown_extensions" in value:
-            tmpstream.append(osspy.der.encode_unknown_extensions(value["_unknown_extensions"]))
+            tmpstream.append(der.encode_unknown_extensions(value["_unknown_extensions"]))
 
         used_tag = [[0x30]]
         if tag is None:
@@ -8150,11 +7962,9 @@ class SubstringFilter:
 
         buffer = tmpstream.get_buffer()
         if stream.canonical:
-            osspy.der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
+            der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
         else:
-            osspy.der.encode_tags_lens_ber(
-                stream.buffer, used_tag, buffer, data_map["encoding_form"]
-            )
+            der.encode_tags_lens_ber(stream.buffer, used_tag, buffer, data_map["encoding_form"])
         stream.append(buffer)
 
         value_tracker.remove_ancestor()
@@ -8163,16 +7973,16 @@ class SubstringFilter:
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> dict:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         seq_type = SubstringFilter()
         return seq_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> dict:
         value = {}
         used_tag = [[0x30]]
@@ -8183,7 +7993,7 @@ class SubstringFilter:
 
         value_tracker.add_ancestor(value)
 
-        correct, length, num_indefs = osspy.der.decode_tags(stream, used_tag)
+        correct, length, num_indefs = der.decode_tags(stream, used_tag)
         if correct == 0:
             value_tracker.remove_ancestor()
             raise ValueError(
@@ -8192,30 +8002,28 @@ class SubstringFilter:
         start_pos = stream.get_pos()
 
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["type"] = AssertionValue.decode(encoding_rule, stream, value_tracker, [[0x04]])
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x24], [0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x24], [0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["type"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x24], [0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "type" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x24]])[0]
+            and der.peek_tags(stream, [[0x24]])[0]
         ):
             value["type"] = AssertionValue.decode(encoding_rule, stream, value_tracker, [[0x04]])
         else:
@@ -8224,9 +8032,8 @@ class SubstringFilter:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x30]])[0]:
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x30]])[0]:
             value["substrings"] = SubstringFilter__6.decode(
                 encoding_rule, stream, value_tracker, [[0x30]]
             )
@@ -8235,14 +8042,12 @@ class SubstringFilter:
             raise ValueError(
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
-        if stream.get_pos() < start_pos + length or (
-            length < 0 and not osspy.der.is_eoc(stream, length)
-        ):
+        if stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length)):
             position = stream.get_pos()
             while position < (start_pos + length) or (
-                length < 0 and not osspy.der.is_eoc(stream, length)
+                length < 0 and not der.is_eoc(stream, length)
             ):
-                octets = osspy.der.decode_undecoded_type(stream)
+                octets = der.decode_undecoded_type(stream)
                 position = position + len(octets)
 
                 if len(octets) > 0:
@@ -8250,8 +8055,8 @@ class SubstringFilter:
                         value["_unknown_extensions"] = ""
                     value["_unknown_extensions"] += octets.hex().upper()
 
-        if length < 0 and osspy.der.is_eoc(stream):
-            osspy.der.skip_eoc(stream, num_indefs)
+        if length < 0 and der.is_eoc(stream):
+            der.skip_eoc(stream, num_indefs)
 
         if len(self._def_vals) > 0:
             for key, val in self._def_vals.items():
@@ -8307,10 +8112,10 @@ class SubstringFilter__6:
         value: list,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         seqof_type = SubstringFilter__6()
         return seqof_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -8321,9 +8126,9 @@ class SubstringFilter__6:
         value: list,
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
-        tmpstream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
+        tmpstream = der.encodingstream(encoding_rule)
         data_map = {}
 
         if not isinstance(value, list):
@@ -8361,27 +8166,25 @@ class SubstringFilter__6:
 
         buffer = tmpstream.get_buffer()
         if stream.canonical:
-            osspy.der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
+            der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
         else:
-            osspy.der.encode_tags_lens_ber(
-                stream.buffer, used_tag, buffer, data_map["encoding_form"]
-            )
+            der.encode_tags_lens_ber(stream.buffer, used_tag, buffer, data_map["encoding_form"])
         stream.append(buffer)
 
         return stream
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> list:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         seqof_type = SubstringFilter__6()
         return seqof_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> list:
         components = []
         used_tag = [[0x30]]
@@ -8391,7 +8194,7 @@ class SubstringFilter__6:
             used_tag = tag
         idx = 0
 
-        correct, length, num_indefs = osspy.der.decode_tags(stream, used_tag)
+        correct, length, num_indefs = der.decode_tags(stream, used_tag)
         if correct == 0:
             raise ValueError(
                 "70003: The next tag present in the encoding does not match the tag of the type to be decoded!"
@@ -8399,14 +8202,14 @@ class SubstringFilter__6:
 
         position = stream.get_pos()
         if length == -1:
-            while not osspy.der.is_eoc(stream) and not stream.is_eof():
+            while not der.is_eoc(stream) and not stream.is_eof():
                 value_tracker.add_ancestor(idx)
                 components.append(
                     SubstringFilter__5.decode(encoding_rule, stream, value_tracker, [])
                 )
                 value_tracker.remove_ancestor()
                 idx += 1
-            osspy.der.skip_eoc(stream, num_indefs)
+            der.skip_eoc(stream, num_indefs)
         else:
             while stream.get_pos() < position + length:
                 value_tracker.add_ancestor(idx)
@@ -8449,10 +8252,10 @@ class SubstringFilter__5:
         value: object,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         choice_type = SubstringFilter__5()
         return choice_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -8463,9 +8266,9 @@ class SubstringFilter__5:
         value: object,
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
-        tmpstream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
+        tmpstream = der.encodingstream(encoding_rule)
         is_encoded = False
 
         if not isinstance(value, dict) or len(value.keys()) != 1:
@@ -8506,7 +8309,7 @@ class SubstringFilter__5:
 
         if not is_encoded:
             if "_unknown_extension" in value:
-                tmpstream.append(osspy.der.encode_unknown_extensions(value["_unknown_extension"]))
+                tmpstream.append(der.encode_unknown_extensions(value["_unknown_extension"]))
                 is_encoded = True
             else:
                 raise ValueError(
@@ -8521,11 +8324,9 @@ class SubstringFilter__5:
 
         buffer = tmpstream.get_buffer()
         if stream.canonical:
-            osspy.der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
+            der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
         else:
-            osspy.der.encode_tags_lens_ber(
-                stream.buffer, used_tag, buffer, data_map["encoding_form"]
-            )
+            der.encode_tags_lens_ber(stream.buffer, used_tag, buffer, data_map["encoding_form"])
         stream.append(buffer)
 
         value_tracker.remove_ancestor()
@@ -8534,16 +8335,16 @@ class SubstringFilter__5:
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> dict:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         choice_type = SubstringFilter__5()
         return choice_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> dict:
         value = {}
         used_tag = []
@@ -8556,60 +8357,60 @@ class SubstringFilter__5:
 
         value_tracker.add_ancestor(value)
 
-        correct, length, offset = osspy.der.peek_tags(stream, used_tag)
+        correct, length, offset = der.peek_tags(stream, used_tag)
         if correct == 1:
             stream.skip_bytes(offset)
 
-        if not is_decoded and (osspy.der.peek_tags(stream, [[0x80]])[0]):
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+        if not is_decoded and (der.peek_tags(stream, [[0x80]])[0]):
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["initial"] = AuthenticationChoice__1.decode(
                 encoding_rule, stream, value_tracker, [[0x80]]
             )
             is_decoded = True
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
-        elif not is_decoded and (osspy.der.peek_tags(stream, [[0xA0]])[0]):
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
+        elif not is_decoded and (der.peek_tags(stream, [[0xA0]])[0]):
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["initial"] = AuthenticationChoice__1.decode(
                 encoding_rule, stream, value_tracker, [[0x80]]
             )
             is_decoded = True
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
-        if not is_decoded and (osspy.der.peek_tags(stream, [[0x81]])[0]):
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
+        if not is_decoded and (der.peek_tags(stream, [[0x81]])[0]):
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["any"] = ExtendedRequest__2.decode(encoding_rule, stream, value_tracker, [[0x81]])
             is_decoded = True
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
-        elif not is_decoded and (osspy.der.peek_tags(stream, [[0xA1]])[0]):
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
+        elif not is_decoded and (der.peek_tags(stream, [[0xA1]])[0]):
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["any"] = ExtendedRequest__2.decode(encoding_rule, stream, value_tracker, [[0x81]])
             is_decoded = True
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
-        if not is_decoded and (osspy.der.peek_tags(stream, [[0x82]])[0]):
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
+        if not is_decoded and (der.peek_tags(stream, [[0x82]])[0]):
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["final"] = MatchingRuleAssertion__2.decode(
                 encoding_rule, stream, value_tracker, [[0x82]]
             )
             is_decoded = True
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
-        elif not is_decoded and (osspy.der.peek_tags(stream, [[0xA2]])[0]):
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
+        elif not is_decoded and (der.peek_tags(stream, [[0xA2]])[0]):
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["final"] = MatchingRuleAssertion__2.decode(
                 encoding_rule, stream, value_tracker, [[0x82]]
             )
             is_decoded = True
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
 
         if not is_decoded:
-            value["_unknown_extension"] = osspy.der.decode_undecoded_type(stream).hex().upper()
+            value["_unknown_extension"] = der.decode_undecoded_type(stream).hex().upper()
 
-        if length < 0 and osspy.der.is_eoc(stream):
-            osspy.der.skip_eoc(stream, len(used_tag))
+        if length < 0 and der.is_eoc(stream):
+            der.skip_eoc(stream, len(used_tag))
 
         value = value_tracker.execute_deferred(value)
         return value
@@ -8667,10 +8468,10 @@ class MatchingRuleAssertion:
         value: object,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         seq_type = MatchingRuleAssertion()
         return seq_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -8681,9 +8482,9 @@ class MatchingRuleAssertion:
         value: object,
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
-        tmpstream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
+        tmpstream = der.encodingstream(encoding_rule)
 
         if not isinstance(value, object):
             raise TypeError(
@@ -8729,7 +8530,7 @@ class MatchingRuleAssertion:
                     ).get_buffer()
                 )
         if "_unknown_extensions" in value:
-            tmpstream.append(osspy.der.encode_unknown_extensions(value["_unknown_extensions"]))
+            tmpstream.append(der.encode_unknown_extensions(value["_unknown_extensions"]))
 
         used_tag = [[0x30]]
         if tag is None:
@@ -8739,11 +8540,9 @@ class MatchingRuleAssertion:
 
         buffer = tmpstream.get_buffer()
         if stream.canonical:
-            osspy.der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
+            der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
         else:
-            osspy.der.encode_tags_lens_ber(
-                stream.buffer, used_tag, buffer, data_map["encoding_form"]
-            )
+            der.encode_tags_lens_ber(stream.buffer, used_tag, buffer, data_map["encoding_form"])
         stream.append(buffer)
 
         value_tracker.remove_ancestor()
@@ -8752,16 +8551,16 @@ class MatchingRuleAssertion:
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> dict:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         seq_type = MatchingRuleAssertion()
         return seq_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> dict:
         value = {}
         used_tag = [[0x30]]
@@ -8772,7 +8571,7 @@ class MatchingRuleAssertion:
 
         value_tracker.add_ancestor(value)
 
-        correct, length, num_indefs = osspy.der.decode_tags(stream, used_tag)
+        correct, length, num_indefs = der.decode_tags(stream, used_tag)
         if correct == 0:
             value_tracker.remove_ancestor()
             raise ValueError(
@@ -8781,94 +8580,88 @@ class MatchingRuleAssertion:
         start_pos = stream.get_pos()
 
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x81]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x81]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["matchingRule"] = ExtendedRequest__2.decode(
                 encoding_rule, stream, value_tracker, [[0x81]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0xA1], [0x81]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0xA1], [0x81]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["matchingRule"] = ExtendedRequest__2.decode(
                 encoding_rule, stream, value_tracker, [[0xA1], [0x81]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "matchingRule" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0xA1]])[0]
+            and der.peek_tags(stream, [[0xA1]])[0]
         ):
             value["matchingRule"] = ExtendedRequest__2.decode(
                 encoding_rule, stream, value_tracker, [[0x81]]
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x82]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x82]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["type"] = MatchingRuleAssertion__2.decode(
                 encoding_rule, stream, value_tracker, [[0x82]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0xA2], [0x82]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0xA2], [0x82]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["type"] = MatchingRuleAssertion__2.decode(
                 encoding_rule, stream, value_tracker, [[0xA2], [0x82]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "type" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0xA2]])[0]
+            and der.peek_tags(stream, [[0xA2]])[0]
         ):
             value["type"] = MatchingRuleAssertion__2.decode(
                 encoding_rule, stream, value_tracker, [[0x82]]
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x83]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x83]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["matchValue"] = MatchingRuleAssertion__3.decode(
                 encoding_rule, stream, value_tracker, [[0x83]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0xA3], [0x83]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0xA3], [0x83]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["matchValue"] = MatchingRuleAssertion__3.decode(
                 encoding_rule, stream, value_tracker, [[0xA3], [0x83]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "matchValue" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0xA3]])[0]
+            and der.peek_tags(stream, [[0xA3]])[0]
         ):
             value["matchValue"] = MatchingRuleAssertion__3.decode(
                 encoding_rule, stream, value_tracker, [[0x83]]
@@ -8879,44 +8672,40 @@ class MatchingRuleAssertion:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x84]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x84]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["dnAttributes"] = MatchingRuleAssertion__4.decode(
                 encoding_rule, stream, value_tracker, [[0x84]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0xA4], [0x84]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0xA4], [0x84]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["dnAttributes"] = MatchingRuleAssertion__4.decode(
                 encoding_rule, stream, value_tracker, [[0xA4], [0x84]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "dnAttributes" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0xA4]])[0]
+            and der.peek_tags(stream, [[0xA4]])[0]
         ):
             value["dnAttributes"] = MatchingRuleAssertion__4.decode(
                 encoding_rule, stream, value_tracker, [[0x84]]
             )
-        if stream.get_pos() < start_pos + length or (
-            length < 0 and not osspy.der.is_eoc(stream, length)
-        ):
+        if stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length)):
             position = stream.get_pos()
             while position < (start_pos + length) or (
-                length < 0 and not osspy.der.is_eoc(stream, length)
+                length < 0 and not der.is_eoc(stream, length)
             ):
-                octets = osspy.der.decode_undecoded_type(stream)
+                octets = der.decode_undecoded_type(stream)
                 position = position + len(octets)
 
                 if len(octets) > 0:
@@ -8924,8 +8713,8 @@ class MatchingRuleAssertion:
                         value["_unknown_extensions"] = ""
                     value["_unknown_extensions"] += octets.hex().upper()
 
-        if length < 0 and osspy.der.is_eoc(stream):
-            osspy.der.skip_eoc(stream, num_indefs)
+        if length < 0 and der.is_eoc(stream):
+            der.skip_eoc(stream, num_indefs)
 
         if len(self._def_vals) > 0:
             for key, val in self._def_vals.items():
@@ -8991,10 +8780,10 @@ class ExtendedRequest__2:
         value: Union[str, dict],
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         octetstring_type = ExtendedRequest__2()
         return octetstring_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -9005,8 +8794,8 @@ class ExtendedRequest__2:
         value: Union[str, dict],
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
         if not isinstance(value, str) and not isinstance(value, dict):
             raise ValueError(
                 "65201: The value class containing the value to be encoded does not match the type specified in the schema!"
@@ -9034,22 +8823,22 @@ class ExtendedRequest__2:
         elif len(tag) > 0:
             used_tag = tag
 
-        osspy.der.encode_octet_string(stream, bin_val, used_tag)
+        der.encode_octet_string(stream, bin_val, used_tag)
 
         return stream
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> Union[str, dict]:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         octetstring_type = ExtendedRequest__2()
         return octetstring_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> Union[str, dict]:
         used_tag = [[0x81]]
         c_tag = [[0xA1]]
@@ -9058,13 +8847,13 @@ class ExtendedRequest__2:
         elif len(tag) > 0:
             used_tag = tag
 
-        value = osspy.der.decode_octet_string(stream, used_tag, c_tag)
+        value = der.decode_octet_string(stream, used_tag, c_tag)
 
         constraint = self._contents_constrait
         if constraint is not None:
             func = getattr(constraint, "decode")
             bin_val = bytearray.fromhex(value)
-            tmpstream = osspy.der.decodingstream(bin_val, encoding_rule)
+            tmpstream = der.decodingstream(bin_val, encoding_rule)
             try:
                 valcontaining = {}
                 current_depth = value_tracker.depth
@@ -9117,10 +8906,10 @@ class MatchingRuleAssertion__2:
         value: Union[str, dict],
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         octetstring_type = MatchingRuleAssertion__2()
         return octetstring_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -9131,8 +8920,8 @@ class MatchingRuleAssertion__2:
         value: Union[str, dict],
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
         if not isinstance(value, str) and not isinstance(value, dict):
             raise ValueError(
                 "65201: The value class containing the value to be encoded does not match the type specified in the schema!"
@@ -9160,22 +8949,22 @@ class MatchingRuleAssertion__2:
         elif len(tag) > 0:
             used_tag = tag
 
-        osspy.der.encode_octet_string(stream, bin_val, used_tag)
+        der.encode_octet_string(stream, bin_val, used_tag)
 
         return stream
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> Union[str, dict]:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         octetstring_type = MatchingRuleAssertion__2()
         return octetstring_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> Union[str, dict]:
         used_tag = [[0x82]]
         c_tag = [[0xA2]]
@@ -9184,13 +8973,13 @@ class MatchingRuleAssertion__2:
         elif len(tag) > 0:
             used_tag = tag
 
-        value = osspy.der.decode_octet_string(stream, used_tag, c_tag)
+        value = der.decode_octet_string(stream, used_tag, c_tag)
 
         constraint = self._contents_constrait
         if constraint is not None:
             func = getattr(constraint, "decode")
             bin_val = bytearray.fromhex(value)
-            tmpstream = osspy.der.decodingstream(bin_val, encoding_rule)
+            tmpstream = der.decodingstream(bin_val, encoding_rule)
             try:
                 valcontaining = {}
                 current_depth = value_tracker.depth
@@ -9241,10 +9030,10 @@ class MatchingRuleAssertion__3:
         value: Union[str, dict],
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         octetstring_type = MatchingRuleAssertion__3()
         return octetstring_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -9255,8 +9044,8 @@ class MatchingRuleAssertion__3:
         value: Union[str, dict],
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
         if not isinstance(value, str) and not isinstance(value, dict):
             raise ValueError(
                 "65201: The value class containing the value to be encoded does not match the type specified in the schema!"
@@ -9284,22 +9073,22 @@ class MatchingRuleAssertion__3:
         elif len(tag) > 0:
             used_tag = tag
 
-        osspy.der.encode_octet_string(stream, bin_val, used_tag)
+        der.encode_octet_string(stream, bin_val, used_tag)
 
         return stream
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> Union[str, dict]:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         octetstring_type = MatchingRuleAssertion__3()
         return octetstring_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> Union[str, dict]:
         used_tag = [[0x83]]
         c_tag = [[0xA3]]
@@ -9308,13 +9097,13 @@ class MatchingRuleAssertion__3:
         elif len(tag) > 0:
             used_tag = tag
 
-        value = osspy.der.decode_octet_string(stream, used_tag, c_tag)
+        value = der.decode_octet_string(stream, used_tag, c_tag)
 
         constraint = self._contents_constrait
         if constraint is not None:
             func = getattr(constraint, "decode")
             bin_val = bytearray.fromhex(value)
-            tmpstream = osspy.der.decodingstream(bin_val, encoding_rule)
+            tmpstream = der.decodingstream(bin_val, encoding_rule)
             try:
                 valcontaining = {}
                 current_depth = value_tracker.depth
@@ -9355,37 +9144,37 @@ class MatchingRuleAssertion__4:
         value: bool,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         simple_type = MatchingRuleAssertion__4()
         return simple_type.encode_value(value, tag, stream)
 
     def encode_value(
-        self, value: bool, tag: list, stream: osspy.der.encodingstream
-    ) -> osspy.der.encodingstream:
+        self, value: bool, tag: list, stream: der.encodingstream
+    ) -> der.encodingstream:
         used_tag = [[0x84]]
         if tag is None:
             tag = []
         elif len(tag) > 0:
             used_tag = tag
 
-        osspy.der.encode_boolean(stream, value, used_tag)
+        der.encode_boolean(stream, value, used_tag)
         return stream
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker_: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker_: dict, tag: list = None
     ) -> bool:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         simple_type = MatchingRuleAssertion__4()
         return simple_type.decode_value(stream, tag)
 
-    def decode_value(self, stream: osspy.der.decodingstream, tag: list) -> bool:
+    def decode_value(self, stream: der.decodingstream, tag: list) -> bool:
         used_tag = [[0x84]]
         c_tag = None
         if tag is None:
@@ -9393,7 +9182,7 @@ class MatchingRuleAssertion__4:
         elif len(tag) > 0:
             used_tag = tag
 
-        return osspy.der.decode_boolean(stream, used_tag, c_tag)
+        return der.decode_boolean(stream, used_tag, c_tag)
 
     @staticmethod
     def validate(value, errors: list, comp_path: str = "") -> list:
@@ -9424,10 +9213,10 @@ class SearchResultEntry:
         value: object,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         seq_type = SearchResultEntry()
         return seq_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -9438,9 +9227,9 @@ class SearchResultEntry:
         value: object,
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
-        tmpstream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
+        tmpstream = der.encodingstream(encoding_rule)
 
         if not isinstance(value, object):
             raise TypeError(
@@ -9473,7 +9262,7 @@ class SearchResultEntry:
                 "63803: A mandatory component is missing from the sequence or set value!"
             )
         if "_unknown_extensions" in value:
-            tmpstream.append(osspy.der.encode_unknown_extensions(value["_unknown_extensions"]))
+            tmpstream.append(der.encode_unknown_extensions(value["_unknown_extensions"]))
 
         used_tag = [[0x64]]
         if tag is None:
@@ -9483,11 +9272,9 @@ class SearchResultEntry:
 
         buffer = tmpstream.get_buffer()
         if stream.canonical:
-            osspy.der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
+            der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
         else:
-            osspy.der.encode_tags_lens_ber(
-                stream.buffer, used_tag, buffer, data_map["encoding_form"]
-            )
+            der.encode_tags_lens_ber(stream.buffer, used_tag, buffer, data_map["encoding_form"])
         stream.append(buffer)
 
         value_tracker.remove_ancestor()
@@ -9496,16 +9283,16 @@ class SearchResultEntry:
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> dict:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         seq_type = SearchResultEntry()
         return seq_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> dict:
         value = {}
         used_tag = [[0x64]]
@@ -9516,7 +9303,7 @@ class SearchResultEntry:
 
         value_tracker.add_ancestor(value)
 
-        correct, length, num_indefs = osspy.der.decode_tags(stream, used_tag)
+        correct, length, num_indefs = der.decode_tags(stream, used_tag)
         if correct == 0:
             value_tracker.remove_ancestor()
             raise ValueError(
@@ -9525,32 +9312,30 @@ class SearchResultEntry:
         start_pos = stream.get_pos()
 
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["objectName"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x24], [0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x24], [0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["objectName"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x24], [0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "objectName" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x24]])[0]
+            and der.peek_tags(stream, [[0x24]])[0]
         ):
             value["objectName"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
@@ -9561,9 +9346,8 @@ class SearchResultEntry:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x30]])[0]:
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x30]])[0]:
             value["attributes"] = PartialAttributeList.decode(
                 encoding_rule, stream, value_tracker, [[0x30]]
             )
@@ -9572,14 +9356,12 @@ class SearchResultEntry:
             raise ValueError(
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
-        if stream.get_pos() < start_pos + length or (
-            length < 0 and not osspy.der.is_eoc(stream, length)
-        ):
+        if stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length)):
             position = stream.get_pos()
             while position < (start_pos + length) or (
-                length < 0 and not osspy.der.is_eoc(stream, length)
+                length < 0 and not der.is_eoc(stream, length)
             ):
-                octets = osspy.der.decode_undecoded_type(stream)
+                octets = der.decode_undecoded_type(stream)
                 position = position + len(octets)
 
                 if len(octets) > 0:
@@ -9587,8 +9369,8 @@ class SearchResultEntry:
                         value["_unknown_extensions"] = ""
                     value["_unknown_extensions"] += octets.hex().upper()
 
-        if length < 0 and osspy.der.is_eoc(stream):
-            osspy.der.skip_eoc(stream, num_indefs)
+        if length < 0 and der.is_eoc(stream):
+            der.skip_eoc(stream, num_indefs)
 
         if len(self._def_vals) > 0:
             for key, val in self._def_vals.items():
@@ -9639,10 +9421,10 @@ class PartialAttributeList:
         value: list,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         seqof_type = PartialAttributeList()
         return seqof_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -9653,9 +9435,9 @@ class PartialAttributeList:
         value: list,
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
-        tmpstream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
+        tmpstream = der.encodingstream(encoding_rule)
         data_map = {}
 
         if not isinstance(value, list):
@@ -9697,27 +9479,25 @@ class PartialAttributeList:
 
         buffer = tmpstream.get_buffer()
         if stream.canonical:
-            osspy.der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
+            der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
         else:
-            osspy.der.encode_tags_lens_ber(
-                stream.buffer, used_tag, buffer, data_map["encoding_form"]
-            )
+            der.encode_tags_lens_ber(stream.buffer, used_tag, buffer, data_map["encoding_form"])
         stream.append(buffer)
 
         return stream
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> list:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         seqof_type = PartialAttributeList()
         return seqof_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> list:
         components = []
         used_tag = [[0x30]]
@@ -9727,7 +9507,7 @@ class PartialAttributeList:
             used_tag = tag
         idx = 0
 
-        correct, length, num_indefs = osspy.der.decode_tags(stream, used_tag)
+        correct, length, num_indefs = der.decode_tags(stream, used_tag)
         if correct == 0:
             raise ValueError(
                 "70003: The next tag present in the encoding does not match the tag of the type to be decoded!"
@@ -9735,14 +9515,14 @@ class PartialAttributeList:
 
         position = stream.get_pos()
         if length == -1:
-            while not osspy.der.is_eoc(stream) and not stream.is_eof():
+            while not der.is_eoc(stream) and not stream.is_eof():
                 value_tracker.add_ancestor(idx)
                 components.append(
                     PartialAttribute.decode(encoding_rule, stream, value_tracker, [[0x30]])
                 )
                 value_tracker.remove_ancestor()
                 idx += 1
-            osspy.der.skip_eoc(stream, num_indefs)
+            der.skip_eoc(stream, num_indefs)
         else:
             while stream.get_pos() < position + length:
                 value_tracker.add_ancestor(idx)
@@ -9788,10 +9568,10 @@ class SearchResultReference:
         value: list,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         seqof_type = SearchResultReference()
         return seqof_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -9802,9 +9582,9 @@ class SearchResultReference:
         value: list,
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
-        tmpstream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
+        tmpstream = der.encodingstream(encoding_rule)
         data_map = {}
 
         if not isinstance(value, list):
@@ -9842,27 +9622,25 @@ class SearchResultReference:
 
         buffer = tmpstream.get_buffer()
         if stream.canonical:
-            osspy.der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
+            der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
         else:
-            osspy.der.encode_tags_lens_ber(
-                stream.buffer, used_tag, buffer, data_map["encoding_form"]
-            )
+            der.encode_tags_lens_ber(stream.buffer, used_tag, buffer, data_map["encoding_form"])
         stream.append(buffer)
 
         return stream
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> list:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         seqof_type = SearchResultReference()
         return seqof_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> list:
         components = []
         used_tag = [[0x73]]
@@ -9872,7 +9650,7 @@ class SearchResultReference:
             used_tag = tag
         idx = 0
 
-        correct, length, num_indefs = osspy.der.decode_tags(stream, used_tag)
+        correct, length, num_indefs = der.decode_tags(stream, used_tag)
         if correct == 0:
             raise ValueError(
                 "70003: The next tag present in the encoding does not match the tag of the type to be decoded!"
@@ -9880,17 +9658,17 @@ class SearchResultReference:
 
         position = stream.get_pos()
         if length == -1:
-            while not osspy.der.is_eoc(stream) and not stream.is_eof():
+            while not der.is_eoc(stream) and not stream.is_eof():
                 value_tracker.add_ancestor(idx)
-                is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+                is_indefinite = der.is_indefinite(stream, stream.get_pos())
                 components.append(
                     AssertionValue.decode(encoding_rule, stream, value_tracker, [[0x04]])
                 )
-                if is_indefinite and osspy.der.is_eoc(stream):
-                    osspy.der.skip_eoc(stream, 1)
+                if is_indefinite and der.is_eoc(stream):
+                    der.skip_eoc(stream, 1)
                 value_tracker.remove_ancestor()
                 idx += 1
-            osspy.der.skip_eoc(stream, num_indefs)
+            der.skip_eoc(stream, num_indefs)
         else:
             while stream.get_pos() < position + length:
                 value_tracker.add_ancestor(idx)
@@ -9939,10 +9717,10 @@ class SearchResultDone:
         value: object,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         seq_type = SearchResultDone()
         return seq_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -9953,9 +9731,9 @@ class SearchResultDone:
         value: object,
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
-        tmpstream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
+        tmpstream = der.encodingstream(encoding_rule)
 
         if not isinstance(value, object):
             raise TypeError(
@@ -10004,7 +9782,7 @@ class SearchResultDone:
                 ).get_buffer()
             )
         if "_unknown_extensions" in value:
-            tmpstream.append(osspy.der.encode_unknown_extensions(value["_unknown_extensions"]))
+            tmpstream.append(der.encode_unknown_extensions(value["_unknown_extensions"]))
 
         used_tag = [[0x65]]
         if tag is None:
@@ -10014,11 +9792,9 @@ class SearchResultDone:
 
         buffer = tmpstream.get_buffer()
         if stream.canonical:
-            osspy.der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
+            der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
         else:
-            osspy.der.encode_tags_lens_ber(
-                stream.buffer, used_tag, buffer, data_map["encoding_form"]
-            )
+            der.encode_tags_lens_ber(stream.buffer, used_tag, buffer, data_map["encoding_form"])
         stream.append(buffer)
 
         value_tracker.remove_ancestor()
@@ -10027,16 +9803,16 @@ class SearchResultDone:
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> dict:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         seq_type = SearchResultDone()
         return seq_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> dict:
         value = {}
         used_tag = [[0x65]]
@@ -10047,7 +9823,7 @@ class SearchResultDone:
 
         value_tracker.add_ancestor(value)
 
-        correct, length, num_indefs = osspy.der.decode_tags(stream, used_tag)
+        correct, length, num_indefs = der.decode_tags(stream, used_tag)
         if correct == 0:
             value_tracker.remove_ancestor()
             raise ValueError(
@@ -10056,32 +9832,30 @@ class SearchResultDone:
         start_pos = stream.get_pos()
 
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x0A]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x0A]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["resultCode"] = LDAPResult__1.decode(
                 encoding_rule, stream, value_tracker, [[0x0A]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x2A], [0x0A]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x2A], [0x0A]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["resultCode"] = LDAPResult__1.decode(
                 encoding_rule, stream, value_tracker, [[0x2A], [0x0A]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "resultCode" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x2A]])[0]
+            and der.peek_tags(stream, [[0x2A]])[0]
         ):
             value["resultCode"] = LDAPResult__1.decode(
                 encoding_rule, stream, value_tracker, [[0x0A]]
@@ -10092,32 +9866,30 @@ class SearchResultDone:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["matchedDN"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x24], [0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x24], [0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["matchedDN"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x24], [0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "matchedDN" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x24]])[0]
+            and der.peek_tags(stream, [[0x24]])[0]
         ):
             value["matchedDN"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
@@ -10128,32 +9900,30 @@ class SearchResultDone:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["diagnosticMessage"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x24], [0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x24], [0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["diagnosticMessage"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x24], [0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "diagnosticMessage" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x24]])[0]
+            and der.peek_tags(stream, [[0x24]])[0]
         ):
             value["diagnosticMessage"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
@@ -10164,18 +9934,15 @@ class SearchResultDone:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0xA3]])[0]:
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0xA3]])[0]:
             value["referral"] = LDAPResult__4.decode(encoding_rule, stream, value_tracker, [[0xA3]])
-        if stream.get_pos() < start_pos + length or (
-            length < 0 and not osspy.der.is_eoc(stream, length)
-        ):
+        if stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length)):
             position = stream.get_pos()
             while position < (start_pos + length) or (
-                length < 0 and not osspy.der.is_eoc(stream, length)
+                length < 0 and not der.is_eoc(stream, length)
             ):
-                octets = osspy.der.decode_undecoded_type(stream)
+                octets = der.decode_undecoded_type(stream)
                 position = position + len(octets)
 
                 if len(octets) > 0:
@@ -10183,8 +9950,8 @@ class SearchResultDone:
                         value["_unknown_extensions"] = ""
                     value["_unknown_extensions"] += octets.hex().upper()
 
-        if length < 0 and osspy.der.is_eoc(stream):
-            osspy.der.skip_eoc(stream, num_indefs)
+        if length < 0 and der.is_eoc(stream):
+            der.skip_eoc(stream, num_indefs)
 
         if len(self._def_vals) > 0:
             for key, val in self._def_vals.items():
@@ -10246,10 +10013,10 @@ class ModifyRequest:
         value: object,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         seq_type = ModifyRequest()
         return seq_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -10260,9 +10027,9 @@ class ModifyRequest:
         value: object,
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
-        tmpstream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
+        tmpstream = der.encodingstream(encoding_rule)
 
         if not isinstance(value, object):
             raise TypeError(
@@ -10295,7 +10062,7 @@ class ModifyRequest:
                 "63803: A mandatory component is missing from the sequence or set value!"
             )
         if "_unknown_extensions" in value:
-            tmpstream.append(osspy.der.encode_unknown_extensions(value["_unknown_extensions"]))
+            tmpstream.append(der.encode_unknown_extensions(value["_unknown_extensions"]))
 
         used_tag = [[0x66]]
         if tag is None:
@@ -10305,11 +10072,9 @@ class ModifyRequest:
 
         buffer = tmpstream.get_buffer()
         if stream.canonical:
-            osspy.der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
+            der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
         else:
-            osspy.der.encode_tags_lens_ber(
-                stream.buffer, used_tag, buffer, data_map["encoding_form"]
-            )
+            der.encode_tags_lens_ber(stream.buffer, used_tag, buffer, data_map["encoding_form"])
         stream.append(buffer)
 
         value_tracker.remove_ancestor()
@@ -10318,16 +10083,16 @@ class ModifyRequest:
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> dict:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         seq_type = ModifyRequest()
         return seq_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> dict:
         value = {}
         used_tag = [[0x66]]
@@ -10338,7 +10103,7 @@ class ModifyRequest:
 
         value_tracker.add_ancestor(value)
 
-        correct, length, num_indefs = osspy.der.decode_tags(stream, used_tag)
+        correct, length, num_indefs = der.decode_tags(stream, used_tag)
         if correct == 0:
             value_tracker.remove_ancestor()
             raise ValueError(
@@ -10347,30 +10112,28 @@ class ModifyRequest:
         start_pos = stream.get_pos()
 
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["object"] = AssertionValue.decode(encoding_rule, stream, value_tracker, [[0x04]])
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x24], [0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x24], [0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["object"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x24], [0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "object" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x24]])[0]
+            and der.peek_tags(stream, [[0x24]])[0]
         ):
             value["object"] = AssertionValue.decode(encoding_rule, stream, value_tracker, [[0x04]])
         else:
@@ -10379,9 +10142,8 @@ class ModifyRequest:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x30]])[0]:
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x30]])[0]:
             value["changes"] = ModifyRequest__5.decode(
                 encoding_rule, stream, value_tracker, [[0x30]]
             )
@@ -10390,14 +10152,12 @@ class ModifyRequest:
             raise ValueError(
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
-        if stream.get_pos() < start_pos + length or (
-            length < 0 and not osspy.der.is_eoc(stream, length)
-        ):
+        if stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length)):
             position = stream.get_pos()
             while position < (start_pos + length) or (
-                length < 0 and not osspy.der.is_eoc(stream, length)
+                length < 0 and not der.is_eoc(stream, length)
             ):
-                octets = osspy.der.decode_undecoded_type(stream)
+                octets = der.decode_undecoded_type(stream)
                 position = position + len(octets)
 
                 if len(octets) > 0:
@@ -10405,8 +10165,8 @@ class ModifyRequest:
                         value["_unknown_extensions"] = ""
                     value["_unknown_extensions"] += octets.hex().upper()
 
-        if length < 0 and osspy.der.is_eoc(stream):
-            osspy.der.skip_eoc(stream, num_indefs)
+        if length < 0 and der.is_eoc(stream):
+            der.skip_eoc(stream, num_indefs)
 
         if len(self._def_vals) > 0:
             for key, val in self._def_vals.items():
@@ -10455,10 +10215,10 @@ class ModifyRequest__5:
         value: list,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         seqof_type = ModifyRequest__5()
         return seqof_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -10469,9 +10229,9 @@ class ModifyRequest__5:
         value: list,
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
-        tmpstream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
+        tmpstream = der.encodingstream(encoding_rule)
         data_map = {}
 
         if not isinstance(value, list):
@@ -10513,27 +10273,25 @@ class ModifyRequest__5:
 
         buffer = tmpstream.get_buffer()
         if stream.canonical:
-            osspy.der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
+            der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
         else:
-            osspy.der.encode_tags_lens_ber(
-                stream.buffer, used_tag, buffer, data_map["encoding_form"]
-            )
+            der.encode_tags_lens_ber(stream.buffer, used_tag, buffer, data_map["encoding_form"])
         stream.append(buffer)
 
         return stream
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> list:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         seqof_type = ModifyRequest__5()
         return seqof_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> list:
         components = []
         used_tag = [[0x30]]
@@ -10543,7 +10301,7 @@ class ModifyRequest__5:
             used_tag = tag
         idx = 0
 
-        correct, length, num_indefs = osspy.der.decode_tags(stream, used_tag)
+        correct, length, num_indefs = der.decode_tags(stream, used_tag)
         if correct == 0:
             raise ValueError(
                 "70003: The next tag present in the encoding does not match the tag of the type to be decoded!"
@@ -10551,14 +10309,14 @@ class ModifyRequest__5:
 
         position = stream.get_pos()
         if length == -1:
-            while not osspy.der.is_eoc(stream) and not stream.is_eof():
+            while not der.is_eoc(stream) and not stream.is_eof():
                 value_tracker.add_ancestor(idx)
                 components.append(
                     ModifyRequest__4.decode(encoding_rule, stream, value_tracker, [[0x30]])
                 )
                 value_tracker.remove_ancestor()
                 idx += 1
-            osspy.der.skip_eoc(stream, num_indefs)
+            der.skip_eoc(stream, num_indefs)
         else:
             while stream.get_pos() < position + length:
                 value_tracker.add_ancestor(idx)
@@ -10602,10 +10360,10 @@ class ModifyRequest__4:
         value: object,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         seq_type = ModifyRequest__4()
         return seq_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -10616,9 +10374,9 @@ class ModifyRequest__4:
         value: object,
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
-        tmpstream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
+        tmpstream = der.encodingstream(encoding_rule)
 
         if not isinstance(value, object):
             raise TypeError(
@@ -10651,7 +10409,7 @@ class ModifyRequest__4:
                 "63803: A mandatory component is missing from the sequence or set value!"
             )
         if "_unknown_extensions" in value:
-            tmpstream.append(osspy.der.encode_unknown_extensions(value["_unknown_extensions"]))
+            tmpstream.append(der.encode_unknown_extensions(value["_unknown_extensions"]))
 
         used_tag = [[0x30]]
         if tag is None:
@@ -10661,11 +10419,9 @@ class ModifyRequest__4:
 
         buffer = tmpstream.get_buffer()
         if stream.canonical:
-            osspy.der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
+            der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
         else:
-            osspy.der.encode_tags_lens_ber(
-                stream.buffer, used_tag, buffer, data_map["encoding_form"]
-            )
+            der.encode_tags_lens_ber(stream.buffer, used_tag, buffer, data_map["encoding_form"])
         stream.append(buffer)
 
         value_tracker.remove_ancestor()
@@ -10674,16 +10430,16 @@ class ModifyRequest__4:
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> dict:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         seq_type = ModifyRequest__4()
         return seq_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> dict:
         value = {}
         used_tag = [[0x30]]
@@ -10694,7 +10450,7 @@ class ModifyRequest__4:
 
         value_tracker.add_ancestor(value)
 
-        correct, length, num_indefs = osspy.der.decode_tags(stream, used_tag)
+        correct, length, num_indefs = der.decode_tags(stream, used_tag)
         if correct == 0:
             value_tracker.remove_ancestor()
             raise ValueError(
@@ -10703,32 +10459,30 @@ class ModifyRequest__4:
         start_pos = stream.get_pos()
 
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x0A]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x0A]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["operation"] = ModifyRequest__2.decode(
                 encoding_rule, stream, value_tracker, [[0x0A]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x2A], [0x0A]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x2A], [0x0A]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["operation"] = ModifyRequest__2.decode(
                 encoding_rule, stream, value_tracker, [[0x2A], [0x0A]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "operation" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x2A]])[0]
+            and der.peek_tags(stream, [[0x2A]])[0]
         ):
             value["operation"] = ModifyRequest__2.decode(
                 encoding_rule, stream, value_tracker, [[0x0A]]
@@ -10739,9 +10493,8 @@ class ModifyRequest__4:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x30]])[0]:
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x30]])[0]:
             value["modification"] = PartialAttribute.decode(
                 encoding_rule, stream, value_tracker, [[0x30]]
             )
@@ -10750,14 +10503,12 @@ class ModifyRequest__4:
             raise ValueError(
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
-        if stream.get_pos() < start_pos + length or (
-            length < 0 and not osspy.der.is_eoc(stream, length)
-        ):
+        if stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length)):
             position = stream.get_pos()
             while position < (start_pos + length) or (
-                length < 0 and not osspy.der.is_eoc(stream, length)
+                length < 0 and not der.is_eoc(stream, length)
             ):
-                octets = osspy.der.decode_undecoded_type(stream)
+                octets = der.decode_undecoded_type(stream)
                 position = position + len(octets)
 
                 if len(octets) > 0:
@@ -10765,8 +10516,8 @@ class ModifyRequest__4:
                         value["_unknown_extensions"] = ""
                     value["_unknown_extensions"] += octets.hex().upper()
 
-        if length < 0 and osspy.der.is_eoc(stream):
-            osspy.der.skip_eoc(stream, num_indefs)
+        if length < 0 and der.is_eoc(stream):
+            der.skip_eoc(stream, num_indefs)
 
         if len(self._def_vals) > 0:
             for key, val in self._def_vals.items():
@@ -10820,17 +10571,17 @@ class ModifyRequest__2:
         value: Union[str, int],
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         enum_type = ModifyRequest__2()
         return enum_type.encode_value(value, tag, stream)
 
     def encode_value(
-        self, value: Union[str, int], tag: list, stream: osspy.der.encodingstream
-    ) -> osspy.der.encodingstream:
+        self, value: Union[str, int], tag: list, stream: der.encodingstream
+    ) -> der.encodingstream:
         if not isinstance(value, int) and not isinstance(value, str):
             raise TypeError(
                 "65201: The value class containing the value to be encoded does not match the type specified in the schema!"
@@ -10856,27 +10607,27 @@ class ModifyRequest__2:
             tag = []
         elif len(tag) > 0:
             used_tag = tag
-        osspy.der.encode_integer(stream, int_val, used_tag)
+        der.encode_integer(stream, int_val, used_tag)
         return stream
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> Union[str, int]:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         enum_type = ModifyRequest__2()
         return enum_type.decode_value(stream, tag)
 
-    def decode_value(self, stream: osspy.der.decodingstream, tag: list) -> Union[str, int]:
+    def decode_value(self, stream: der.decodingstream, tag: list) -> Union[str, int]:
         used_tag = [[0x0A]]
         if tag is None:
             tag = []
         elif len(tag) > 0:
             used_tag = tag
 
-        value = osspy.der.decode_integer(stream, used_tag)
+        value = der.decode_integer(stream, used_tag)
 
         identifier = None
         for item in self._identifiers:
@@ -10926,10 +10677,10 @@ class ModifyResponse:
         value: object,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         seq_type = ModifyResponse()
         return seq_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -10940,9 +10691,9 @@ class ModifyResponse:
         value: object,
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
-        tmpstream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
+        tmpstream = der.encodingstream(encoding_rule)
 
         if not isinstance(value, object):
             raise TypeError(
@@ -10991,7 +10742,7 @@ class ModifyResponse:
                 ).get_buffer()
             )
         if "_unknown_extensions" in value:
-            tmpstream.append(osspy.der.encode_unknown_extensions(value["_unknown_extensions"]))
+            tmpstream.append(der.encode_unknown_extensions(value["_unknown_extensions"]))
 
         used_tag = [[0x67]]
         if tag is None:
@@ -11001,11 +10752,9 @@ class ModifyResponse:
 
         buffer = tmpstream.get_buffer()
         if stream.canonical:
-            osspy.der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
+            der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
         else:
-            osspy.der.encode_tags_lens_ber(
-                stream.buffer, used_tag, buffer, data_map["encoding_form"]
-            )
+            der.encode_tags_lens_ber(stream.buffer, used_tag, buffer, data_map["encoding_form"])
         stream.append(buffer)
 
         value_tracker.remove_ancestor()
@@ -11014,16 +10763,16 @@ class ModifyResponse:
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> dict:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         seq_type = ModifyResponse()
         return seq_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> dict:
         value = {}
         used_tag = [[0x67]]
@@ -11034,7 +10783,7 @@ class ModifyResponse:
 
         value_tracker.add_ancestor(value)
 
-        correct, length, num_indefs = osspy.der.decode_tags(stream, used_tag)
+        correct, length, num_indefs = der.decode_tags(stream, used_tag)
         if correct == 0:
             value_tracker.remove_ancestor()
             raise ValueError(
@@ -11043,32 +10792,30 @@ class ModifyResponse:
         start_pos = stream.get_pos()
 
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x0A]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x0A]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["resultCode"] = LDAPResult__1.decode(
                 encoding_rule, stream, value_tracker, [[0x0A]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x2A], [0x0A]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x2A], [0x0A]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["resultCode"] = LDAPResult__1.decode(
                 encoding_rule, stream, value_tracker, [[0x2A], [0x0A]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "resultCode" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x2A]])[0]
+            and der.peek_tags(stream, [[0x2A]])[0]
         ):
             value["resultCode"] = LDAPResult__1.decode(
                 encoding_rule, stream, value_tracker, [[0x0A]]
@@ -11079,32 +10826,30 @@ class ModifyResponse:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["matchedDN"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x24], [0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x24], [0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["matchedDN"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x24], [0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "matchedDN" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x24]])[0]
+            and der.peek_tags(stream, [[0x24]])[0]
         ):
             value["matchedDN"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
@@ -11115,32 +10860,30 @@ class ModifyResponse:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["diagnosticMessage"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x24], [0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x24], [0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["diagnosticMessage"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x24], [0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "diagnosticMessage" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x24]])[0]
+            and der.peek_tags(stream, [[0x24]])[0]
         ):
             value["diagnosticMessage"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
@@ -11151,18 +10894,15 @@ class ModifyResponse:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0xA3]])[0]:
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0xA3]])[0]:
             value["referral"] = LDAPResult__4.decode(encoding_rule, stream, value_tracker, [[0xA3]])
-        if stream.get_pos() < start_pos + length or (
-            length < 0 and not osspy.der.is_eoc(stream, length)
-        ):
+        if stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length)):
             position = stream.get_pos()
             while position < (start_pos + length) or (
-                length < 0 and not osspy.der.is_eoc(stream, length)
+                length < 0 and not der.is_eoc(stream, length)
             ):
-                octets = osspy.der.decode_undecoded_type(stream)
+                octets = der.decode_undecoded_type(stream)
                 position = position + len(octets)
 
                 if len(octets) > 0:
@@ -11170,8 +10910,8 @@ class ModifyResponse:
                         value["_unknown_extensions"] = ""
                     value["_unknown_extensions"] += octets.hex().upper()
 
-        if length < 0 and osspy.der.is_eoc(stream):
-            osspy.der.skip_eoc(stream, num_indefs)
+        if length < 0 and der.is_eoc(stream):
+            der.skip_eoc(stream, num_indefs)
 
         if len(self._def_vals) > 0:
             for key, val in self._def_vals.items():
@@ -11233,10 +10973,10 @@ class AddRequest:
         value: object,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         seq_type = AddRequest()
         return seq_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -11247,9 +10987,9 @@ class AddRequest:
         value: object,
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
-        tmpstream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
+        tmpstream = der.encodingstream(encoding_rule)
 
         if not isinstance(value, object):
             raise TypeError(
@@ -11282,7 +11022,7 @@ class AddRequest:
                 "63803: A mandatory component is missing from the sequence or set value!"
             )
         if "_unknown_extensions" in value:
-            tmpstream.append(osspy.der.encode_unknown_extensions(value["_unknown_extensions"]))
+            tmpstream.append(der.encode_unknown_extensions(value["_unknown_extensions"]))
 
         used_tag = [[0x68]]
         if tag is None:
@@ -11292,11 +11032,9 @@ class AddRequest:
 
         buffer = tmpstream.get_buffer()
         if stream.canonical:
-            osspy.der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
+            der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
         else:
-            osspy.der.encode_tags_lens_ber(
-                stream.buffer, used_tag, buffer, data_map["encoding_form"]
-            )
+            der.encode_tags_lens_ber(stream.buffer, used_tag, buffer, data_map["encoding_form"])
         stream.append(buffer)
 
         value_tracker.remove_ancestor()
@@ -11305,16 +11043,16 @@ class AddRequest:
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> dict:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         seq_type = AddRequest()
         return seq_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> dict:
         value = {}
         used_tag = [[0x68]]
@@ -11325,7 +11063,7 @@ class AddRequest:
 
         value_tracker.add_ancestor(value)
 
-        correct, length, num_indefs = osspy.der.decode_tags(stream, used_tag)
+        correct, length, num_indefs = der.decode_tags(stream, used_tag)
         if correct == 0:
             value_tracker.remove_ancestor()
             raise ValueError(
@@ -11334,30 +11072,28 @@ class AddRequest:
         start_pos = stream.get_pos()
 
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["entry"] = AssertionValue.decode(encoding_rule, stream, value_tracker, [[0x04]])
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x24], [0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x24], [0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["entry"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x24], [0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "entry" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x24]])[0]
+            and der.peek_tags(stream, [[0x24]])[0]
         ):
             value["entry"] = AssertionValue.decode(encoding_rule, stream, value_tracker, [[0x04]])
         else:
@@ -11366,9 +11102,8 @@ class AddRequest:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x30]])[0]:
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x30]])[0]:
             value["attributes"] = AttributeList.decode(
                 encoding_rule, stream, value_tracker, [[0x30]]
             )
@@ -11377,14 +11112,12 @@ class AddRequest:
             raise ValueError(
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
-        if stream.get_pos() < start_pos + length or (
-            length < 0 and not osspy.der.is_eoc(stream, length)
-        ):
+        if stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length)):
             position = stream.get_pos()
             while position < (start_pos + length) or (
-                length < 0 and not osspy.der.is_eoc(stream, length)
+                length < 0 and not der.is_eoc(stream, length)
             ):
-                octets = osspy.der.decode_undecoded_type(stream)
+                octets = der.decode_undecoded_type(stream)
                 position = position + len(octets)
 
                 if len(octets) > 0:
@@ -11392,8 +11125,8 @@ class AddRequest:
                         value["_unknown_extensions"] = ""
                     value["_unknown_extensions"] += octets.hex().upper()
 
-        if length < 0 and osspy.der.is_eoc(stream):
-            osspy.der.skip_eoc(stream, num_indefs)
+        if length < 0 and der.is_eoc(stream):
+            der.skip_eoc(stream, num_indefs)
 
         if len(self._def_vals) > 0:
             for key, val in self._def_vals.items():
@@ -11442,10 +11175,10 @@ class AttributeList:
         value: list,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         seqof_type = AttributeList()
         return seqof_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -11456,9 +11189,9 @@ class AttributeList:
         value: list,
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
-        tmpstream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
+        tmpstream = der.encodingstream(encoding_rule)
         data_map = {}
 
         if not isinstance(value, list):
@@ -11496,27 +11229,25 @@ class AttributeList:
 
         buffer = tmpstream.get_buffer()
         if stream.canonical:
-            osspy.der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
+            der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
         else:
-            osspy.der.encode_tags_lens_ber(
-                stream.buffer, used_tag, buffer, data_map["encoding_form"]
-            )
+            der.encode_tags_lens_ber(stream.buffer, used_tag, buffer, data_map["encoding_form"])
         stream.append(buffer)
 
         return stream
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> list:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         seqof_type = AttributeList()
         return seqof_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> list:
         components = []
         used_tag = [[0x30]]
@@ -11526,7 +11257,7 @@ class AttributeList:
             used_tag = tag
         idx = 0
 
-        correct, length, num_indefs = osspy.der.decode_tags(stream, used_tag)
+        correct, length, num_indefs = der.decode_tags(stream, used_tag)
         if correct == 0:
             raise ValueError(
                 "70003: The next tag present in the encoding does not match the tag of the type to be decoded!"
@@ -11534,12 +11265,12 @@ class AttributeList:
 
         position = stream.get_pos()
         if length == -1:
-            while not osspy.der.is_eoc(stream) and not stream.is_eof():
+            while not der.is_eoc(stream) and not stream.is_eof():
                 value_tracker.add_ancestor(idx)
                 components.append(Attribute.decode(encoding_rule, stream, value_tracker, [[0x30]]))
                 value_tracker.remove_ancestor()
                 idx += 1
-            osspy.der.skip_eoc(stream, num_indefs)
+            der.skip_eoc(stream, num_indefs)
         else:
             while stream.get_pos() < position + length:
                 value_tracker.add_ancestor(idx)
@@ -11586,10 +11317,10 @@ class AddResponse:
         value: object,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         seq_type = AddResponse()
         return seq_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -11600,9 +11331,9 @@ class AddResponse:
         value: object,
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
-        tmpstream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
+        tmpstream = der.encodingstream(encoding_rule)
 
         if not isinstance(value, object):
             raise TypeError(
@@ -11651,7 +11382,7 @@ class AddResponse:
                 ).get_buffer()
             )
         if "_unknown_extensions" in value:
-            tmpstream.append(osspy.der.encode_unknown_extensions(value["_unknown_extensions"]))
+            tmpstream.append(der.encode_unknown_extensions(value["_unknown_extensions"]))
 
         used_tag = [[0x69]]
         if tag is None:
@@ -11661,11 +11392,9 @@ class AddResponse:
 
         buffer = tmpstream.get_buffer()
         if stream.canonical:
-            osspy.der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
+            der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
         else:
-            osspy.der.encode_tags_lens_ber(
-                stream.buffer, used_tag, buffer, data_map["encoding_form"]
-            )
+            der.encode_tags_lens_ber(stream.buffer, used_tag, buffer, data_map["encoding_form"])
         stream.append(buffer)
 
         value_tracker.remove_ancestor()
@@ -11674,16 +11403,16 @@ class AddResponse:
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> dict:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         seq_type = AddResponse()
         return seq_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> dict:
         value = {}
         used_tag = [[0x69]]
@@ -11694,7 +11423,7 @@ class AddResponse:
 
         value_tracker.add_ancestor(value)
 
-        correct, length, num_indefs = osspy.der.decode_tags(stream, used_tag)
+        correct, length, num_indefs = der.decode_tags(stream, used_tag)
         if correct == 0:
             value_tracker.remove_ancestor()
             raise ValueError(
@@ -11703,32 +11432,30 @@ class AddResponse:
         start_pos = stream.get_pos()
 
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x0A]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x0A]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["resultCode"] = LDAPResult__1.decode(
                 encoding_rule, stream, value_tracker, [[0x0A]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x2A], [0x0A]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x2A], [0x0A]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["resultCode"] = LDAPResult__1.decode(
                 encoding_rule, stream, value_tracker, [[0x2A], [0x0A]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "resultCode" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x2A]])[0]
+            and der.peek_tags(stream, [[0x2A]])[0]
         ):
             value["resultCode"] = LDAPResult__1.decode(
                 encoding_rule, stream, value_tracker, [[0x0A]]
@@ -11739,32 +11466,30 @@ class AddResponse:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["matchedDN"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x24], [0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x24], [0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["matchedDN"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x24], [0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "matchedDN" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x24]])[0]
+            and der.peek_tags(stream, [[0x24]])[0]
         ):
             value["matchedDN"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
@@ -11775,32 +11500,30 @@ class AddResponse:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["diagnosticMessage"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x24], [0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x24], [0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["diagnosticMessage"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x24], [0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "diagnosticMessage" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x24]])[0]
+            and der.peek_tags(stream, [[0x24]])[0]
         ):
             value["diagnosticMessage"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
@@ -11811,18 +11534,15 @@ class AddResponse:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0xA3]])[0]:
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0xA3]])[0]:
             value["referral"] = LDAPResult__4.decode(encoding_rule, stream, value_tracker, [[0xA3]])
-        if stream.get_pos() < start_pos + length or (
-            length < 0 and not osspy.der.is_eoc(stream, length)
-        ):
+        if stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length)):
             position = stream.get_pos()
             while position < (start_pos + length) or (
-                length < 0 and not osspy.der.is_eoc(stream, length)
+                length < 0 and not der.is_eoc(stream, length)
             ):
-                octets = osspy.der.decode_undecoded_type(stream)
+                octets = der.decode_undecoded_type(stream)
                 position = position + len(octets)
 
                 if len(octets) > 0:
@@ -11830,8 +11550,8 @@ class AddResponse:
                         value["_unknown_extensions"] = ""
                     value["_unknown_extensions"] += octets.hex().upper()
 
-        if length < 0 and osspy.der.is_eoc(stream):
-            osspy.der.skip_eoc(stream, num_indefs)
+        if length < 0 and der.is_eoc(stream):
+            der.skip_eoc(stream, num_indefs)
 
         if len(self._def_vals) > 0:
             for key, val in self._def_vals.items():
@@ -11897,10 +11617,10 @@ class DelRequest:
         value: Union[str, dict],
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         octetstring_type = DelRequest()
         return octetstring_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -11911,8 +11631,8 @@ class DelRequest:
         value: Union[str, dict],
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
         if not isinstance(value, str) and not isinstance(value, dict):
             raise ValueError(
                 "65201: The value class containing the value to be encoded does not match the type specified in the schema!"
@@ -11940,22 +11660,22 @@ class DelRequest:
         elif len(tag) > 0:
             used_tag = tag
 
-        osspy.der.encode_octet_string(stream, bin_val, used_tag)
+        der.encode_octet_string(stream, bin_val, used_tag)
 
         return stream
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> Union[str, dict]:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         octetstring_type = DelRequest()
         return octetstring_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> Union[str, dict]:
         used_tag = [[0x4A]]
         c_tag = [[0x6A]]
@@ -11964,13 +11684,13 @@ class DelRequest:
         elif len(tag) > 0:
             used_tag = tag
 
-        value = osspy.der.decode_octet_string(stream, used_tag, c_tag)
+        value = der.decode_octet_string(stream, used_tag, c_tag)
 
         constraint = self._contents_constrait
         if constraint is not None:
             func = getattr(constraint, "decode")
             bin_val = bytearray.fromhex(value)
-            tmpstream = osspy.der.decodingstream(bin_val, encoding_rule)
+            tmpstream = der.decodingstream(bin_val, encoding_rule)
             try:
                 valcontaining = {}
                 current_depth = value_tracker.depth
@@ -12017,10 +11737,10 @@ class DelResponse:
         value: object,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         seq_type = DelResponse()
         return seq_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -12031,9 +11751,9 @@ class DelResponse:
         value: object,
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
-        tmpstream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
+        tmpstream = der.encodingstream(encoding_rule)
 
         if not isinstance(value, object):
             raise TypeError(
@@ -12082,7 +11802,7 @@ class DelResponse:
                 ).get_buffer()
             )
         if "_unknown_extensions" in value:
-            tmpstream.append(osspy.der.encode_unknown_extensions(value["_unknown_extensions"]))
+            tmpstream.append(der.encode_unknown_extensions(value["_unknown_extensions"]))
 
         used_tag = [[0x6B]]
         if tag is None:
@@ -12092,11 +11812,9 @@ class DelResponse:
 
         buffer = tmpstream.get_buffer()
         if stream.canonical:
-            osspy.der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
+            der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
         else:
-            osspy.der.encode_tags_lens_ber(
-                stream.buffer, used_tag, buffer, data_map["encoding_form"]
-            )
+            der.encode_tags_lens_ber(stream.buffer, used_tag, buffer, data_map["encoding_form"])
         stream.append(buffer)
 
         value_tracker.remove_ancestor()
@@ -12105,16 +11823,16 @@ class DelResponse:
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> dict:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         seq_type = DelResponse()
         return seq_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> dict:
         value = {}
         used_tag = [[0x6B]]
@@ -12125,7 +11843,7 @@ class DelResponse:
 
         value_tracker.add_ancestor(value)
 
-        correct, length, num_indefs = osspy.der.decode_tags(stream, used_tag)
+        correct, length, num_indefs = der.decode_tags(stream, used_tag)
         if correct == 0:
             value_tracker.remove_ancestor()
             raise ValueError(
@@ -12134,32 +11852,30 @@ class DelResponse:
         start_pos = stream.get_pos()
 
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x0A]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x0A]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["resultCode"] = LDAPResult__1.decode(
                 encoding_rule, stream, value_tracker, [[0x0A]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x2A], [0x0A]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x2A], [0x0A]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["resultCode"] = LDAPResult__1.decode(
                 encoding_rule, stream, value_tracker, [[0x2A], [0x0A]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "resultCode" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x2A]])[0]
+            and der.peek_tags(stream, [[0x2A]])[0]
         ):
             value["resultCode"] = LDAPResult__1.decode(
                 encoding_rule, stream, value_tracker, [[0x0A]]
@@ -12170,32 +11886,30 @@ class DelResponse:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["matchedDN"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x24], [0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x24], [0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["matchedDN"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x24], [0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "matchedDN" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x24]])[0]
+            and der.peek_tags(stream, [[0x24]])[0]
         ):
             value["matchedDN"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
@@ -12206,32 +11920,30 @@ class DelResponse:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["diagnosticMessage"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x24], [0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x24], [0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["diagnosticMessage"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x24], [0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "diagnosticMessage" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x24]])[0]
+            and der.peek_tags(stream, [[0x24]])[0]
         ):
             value["diagnosticMessage"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
@@ -12242,18 +11954,15 @@ class DelResponse:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0xA3]])[0]:
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0xA3]])[0]:
             value["referral"] = LDAPResult__4.decode(encoding_rule, stream, value_tracker, [[0xA3]])
-        if stream.get_pos() < start_pos + length or (
-            length < 0 and not osspy.der.is_eoc(stream, length)
-        ):
+        if stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length)):
             position = stream.get_pos()
             while position < (start_pos + length) or (
-                length < 0 and not osspy.der.is_eoc(stream, length)
+                length < 0 and not der.is_eoc(stream, length)
             ):
-                octets = osspy.der.decode_undecoded_type(stream)
+                octets = der.decode_undecoded_type(stream)
                 position = position + len(octets)
 
                 if len(octets) > 0:
@@ -12261,8 +11970,8 @@ class DelResponse:
                         value["_unknown_extensions"] = ""
                     value["_unknown_extensions"] += octets.hex().upper()
 
-        if length < 0 and osspy.der.is_eoc(stream):
-            osspy.der.skip_eoc(stream, num_indefs)
+        if length < 0 and der.is_eoc(stream):
+            der.skip_eoc(stream, num_indefs)
 
         if len(self._def_vals) > 0:
             for key, val in self._def_vals.items():
@@ -12329,10 +12038,10 @@ class ModifyDNRequest:
         value: object,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         seq_type = ModifyDNRequest()
         return seq_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -12343,9 +12052,9 @@ class ModifyDNRequest:
         value: object,
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
-        tmpstream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
+        tmpstream = der.encodingstream(encoding_rule)
 
         if not isinstance(value, object):
             raise TypeError(
@@ -12394,7 +12103,7 @@ class ModifyDNRequest:
                 ).get_buffer()
             )
         if "_unknown_extensions" in value:
-            tmpstream.append(osspy.der.encode_unknown_extensions(value["_unknown_extensions"]))
+            tmpstream.append(der.encode_unknown_extensions(value["_unknown_extensions"]))
 
         used_tag = [[0x6C]]
         if tag is None:
@@ -12404,11 +12113,9 @@ class ModifyDNRequest:
 
         buffer = tmpstream.get_buffer()
         if stream.canonical:
-            osspy.der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
+            der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
         else:
-            osspy.der.encode_tags_lens_ber(
-                stream.buffer, used_tag, buffer, data_map["encoding_form"]
-            )
+            der.encode_tags_lens_ber(stream.buffer, used_tag, buffer, data_map["encoding_form"])
         stream.append(buffer)
 
         value_tracker.remove_ancestor()
@@ -12417,16 +12124,16 @@ class ModifyDNRequest:
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> dict:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         seq_type = ModifyDNRequest()
         return seq_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> dict:
         value = {}
         used_tag = [[0x6C]]
@@ -12437,7 +12144,7 @@ class ModifyDNRequest:
 
         value_tracker.add_ancestor(value)
 
-        correct, length, num_indefs = osspy.der.decode_tags(stream, used_tag)
+        correct, length, num_indefs = der.decode_tags(stream, used_tag)
         if correct == 0:
             value_tracker.remove_ancestor()
             raise ValueError(
@@ -12446,30 +12153,28 @@ class ModifyDNRequest:
         start_pos = stream.get_pos()
 
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["entry"] = AssertionValue.decode(encoding_rule, stream, value_tracker, [[0x04]])
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x24], [0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x24], [0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["entry"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x24], [0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "entry" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x24]])[0]
+            and der.peek_tags(stream, [[0x24]])[0]
         ):
             value["entry"] = AssertionValue.decode(encoding_rule, stream, value_tracker, [[0x04]])
         else:
@@ -12478,30 +12183,28 @@ class ModifyDNRequest:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["newrdn"] = AssertionValue.decode(encoding_rule, stream, value_tracker, [[0x04]])
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x24], [0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x24], [0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["newrdn"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x24], [0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "newrdn" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x24]])[0]
+            and der.peek_tags(stream, [[0x24]])[0]
         ):
             value["newrdn"] = AssertionValue.decode(encoding_rule, stream, value_tracker, [[0x04]])
         else:
@@ -12510,32 +12213,30 @@ class ModifyDNRequest:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x01]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x01]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["deleteoldrdn"] = Control__2.decode(
                 encoding_rule, stream, value_tracker, [[0x01]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x21], [0x01]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x21], [0x01]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["deleteoldrdn"] = Control__2.decode(
                 encoding_rule, stream, value_tracker, [[0x21], [0x01]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "deleteoldrdn" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x21]])[0]
+            and der.peek_tags(stream, [[0x21]])[0]
         ):
             value["deleteoldrdn"] = Control__2.decode(
                 encoding_rule, stream, value_tracker, [[0x01]]
@@ -12546,44 +12247,40 @@ class ModifyDNRequest:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x80]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x80]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["newSuperior"] = AuthenticationChoice__1.decode(
                 encoding_rule, stream, value_tracker, [[0x80]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0xA0], [0x80]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0xA0], [0x80]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["newSuperior"] = AuthenticationChoice__1.decode(
                 encoding_rule, stream, value_tracker, [[0xA0], [0x80]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "newSuperior" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0xA0]])[0]
+            and der.peek_tags(stream, [[0xA0]])[0]
         ):
             value["newSuperior"] = AuthenticationChoice__1.decode(
                 encoding_rule, stream, value_tracker, [[0x80]]
             )
-        if stream.get_pos() < start_pos + length or (
-            length < 0 and not osspy.der.is_eoc(stream, length)
-        ):
+        if stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length)):
             position = stream.get_pos()
             while position < (start_pos + length) or (
-                length < 0 and not osspy.der.is_eoc(stream, length)
+                length < 0 and not der.is_eoc(stream, length)
             ):
-                octets = osspy.der.decode_undecoded_type(stream)
+                octets = der.decode_undecoded_type(stream)
                 position = position + len(octets)
 
                 if len(octets) > 0:
@@ -12591,8 +12288,8 @@ class ModifyDNRequest:
                         value["_unknown_extensions"] = ""
                     value["_unknown_extensions"] += octets.hex().upper()
 
-        if length < 0 and osspy.der.is_eoc(stream):
-            osspy.der.skip_eoc(stream, num_indefs)
+        if length < 0 and der.is_eoc(stream):
+            der.skip_eoc(stream, num_indefs)
 
         if len(self._def_vals) > 0:
             for key, val in self._def_vals.items():
@@ -12649,37 +12346,37 @@ class Control__2:
         value: bool,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         simple_type = Control__2()
         return simple_type.encode_value(value, tag, stream)
 
     def encode_value(
-        self, value: bool, tag: list, stream: osspy.der.encodingstream
-    ) -> osspy.der.encodingstream:
+        self, value: bool, tag: list, stream: der.encodingstream
+    ) -> der.encodingstream:
         used_tag = [[0x01]]
         if tag is None:
             tag = []
         elif len(tag) > 0:
             used_tag = tag
 
-        osspy.der.encode_boolean(stream, value, used_tag)
+        der.encode_boolean(stream, value, used_tag)
         return stream
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker_: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker_: dict, tag: list = None
     ) -> bool:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         simple_type = Control__2()
         return simple_type.decode_value(stream, tag)
 
-    def decode_value(self, stream: osspy.der.decodingstream, tag: list) -> bool:
+    def decode_value(self, stream: der.decodingstream, tag: list) -> bool:
         used_tag = [[0x01]]
         c_tag = None
         if tag is None:
@@ -12687,7 +12384,7 @@ class Control__2:
         elif len(tag) > 0:
             used_tag = tag
 
-        return osspy.der.decode_boolean(stream, used_tag, c_tag)
+        return der.decode_boolean(stream, used_tag, c_tag)
 
     @staticmethod
     def validate(value, errors: list, comp_path: str = "") -> list:
@@ -12728,10 +12425,10 @@ class AuthenticationChoice__1:
         value: Union[str, dict],
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         octetstring_type = AuthenticationChoice__1()
         return octetstring_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -12742,8 +12439,8 @@ class AuthenticationChoice__1:
         value: Union[str, dict],
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
         if not isinstance(value, str) and not isinstance(value, dict):
             raise ValueError(
                 "65201: The value class containing the value to be encoded does not match the type specified in the schema!"
@@ -12771,22 +12468,22 @@ class AuthenticationChoice__1:
         elif len(tag) > 0:
             used_tag = tag
 
-        osspy.der.encode_octet_string(stream, bin_val, used_tag)
+        der.encode_octet_string(stream, bin_val, used_tag)
 
         return stream
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> Union[str, dict]:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         octetstring_type = AuthenticationChoice__1()
         return octetstring_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> Union[str, dict]:
         used_tag = [[0x80]]
         c_tag = [[0xA0]]
@@ -12795,13 +12492,13 @@ class AuthenticationChoice__1:
         elif len(tag) > 0:
             used_tag = tag
 
-        value = osspy.der.decode_octet_string(stream, used_tag, c_tag)
+        value = der.decode_octet_string(stream, used_tag, c_tag)
 
         constraint = self._contents_constrait
         if constraint is not None:
             func = getattr(constraint, "decode")
             bin_val = bytearray.fromhex(value)
-            tmpstream = osspy.der.decodingstream(bin_val, encoding_rule)
+            tmpstream = der.decodingstream(bin_val, encoding_rule)
             try:
                 valcontaining = {}
                 current_depth = value_tracker.depth
@@ -12854,10 +12551,10 @@ class ModifyDNResponse:
         value: object,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         seq_type = ModifyDNResponse()
         return seq_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -12868,9 +12565,9 @@ class ModifyDNResponse:
         value: object,
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
-        tmpstream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
+        tmpstream = der.encodingstream(encoding_rule)
 
         if not isinstance(value, object):
             raise TypeError(
@@ -12919,7 +12616,7 @@ class ModifyDNResponse:
                 ).get_buffer()
             )
         if "_unknown_extensions" in value:
-            tmpstream.append(osspy.der.encode_unknown_extensions(value["_unknown_extensions"]))
+            tmpstream.append(der.encode_unknown_extensions(value["_unknown_extensions"]))
 
         used_tag = [[0x6D]]
         if tag is None:
@@ -12929,11 +12626,9 @@ class ModifyDNResponse:
 
         buffer = tmpstream.get_buffer()
         if stream.canonical:
-            osspy.der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
+            der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
         else:
-            osspy.der.encode_tags_lens_ber(
-                stream.buffer, used_tag, buffer, data_map["encoding_form"]
-            )
+            der.encode_tags_lens_ber(stream.buffer, used_tag, buffer, data_map["encoding_form"])
         stream.append(buffer)
 
         value_tracker.remove_ancestor()
@@ -12942,16 +12637,16 @@ class ModifyDNResponse:
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> dict:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         seq_type = ModifyDNResponse()
         return seq_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> dict:
         value = {}
         used_tag = [[0x6D]]
@@ -12962,7 +12657,7 @@ class ModifyDNResponse:
 
         value_tracker.add_ancestor(value)
 
-        correct, length, num_indefs = osspy.der.decode_tags(stream, used_tag)
+        correct, length, num_indefs = der.decode_tags(stream, used_tag)
         if correct == 0:
             value_tracker.remove_ancestor()
             raise ValueError(
@@ -12971,32 +12666,30 @@ class ModifyDNResponse:
         start_pos = stream.get_pos()
 
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x0A]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x0A]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["resultCode"] = LDAPResult__1.decode(
                 encoding_rule, stream, value_tracker, [[0x0A]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x2A], [0x0A]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x2A], [0x0A]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["resultCode"] = LDAPResult__1.decode(
                 encoding_rule, stream, value_tracker, [[0x2A], [0x0A]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "resultCode" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x2A]])[0]
+            and der.peek_tags(stream, [[0x2A]])[0]
         ):
             value["resultCode"] = LDAPResult__1.decode(
                 encoding_rule, stream, value_tracker, [[0x0A]]
@@ -13007,32 +12700,30 @@ class ModifyDNResponse:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["matchedDN"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x24], [0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x24], [0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["matchedDN"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x24], [0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "matchedDN" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x24]])[0]
+            and der.peek_tags(stream, [[0x24]])[0]
         ):
             value["matchedDN"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
@@ -13043,32 +12734,30 @@ class ModifyDNResponse:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["diagnosticMessage"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x24], [0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x24], [0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["diagnosticMessage"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x24], [0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "diagnosticMessage" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x24]])[0]
+            and der.peek_tags(stream, [[0x24]])[0]
         ):
             value["diagnosticMessage"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
@@ -13079,18 +12768,15 @@ class ModifyDNResponse:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0xA3]])[0]:
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0xA3]])[0]:
             value["referral"] = LDAPResult__4.decode(encoding_rule, stream, value_tracker, [[0xA3]])
-        if stream.get_pos() < start_pos + length or (
-            length < 0 and not osspy.der.is_eoc(stream, length)
-        ):
+        if stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length)):
             position = stream.get_pos()
             while position < (start_pos + length) or (
-                length < 0 and not osspy.der.is_eoc(stream, length)
+                length < 0 and not der.is_eoc(stream, length)
             ):
-                octets = osspy.der.decode_undecoded_type(stream)
+                octets = der.decode_undecoded_type(stream)
                 position = position + len(octets)
 
                 if len(octets) > 0:
@@ -13098,8 +12784,8 @@ class ModifyDNResponse:
                         value["_unknown_extensions"] = ""
                     value["_unknown_extensions"] += octets.hex().upper()
 
-        if length < 0 and osspy.der.is_eoc(stream):
-            osspy.der.skip_eoc(stream, num_indefs)
+        if length < 0 and der.is_eoc(stream):
+            der.skip_eoc(stream, num_indefs)
 
         if len(self._def_vals) > 0:
             for key, val in self._def_vals.items():
@@ -13161,10 +12847,10 @@ class CompareRequest:
         value: object,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         seq_type = CompareRequest()
         return seq_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -13175,9 +12861,9 @@ class CompareRequest:
         value: object,
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
-        tmpstream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
+        tmpstream = der.encodingstream(encoding_rule)
 
         if not isinstance(value, object):
             raise TypeError(
@@ -13210,7 +12896,7 @@ class CompareRequest:
                 "63803: A mandatory component is missing from the sequence or set value!"
             )
         if "_unknown_extensions" in value:
-            tmpstream.append(osspy.der.encode_unknown_extensions(value["_unknown_extensions"]))
+            tmpstream.append(der.encode_unknown_extensions(value["_unknown_extensions"]))
 
         used_tag = [[0x6E]]
         if tag is None:
@@ -13220,11 +12906,9 @@ class CompareRequest:
 
         buffer = tmpstream.get_buffer()
         if stream.canonical:
-            osspy.der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
+            der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
         else:
-            osspy.der.encode_tags_lens_ber(
-                stream.buffer, used_tag, buffer, data_map["encoding_form"]
-            )
+            der.encode_tags_lens_ber(stream.buffer, used_tag, buffer, data_map["encoding_form"])
         stream.append(buffer)
 
         value_tracker.remove_ancestor()
@@ -13233,16 +12917,16 @@ class CompareRequest:
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> dict:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         seq_type = CompareRequest()
         return seq_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> dict:
         value = {}
         used_tag = [[0x6E]]
@@ -13253,7 +12937,7 @@ class CompareRequest:
 
         value_tracker.add_ancestor(value)
 
-        correct, length, num_indefs = osspy.der.decode_tags(stream, used_tag)
+        correct, length, num_indefs = der.decode_tags(stream, used_tag)
         if correct == 0:
             value_tracker.remove_ancestor()
             raise ValueError(
@@ -13262,30 +12946,28 @@ class CompareRequest:
         start_pos = stream.get_pos()
 
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["entry"] = AssertionValue.decode(encoding_rule, stream, value_tracker, [[0x04]])
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x24], [0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x24], [0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["entry"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x24], [0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "entry" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x24]])[0]
+            and der.peek_tags(stream, [[0x24]])[0]
         ):
             value["entry"] = AssertionValue.decode(encoding_rule, stream, value_tracker, [[0x04]])
         else:
@@ -13294,9 +12976,8 @@ class CompareRequest:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x30]])[0]:
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x30]])[0]:
             value["ava"] = AttributeValueAssertion.decode(
                 encoding_rule, stream, value_tracker, [[0x30]]
             )
@@ -13305,14 +12986,12 @@ class CompareRequest:
             raise ValueError(
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
-        if stream.get_pos() < start_pos + length or (
-            length < 0 and not osspy.der.is_eoc(stream, length)
-        ):
+        if stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length)):
             position = stream.get_pos()
             while position < (start_pos + length) or (
-                length < 0 and not osspy.der.is_eoc(stream, length)
+                length < 0 and not der.is_eoc(stream, length)
             ):
-                octets = osspy.der.decode_undecoded_type(stream)
+                octets = der.decode_undecoded_type(stream)
                 position = position + len(octets)
 
                 if len(octets) > 0:
@@ -13320,8 +12999,8 @@ class CompareRequest:
                         value["_unknown_extensions"] = ""
                     value["_unknown_extensions"] += octets.hex().upper()
 
-        if length < 0 and osspy.der.is_eoc(stream):
-            osspy.der.skip_eoc(stream, num_indefs)
+        if length < 0 and der.is_eoc(stream):
+            der.skip_eoc(stream, num_indefs)
 
         if len(self._def_vals) > 0:
             for key, val in self._def_vals.items():
@@ -13376,10 +13055,10 @@ class CompareResponse:
         value: object,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         seq_type = CompareResponse()
         return seq_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -13390,9 +13069,9 @@ class CompareResponse:
         value: object,
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
-        tmpstream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
+        tmpstream = der.encodingstream(encoding_rule)
 
         if not isinstance(value, object):
             raise TypeError(
@@ -13441,7 +13120,7 @@ class CompareResponse:
                 ).get_buffer()
             )
         if "_unknown_extensions" in value:
-            tmpstream.append(osspy.der.encode_unknown_extensions(value["_unknown_extensions"]))
+            tmpstream.append(der.encode_unknown_extensions(value["_unknown_extensions"]))
 
         used_tag = [[0x6F]]
         if tag is None:
@@ -13451,11 +13130,9 @@ class CompareResponse:
 
         buffer = tmpstream.get_buffer()
         if stream.canonical:
-            osspy.der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
+            der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
         else:
-            osspy.der.encode_tags_lens_ber(
-                stream.buffer, used_tag, buffer, data_map["encoding_form"]
-            )
+            der.encode_tags_lens_ber(stream.buffer, used_tag, buffer, data_map["encoding_form"])
         stream.append(buffer)
 
         value_tracker.remove_ancestor()
@@ -13464,16 +13141,16 @@ class CompareResponse:
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> dict:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         seq_type = CompareResponse()
         return seq_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> dict:
         value = {}
         used_tag = [[0x6F]]
@@ -13484,7 +13161,7 @@ class CompareResponse:
 
         value_tracker.add_ancestor(value)
 
-        correct, length, num_indefs = osspy.der.decode_tags(stream, used_tag)
+        correct, length, num_indefs = der.decode_tags(stream, used_tag)
         if correct == 0:
             value_tracker.remove_ancestor()
             raise ValueError(
@@ -13493,32 +13170,30 @@ class CompareResponse:
         start_pos = stream.get_pos()
 
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x0A]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x0A]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["resultCode"] = LDAPResult__1.decode(
                 encoding_rule, stream, value_tracker, [[0x0A]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x2A], [0x0A]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x2A], [0x0A]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["resultCode"] = LDAPResult__1.decode(
                 encoding_rule, stream, value_tracker, [[0x2A], [0x0A]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "resultCode" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x2A]])[0]
+            and der.peek_tags(stream, [[0x2A]])[0]
         ):
             value["resultCode"] = LDAPResult__1.decode(
                 encoding_rule, stream, value_tracker, [[0x0A]]
@@ -13529,32 +13204,30 @@ class CompareResponse:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["matchedDN"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x24], [0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x24], [0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["matchedDN"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x24], [0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "matchedDN" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x24]])[0]
+            and der.peek_tags(stream, [[0x24]])[0]
         ):
             value["matchedDN"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
@@ -13565,32 +13238,30 @@ class CompareResponse:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["diagnosticMessage"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x24], [0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x24], [0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["diagnosticMessage"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x24], [0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "diagnosticMessage" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x24]])[0]
+            and der.peek_tags(stream, [[0x24]])[0]
         ):
             value["diagnosticMessage"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
@@ -13601,18 +13272,15 @@ class CompareResponse:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0xA3]])[0]:
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0xA3]])[0]:
             value["referral"] = LDAPResult__4.decode(encoding_rule, stream, value_tracker, [[0xA3]])
-        if stream.get_pos() < start_pos + length or (
-            length < 0 and not osspy.der.is_eoc(stream, length)
-        ):
+        if stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length)):
             position = stream.get_pos()
             while position < (start_pos + length) or (
-                length < 0 and not osspy.der.is_eoc(stream, length)
+                length < 0 and not der.is_eoc(stream, length)
             ):
-                octets = osspy.der.decode_undecoded_type(stream)
+                octets = der.decode_undecoded_type(stream)
                 position = position + len(octets)
 
                 if len(octets) > 0:
@@ -13620,8 +13288,8 @@ class CompareResponse:
                         value["_unknown_extensions"] = ""
                     value["_unknown_extensions"] += octets.hex().upper()
 
-        if length < 0 and osspy.der.is_eoc(stream):
-            osspy.der.skip_eoc(stream, num_indefs)
+        if length < 0 and der.is_eoc(stream):
+            der.skip_eoc(stream, num_indefs)
 
         if len(self._def_vals) > 0:
             for key, val in self._def_vals.items():
@@ -13689,37 +13357,35 @@ class AbandonRequest:
         value: int,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         simple_type = AbandonRequest()
         return simple_type.encode_value(value, tag, stream)
 
-    def encode_value(
-        self, value: int, tag: list, stream: osspy.der.encodingstream
-    ) -> osspy.der.encodingstream:
+    def encode_value(self, value: int, tag: list, stream: der.encodingstream) -> der.encodingstream:
         used_tag = [[0x50]]
         if tag is None:
             tag = []
         elif len(tag) > 0:
             used_tag = tag
 
-        osspy.der.encode_integer(stream, value, used_tag)
+        der.encode_integer(stream, value, used_tag)
         return stream
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker_: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker_: dict, tag: list = None
     ) -> int:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         simple_type = AbandonRequest()
         return simple_type.decode_value(stream, tag)
 
-    def decode_value(self, stream: osspy.der.decodingstream, tag: list) -> int:
+    def decode_value(self, stream: der.decodingstream, tag: list) -> int:
         used_tag = [[0x50]]
         c_tag = None
         if tag is None:
@@ -13727,7 +13393,7 @@ class AbandonRequest:
         elif len(tag) > 0:
             used_tag = tag
 
-        return osspy.der.decode_integer(stream, used_tag, c_tag)
+        return der.decode_integer(stream, used_tag, c_tag)
 
     @staticmethod
     def validate(value, errors: list, comp_path: str = "") -> list:
@@ -13761,10 +13427,10 @@ class ExtendedRequest:
         value: object,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         seq_type = ExtendedRequest()
         return seq_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -13775,9 +13441,9 @@ class ExtendedRequest:
         value: object,
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
-        tmpstream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
+        tmpstream = der.encodingstream(encoding_rule)
 
         if not isinstance(value, object):
             raise TypeError(
@@ -13806,7 +13472,7 @@ class ExtendedRequest:
                 ).get_buffer()
             )
         if "_unknown_extensions" in value:
-            tmpstream.append(osspy.der.encode_unknown_extensions(value["_unknown_extensions"]))
+            tmpstream.append(der.encode_unknown_extensions(value["_unknown_extensions"]))
 
         used_tag = [[0x77]]
         if tag is None:
@@ -13816,11 +13482,9 @@ class ExtendedRequest:
 
         buffer = tmpstream.get_buffer()
         if stream.canonical:
-            osspy.der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
+            der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
         else:
-            osspy.der.encode_tags_lens_ber(
-                stream.buffer, used_tag, buffer, data_map["encoding_form"]
-            )
+            der.encode_tags_lens_ber(stream.buffer, used_tag, buffer, data_map["encoding_form"])
         stream.append(buffer)
 
         value_tracker.remove_ancestor()
@@ -13829,16 +13493,16 @@ class ExtendedRequest:
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> dict:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         seq_type = ExtendedRequest()
         return seq_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> dict:
         value = {}
         used_tag = [[0x77]]
@@ -13849,7 +13513,7 @@ class ExtendedRequest:
 
         value_tracker.add_ancestor(value)
 
-        correct, length, num_indefs = osspy.der.decode_tags(stream, used_tag)
+        correct, length, num_indefs = der.decode_tags(stream, used_tag)
         if correct == 0:
             value_tracker.remove_ancestor()
             raise ValueError(
@@ -13858,32 +13522,30 @@ class ExtendedRequest:
         start_pos = stream.get_pos()
 
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x80]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x80]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["requestName"] = AuthenticationChoice__1.decode(
                 encoding_rule, stream, value_tracker, [[0x80]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0xA0], [0x80]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0xA0], [0x80]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["requestName"] = AuthenticationChoice__1.decode(
                 encoding_rule, stream, value_tracker, [[0xA0], [0x80]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "requestName" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0xA0]])[0]
+            and der.peek_tags(stream, [[0xA0]])[0]
         ):
             value["requestName"] = AuthenticationChoice__1.decode(
                 encoding_rule, stream, value_tracker, [[0x80]]
@@ -13894,44 +13556,40 @@ class ExtendedRequest:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x81]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x81]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["requestValue"] = ExtendedRequest__2.decode(
                 encoding_rule, stream, value_tracker, [[0x81]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0xA1], [0x81]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0xA1], [0x81]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["requestValue"] = ExtendedRequest__2.decode(
                 encoding_rule, stream, value_tracker, [[0xA1], [0x81]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "requestValue" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0xA1]])[0]
+            and der.peek_tags(stream, [[0xA1]])[0]
         ):
             value["requestValue"] = ExtendedRequest__2.decode(
                 encoding_rule, stream, value_tracker, [[0x81]]
             )
-        if stream.get_pos() < start_pos + length or (
-            length < 0 and not osspy.der.is_eoc(stream, length)
-        ):
+        if stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length)):
             position = stream.get_pos()
             while position < (start_pos + length) or (
-                length < 0 and not osspy.der.is_eoc(stream, length)
+                length < 0 and not der.is_eoc(stream, length)
             ):
-                octets = osspy.der.decode_undecoded_type(stream)
+                octets = der.decode_undecoded_type(stream)
                 position = position + len(octets)
 
                 if len(octets) > 0:
@@ -13939,8 +13597,8 @@ class ExtendedRequest:
                         value["_unknown_extensions"] = ""
                     value["_unknown_extensions"] += octets.hex().upper()
 
-        if length < 0 and osspy.der.is_eoc(stream):
-            osspy.der.skip_eoc(stream, num_indefs)
+        if length < 0 and der.is_eoc(stream):
+            der.skip_eoc(stream, num_indefs)
 
         if len(self._def_vals) > 0:
             for key, val in self._def_vals.items():
@@ -13999,10 +13657,10 @@ class ExtendedResponse:
         value: object,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         seq_type = ExtendedResponse()
         return seq_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -14013,9 +13671,9 @@ class ExtendedResponse:
         value: object,
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
-        tmpstream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
+        tmpstream = der.encodingstream(encoding_rule)
 
         if not isinstance(value, object):
             raise TypeError(
@@ -14076,7 +13734,7 @@ class ExtendedResponse:
                 ).get_buffer()
             )
         if "_unknown_extensions" in value:
-            tmpstream.append(osspy.der.encode_unknown_extensions(value["_unknown_extensions"]))
+            tmpstream.append(der.encode_unknown_extensions(value["_unknown_extensions"]))
 
         used_tag = [[0x78]]
         if tag is None:
@@ -14086,11 +13744,9 @@ class ExtendedResponse:
 
         buffer = tmpstream.get_buffer()
         if stream.canonical:
-            osspy.der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
+            der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
         else:
-            osspy.der.encode_tags_lens_ber(
-                stream.buffer, used_tag, buffer, data_map["encoding_form"]
-            )
+            der.encode_tags_lens_ber(stream.buffer, used_tag, buffer, data_map["encoding_form"])
         stream.append(buffer)
 
         value_tracker.remove_ancestor()
@@ -14099,16 +13755,16 @@ class ExtendedResponse:
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> dict:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         seq_type = ExtendedResponse()
         return seq_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> dict:
         value = {}
         used_tag = [[0x78]]
@@ -14119,7 +13775,7 @@ class ExtendedResponse:
 
         value_tracker.add_ancestor(value)
 
-        correct, length, num_indefs = osspy.der.decode_tags(stream, used_tag)
+        correct, length, num_indefs = der.decode_tags(stream, used_tag)
         if correct == 0:
             value_tracker.remove_ancestor()
             raise ValueError(
@@ -14128,32 +13784,30 @@ class ExtendedResponse:
         start_pos = stream.get_pos()
 
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x0A]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x0A]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["resultCode"] = LDAPResult__1.decode(
                 encoding_rule, stream, value_tracker, [[0x0A]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x2A], [0x0A]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x2A], [0x0A]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["resultCode"] = LDAPResult__1.decode(
                 encoding_rule, stream, value_tracker, [[0x2A], [0x0A]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "resultCode" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x2A]])[0]
+            and der.peek_tags(stream, [[0x2A]])[0]
         ):
             value["resultCode"] = LDAPResult__1.decode(
                 encoding_rule, stream, value_tracker, [[0x0A]]
@@ -14164,32 +13818,30 @@ class ExtendedResponse:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["matchedDN"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x24], [0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x24], [0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["matchedDN"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x24], [0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "matchedDN" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x24]])[0]
+            and der.peek_tags(stream, [[0x24]])[0]
         ):
             value["matchedDN"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
@@ -14200,32 +13852,30 @@ class ExtendedResponse:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["diagnosticMessage"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x24], [0x04]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x24], [0x04]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["diagnosticMessage"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x24], [0x04]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "diagnosticMessage" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0x24]])[0]
+            and der.peek_tags(stream, [[0x24]])[0]
         ):
             value["diagnosticMessage"] = AssertionValue.decode(
                 encoding_rule, stream, value_tracker, [[0x04]]
@@ -14236,80 +13886,73 @@ class ExtendedResponse:
                 "63805: A mandatory component of the sequence or set type is missing from the encoded data!"
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0xA3]])[0]:
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0xA3]])[0]:
             value["referral"] = LDAPResult__4.decode(encoding_rule, stream, value_tracker, [[0xA3]])
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x8A]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x8A]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["responseName"] = ExtendedResponse_1__5.decode(
                 encoding_rule, stream, value_tracker, [[0x8A]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0xAA], [0x8A]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0xAA], [0x8A]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["responseName"] = ExtendedResponse_1__5.decode(
                 encoding_rule, stream, value_tracker, [[0xAA], [0x8A]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "responseName" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0xAA]])[0]
+            and der.peek_tags(stream, [[0xAA]])[0]
         ):
             value["responseName"] = ExtendedResponse_1__5.decode(
                 encoding_rule, stream, value_tracker, [[0x8A]]
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x8B]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x8B]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["responseValue"] = ExtendedResponse_1__6.decode(
                 encoding_rule, stream, value_tracker, [[0x8B]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0xAB], [0x8B]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0xAB], [0x8B]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["responseValue"] = ExtendedResponse_1__6.decode(
                 encoding_rule, stream, value_tracker, [[0xAB], [0x8B]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "responseValue" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0xAB]])[0]
+            and der.peek_tags(stream, [[0xAB]])[0]
         ):
             value["responseValue"] = ExtendedResponse_1__6.decode(
                 encoding_rule, stream, value_tracker, [[0x8B]]
             )
-        if stream.get_pos() < start_pos + length or (
-            length < 0 and not osspy.der.is_eoc(stream, length)
-        ):
+        if stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length)):
             position = stream.get_pos()
             while position < (start_pos + length) or (
-                length < 0 and not osspy.der.is_eoc(stream, length)
+                length < 0 and not der.is_eoc(stream, length)
             ):
-                octets = osspy.der.decode_undecoded_type(stream)
+                octets = der.decode_undecoded_type(stream)
                 position = position + len(octets)
 
                 if len(octets) > 0:
@@ -14317,8 +13960,8 @@ class ExtendedResponse:
                         value["_unknown_extensions"] = ""
                     value["_unknown_extensions"] += octets.hex().upper()
 
-        if length < 0 and osspy.der.is_eoc(stream):
-            osspy.der.skip_eoc(stream, num_indefs)
+        if length < 0 and der.is_eoc(stream):
+            der.skip_eoc(stream, num_indefs)
 
         if len(self._def_vals) > 0:
             for key, val in self._def_vals.items():
@@ -14394,10 +14037,10 @@ class ExtendedResponse_1__5:
         value: Union[str, dict],
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         octetstring_type = ExtendedResponse_1__5()
         return octetstring_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -14408,8 +14051,8 @@ class ExtendedResponse_1__5:
         value: Union[str, dict],
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
         if not isinstance(value, str) and not isinstance(value, dict):
             raise ValueError(
                 "65201: The value class containing the value to be encoded does not match the type specified in the schema!"
@@ -14437,22 +14080,22 @@ class ExtendedResponse_1__5:
         elif len(tag) > 0:
             used_tag = tag
 
-        osspy.der.encode_octet_string(stream, bin_val, used_tag)
+        der.encode_octet_string(stream, bin_val, used_tag)
 
         return stream
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> Union[str, dict]:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         octetstring_type = ExtendedResponse_1__5()
         return octetstring_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> Union[str, dict]:
         used_tag = [[0x8A]]
         c_tag = [[0xAA]]
@@ -14461,13 +14104,13 @@ class ExtendedResponse_1__5:
         elif len(tag) > 0:
             used_tag = tag
 
-        value = osspy.der.decode_octet_string(stream, used_tag, c_tag)
+        value = der.decode_octet_string(stream, used_tag, c_tag)
 
         constraint = self._contents_constrait
         if constraint is not None:
             func = getattr(constraint, "decode")
             bin_val = bytearray.fromhex(value)
-            tmpstream = osspy.der.decodingstream(bin_val, encoding_rule)
+            tmpstream = der.decodingstream(bin_val, encoding_rule)
             try:
                 valcontaining = {}
                 current_depth = value_tracker.depth
@@ -14515,10 +14158,10 @@ class ExtendedResponse_1__6:
         value: Union[str, dict],
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         octetstring_type = ExtendedResponse_1__6()
         return octetstring_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -14529,8 +14172,8 @@ class ExtendedResponse_1__6:
         value: Union[str, dict],
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
         if not isinstance(value, str) and not isinstance(value, dict):
             raise ValueError(
                 "65201: The value class containing the value to be encoded does not match the type specified in the schema!"
@@ -14558,22 +14201,22 @@ class ExtendedResponse_1__6:
         elif len(tag) > 0:
             used_tag = tag
 
-        osspy.der.encode_octet_string(stream, bin_val, used_tag)
+        der.encode_octet_string(stream, bin_val, used_tag)
 
         return stream
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> Union[str, dict]:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         octetstring_type = ExtendedResponse_1__6()
         return octetstring_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> Union[str, dict]:
         used_tag = [[0x8B]]
         c_tag = [[0xAB]]
@@ -14582,13 +14225,13 @@ class ExtendedResponse_1__6:
         elif len(tag) > 0:
             used_tag = tag
 
-        value = osspy.der.decode_octet_string(stream, used_tag, c_tag)
+        value = der.decode_octet_string(stream, used_tag, c_tag)
 
         constraint = self._contents_constrait
         if constraint is not None:
             func = getattr(constraint, "decode")
             bin_val = bytearray.fromhex(value)
-            tmpstream = osspy.der.decodingstream(bin_val, encoding_rule)
+            tmpstream = der.decodingstream(bin_val, encoding_rule)
             try:
                 valcontaining = {}
                 current_depth = value_tracker.depth
@@ -14633,10 +14276,10 @@ class IntermediateResponse:
         value: object,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         seq_type = IntermediateResponse()
         return seq_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -14647,9 +14290,9 @@ class IntermediateResponse:
         value: object,
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
-        tmpstream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
+        tmpstream = der.encodingstream(encoding_rule)
 
         if not isinstance(value, object):
             raise TypeError(
@@ -14674,7 +14317,7 @@ class IntermediateResponse:
                 ).get_buffer()
             )
         if "_unknown_extensions" in value:
-            tmpstream.append(osspy.der.encode_unknown_extensions(value["_unknown_extensions"]))
+            tmpstream.append(der.encode_unknown_extensions(value["_unknown_extensions"]))
 
         used_tag = [[0x79]]
         if tag is None:
@@ -14684,11 +14327,9 @@ class IntermediateResponse:
 
         buffer = tmpstream.get_buffer()
         if stream.canonical:
-            osspy.der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
+            der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
         else:
-            osspy.der.encode_tags_lens_ber(
-                stream.buffer, used_tag, buffer, data_map["encoding_form"]
-            )
+            der.encode_tags_lens_ber(stream.buffer, used_tag, buffer, data_map["encoding_form"])
         stream.append(buffer)
 
         value_tracker.remove_ancestor()
@@ -14697,16 +14338,16 @@ class IntermediateResponse:
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> dict:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         seq_type = IntermediateResponse()
         return seq_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> dict:
         value = {}
         used_tag = [[0x79]]
@@ -14717,7 +14358,7 @@ class IntermediateResponse:
 
         value_tracker.add_ancestor(value)
 
-        correct, length, num_indefs = osspy.der.decode_tags(stream, used_tag)
+        correct, length, num_indefs = der.decode_tags(stream, used_tag)
         if correct == 0:
             value_tracker.remove_ancestor()
             raise ValueError(
@@ -14726,75 +14367,69 @@ class IntermediateResponse:
         start_pos = stream.get_pos()
 
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x80]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x80]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["responseName"] = AuthenticationChoice__1.decode(
                 encoding_rule, stream, value_tracker, [[0x80]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0xA0], [0x80]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0xA0], [0x80]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["responseName"] = AuthenticationChoice__1.decode(
                 encoding_rule, stream, value_tracker, [[0xA0], [0x80]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "responseName" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0xA0]])[0]
+            and der.peek_tags(stream, [[0xA0]])[0]
         ):
             value["responseName"] = AuthenticationChoice__1.decode(
                 encoding_rule, stream, value_tracker, [[0x80]]
             )
         if (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0x81]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0x81]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["responseValue"] = ExtendedRequest__2.decode(
                 encoding_rule, stream, value_tracker, [[0x81]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
-            stream.get_pos() < start_pos + length
-            or (length < 0 and not osspy.der.is_eoc(stream, length))
-        ) and osspy.der.peek_tags(stream, [[0xA1], [0x81]])[0]:
-            is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+            stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length))
+        ) and der.peek_tags(stream, [[0xA1], [0x81]])[0]:
+            is_indefinite = der.is_indefinite(stream, stream.get_pos())
             value["responseValue"] = ExtendedRequest__2.decode(
                 encoding_rule, stream, value_tracker, [[0xA1], [0x81]]
             )
-            if is_indefinite and osspy.der.is_eoc(stream):
-                osspy.der.skip_eoc(stream, 1)
+            if is_indefinite and der.is_eoc(stream):
+                der.skip_eoc(stream, 1)
         elif (
             (
                 stream.get_pos() < start_pos + length
-                or (length < 0 and not osspy.der.is_eoc(stream, length))
+                or (length < 0 and not der.is_eoc(stream, length))
             )
             and "responseValue" in self._frag_components
-            and osspy.der.peek_tags(stream, [[0xA1]])[0]
+            and der.peek_tags(stream, [[0xA1]])[0]
         ):
             value["responseValue"] = ExtendedRequest__2.decode(
                 encoding_rule, stream, value_tracker, [[0x81]]
             )
-        if stream.get_pos() < start_pos + length or (
-            length < 0 and not osspy.der.is_eoc(stream, length)
-        ):
+        if stream.get_pos() < start_pos + length or (length < 0 and not der.is_eoc(stream, length)):
             position = stream.get_pos()
             while position < (start_pos + length) or (
-                length < 0 and not osspy.der.is_eoc(stream, length)
+                length < 0 and not der.is_eoc(stream, length)
             ):
-                octets = osspy.der.decode_undecoded_type(stream)
+                octets = der.decode_undecoded_type(stream)
                 position = position + len(octets)
 
                 if len(octets) > 0:
@@ -14802,8 +14437,8 @@ class IntermediateResponse:
                         value["_unknown_extensions"] = ""
                     value["_unknown_extensions"] += octets.hex().upper()
 
-        if length < 0 and osspy.der.is_eoc(stream):
-            osspy.der.skip_eoc(stream, num_indefs)
+        if length < 0 and der.is_eoc(stream):
+            der.skip_eoc(stream, num_indefs)
 
         if len(self._def_vals) > 0:
             for key, val in self._def_vals.items():
@@ -14855,10 +14490,10 @@ class PartialAttribute_1__2:
         value: list,
         value_tracker: dict,
         tag: list = None,
-        stream: osspy.der.encodingstream = None,
-    ) -> osspy.der.encodingstream:
-        if not isinstance(stream, osspy.der.encodingstream):
-            stream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream = None,
+    ) -> der.encodingstream:
+        if not isinstance(stream, der.encodingstream):
+            stream = der.encodingstream(encoding_rule)
 
         seqof_type = PartialAttribute_1__2()
         return seqof_type.encode_value(encoding_rule, value, value_tracker, tag, stream)
@@ -14869,9 +14504,9 @@ class PartialAttribute_1__2:
         value: list,
         value_tracker: dict,
         tag: list,
-        stream: osspy.der.encodingstream,
-    ) -> osspy.der.encodingstream:
-        tmpstream = osspy.der.encodingstream(encoding_rule)
+        stream: der.encodingstream,
+    ) -> der.encodingstream:
+        tmpstream = der.encodingstream(encoding_rule)
         data_map = {}
 
         if not isinstance(value, list):
@@ -14909,27 +14544,25 @@ class PartialAttribute_1__2:
 
         buffer = tmpstream.get_buffer()
         if stream.canonical:
-            osspy.der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
+            der.encode_tags_lens(stream.buffer, used_tag, len(buffer))
         else:
-            osspy.der.encode_tags_lens_ber(
-                stream.buffer, used_tag, buffer, data_map["encoding_form"]
-            )
+            der.encode_tags_lens_ber(stream.buffer, used_tag, buffer, data_map["encoding_form"])
         stream.append(buffer)
 
         return stream
 
     @staticmethod
     def decode(
-        encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list = None
+        encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list = None
     ) -> list:
-        if not isinstance(stream, osspy.der.decodingstream):
-            stream = osspy.der.decodingstream(stream, encoding_rule)
+        if not isinstance(stream, der.decodingstream):
+            stream = der.decodingstream(stream, encoding_rule)
 
         seqof_type = PartialAttribute_1__2()
         return seqof_type.decode_value(encoding_rule, stream, value_tracker, tag)
 
     def decode_value(
-        self, encoding_rule: str, stream: osspy.der.decodingstream, value_tracker: dict, tag: list
+        self, encoding_rule: str, stream: der.decodingstream, value_tracker: dict, tag: list
     ) -> list:
         components = []
         used_tag = [[0x31]]
@@ -14939,7 +14572,7 @@ class PartialAttribute_1__2:
             used_tag = tag
         idx = 0
 
-        correct, length, num_indefs = osspy.der.decode_tags(stream, used_tag)
+        correct, length, num_indefs = der.decode_tags(stream, used_tag)
         if correct == 0:
             raise ValueError(
                 "70003: The next tag present in the encoding does not match the tag of the type to be decoded!"
@@ -14947,17 +14580,17 @@ class PartialAttribute_1__2:
 
         position = stream.get_pos()
         if length == -1:
-            while not osspy.der.is_eoc(stream) and not stream.is_eof():
+            while not der.is_eoc(stream) and not stream.is_eof():
                 value_tracker.add_ancestor(idx)
-                is_indefinite = osspy.der.is_indefinite(stream, stream.get_pos())
+                is_indefinite = der.is_indefinite(stream, stream.get_pos())
                 components.append(
                     AssertionValue.decode(encoding_rule, stream, value_tracker, [[0x04]])
                 )
-                if is_indefinite and osspy.der.is_eoc(stream):
-                    osspy.der.skip_eoc(stream, 1)
+                if is_indefinite and der.is_eoc(stream):
+                    der.skip_eoc(stream, 1)
                 value_tracker.remove_ancestor()
                 idx += 1
-            osspy.der.skip_eoc(stream, num_indefs)
+            der.skip_eoc(stream, num_indefs)
         else:
             while stream.get_pos() < position + length:
                 value_tracker.add_ancestor(idx)
