@@ -11,12 +11,12 @@ from starlette.middleware.authentication import AuthenticationMiddleware
 
 from . import logger, settings
 from .database import get_db_vcard, list_db_vcards
-from .authentication import BasicAuth, authenticated, BookUser
+from .authentication import BasicAuth, authenticated, FiresetUser
 
 
 @authenticated
 async def handle_card_get(request: Request):
-    user: BookUser = request.user
+    user: FiresetUser = request.user
     user_id = int(request.path_params.get("user_id", -1))
     assert user.id == user_id
 
@@ -54,7 +54,7 @@ async def handle_users_options(request: Request):
 
 @authenticated
 async def handle_users_propfind(request: Request):
-    user: BookUser = request.user
+    user: FiresetUser = request.user
 
     depth = request.headers.get("Depth", "0")
     content_length = int(request.headers.get("Content-Length", 0))
@@ -137,7 +137,7 @@ async def handle_users_propfind(request: Request):
 
 @authenticated
 async def handle_wall_known(request: Request):
-    user: BookUser = request.user
+    user: FiresetUser = request.user
     return Response(
         status_code=302, headers={"Location": f"{settings.server_url}/users/{user.id}/"}
     )
@@ -155,7 +155,7 @@ async def handle_addressbooks_options(request: Request):
 
 @authenticated
 async def handle_addressbooks_propfind(request: Request):
-    user: BookUser = request.user
+    user: FiresetUser = request.user
 
     depth = request.headers.get("Depth", "0")
     content_length = int(request.headers.get("Content-Length", 0))

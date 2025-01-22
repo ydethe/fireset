@@ -34,7 +34,7 @@ def authenticated(func: T.Callable[_P, T.Any]) -> T.Callable[_P, T.Any]:
     async def async_wrapper(*args, **kwargs) -> T.Any:
         request = kwargs.get("request", args[idx] if idx < len(args) else None)
         assert isinstance(request, Request)
-        user: BookUser = request.user
+        user: FiresetUser = request.user
         user_id = int(request.path_params.get("user_id", -1))
 
         if "authenticated" not in request.auth.scopes or (user_id != -1 and user.id != user_id):
@@ -46,14 +46,14 @@ def authenticated(func: T.Callable[_P, T.Any]) -> T.Callable[_P, T.Any]:
 
 
 @dataclass
-class BookUser:
+class FiresetUser:
     id: int
     email: str
     password: str
     is_authenticated: bool
 
     @classmethod
-    def from_db(cls, email: str) -> "BookUser":
+    def from_db(cls, email: str) -> "FiresetUser":
         db_contact = get_contact_from_email(email)
         if db_contact is None:
             return None
@@ -74,9 +74,9 @@ class BookUser:
 # Authentication backend
 class BasicAuth(BaseBasicAuth):
     async def find_user(self, username: str):
-        u = BookUser.from_db(email=username)
+        u = FiresetUser.from_db(email=username)
         return u
 
-    async def verify_password(self, user: BookUser, password: str):
+    async def verify_password(self, user: FiresetUser, password: str):
         user.is_authenticated = await hasher.verify(password, user.password)
         return user.is_authenticated
