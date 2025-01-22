@@ -11,4 +11,4 @@ def test_vcard():
 
 if __name__ == "__main__":
     test_vcard()
-    logfire.info("Test done: {name}", name="test_vcard")
+    logfire.info("Test done: test_vcard")
