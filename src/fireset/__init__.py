@@ -9,13 +9,11 @@
 
 To run tests, just run:
 
-    pdm run pytest
+    pytest
 
 ## Test reports
 
 [See test report](../tests/report.html)
-
-
 
 [See coverage](../coverage/index.html)
 
