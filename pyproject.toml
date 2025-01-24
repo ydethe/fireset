@@ -13,6 +13,7 @@ authors = [
 dependencies = [
     "sqlalchemy>=2.0.37",
     "twisted>=24.11.0",
+    "vobject>=0.9.9",
 ]
 requires-python = ">=3.10,<3.13"
 readme = "README.md"

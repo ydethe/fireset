@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 <!-- insertion marker -->
 ## Unreleased
 
-<small>[Compare with latest](https://github.com/ydethe/fireset/compare/v0.2.11...HEAD)</small>
+<small>[Compare with latest](https://github.com/ydethe/fireset/compare/71d444e03f33530abd6ea0ad8c7d05baa052d4b3...HEAD)</small>
 
 ### Added
 
@@ -28,43 +28,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added logging in logfire + basic auth ([af5fe3c](https://github.com/ydethe/fireset/commit/af5fe3c82fd9ad11787c31848b7751b38627e0b3) by Yann de The).
 - Added auth ([317c5cd](https://github.com/ydethe/fireset/commit/317c5cdcd727450540fee924ff0e4af9b11d9954) by Yann de The).
 - Added docker compose file ([f55f6ef](https://github.com/ydethe/fireset/commit/f55f6ef184e92132b9546347f87a0225985acbfd) by Yann de The).
-
-### Fixed
-
-- Fixed tests imports ([5bb4c74](https://github.com/ydethe/fireset/commit/5bb4c74c9f063ec4abff3c55ab95a2119f3ed482) by Yann de The).
-
-### Removed
-
-- Removed all store except DatabaseStore ([56b68c2](https://github.com/ydethe/fireset/commit/56b68c224c455aced1271feff606e51f03861ea2) by Yann de The).
-- Removed support files ([3e53b91](https://github.com/ydethe/fireset/commit/3e53b91d5e96c2c0d8eab7876416b08300842f99) by Yann de The).
-
-<!-- insertion marker -->
-## [v0.2.11](https://github.com/ydethe/fireset/releases/tag/v0.2.11) - 2024-03-29
-
-<small>[Compare with v0.2.10](https://github.com/ydethe/fireset/compare/v0.2.10...v0.2.11)</small>
-
-### Added
-
 - Add support for Python 3.11/3.12 (#296) ([ebc1aa7](https://github.com/ydethe/fireset/commit/ebc1aa7f39d89ac7350de232afd1f7aa10787d9f) by Jelmer Vernooĳ).
 - Add multiarch Docker build ([a97da79](https://github.com/ydethe/fireset/commit/a97da795c8767f57ee7d24d6170c49638830a31b) by Maya the bee).
 - Add dependabot config ([2901833](https://github.com/ydethe/fireset/commit/2901833a6051d13873b6d1022897bae51259b045) by Jelmer Vernooĳ).
 - Add tests for href_to_path ([7e9f5e4](https://github.com/ydethe/fireset/commit/7e9f5e4d59d2a5671232227245701bd2453e13a5) by Jelmer Vernooĳ).
 - Add Backend.get_resources ([c2b667a](https://github.com/ydethe/fireset/commit/c2b667a61e285d8f5c4699c6aa2b478cdaab6f1d) by Jelmer Vernooĳ).
 - Add reformat target ([86e2b2b](https://github.com/ydethe/fireset/commit/86e2b2bd9096118d659c9d6305f165555854ea5b) by Jelmer Vernooĳ).
-
-### Fixed
-
-- Fix pycaldav (#297) ([fcdb84a](https://github.com/ydethe/fireset/commit/fcdb84a1175e9d2c630f536f9acb6e8255f7a25b) by Jelmer Vernooĳ).
-- Fix tasks.org link ([97a81e2](https://github.com/ydethe/fireset/commit/97a81e25f7b4fef9b60b0bda82b841516e0f2f69) by Jelmer Vernooĳ).
-- Fix disperse workflow name ([978f9d8](https://github.com/ydethe/fireset/commit/978f9d87b767e12f69f971c2ce21477f985264a8) by Jelmer Vernooĳ).
-- Fix href handling ([01264f7](https://github.com/ydethe/fireset/commit/01264f7acfe05952b801d5f89c235b148dabf55f) by Tcc100).
-
-## [v0.2.10](https://github.com/ydethe/fireset/releases/tag/v0.2.10) - 2023-09-04
-
-<small>[Compare with v0.2.8](https://github.com/ydethe/fireset/compare/v0.2.8...v0.2.10)</small>
-
-### Added
-
 - Add some more typing ([728d6aa](https://github.com/ydethe/fireset/commit/728d6aa76d8e60d35aa12b768003e134d637dffa) by Jelmer Vernooĳ).
 - Add basic rust crate ([1520f3d](https://github.com/ydethe/fireset/commit/1520f3de1bdca8f72cfbf3c5d92797865d2a8a57) by Jelmer Vernooĳ).
 - Add more typing ([de74413](https://github.com/ydethe/fireset/commit/de74413290796e2f9288b6e9b9e5ee297dd0f6c3) by Jelmer Vernooĳ).
@@ -90,115 +59,19 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add note to dev docs directory. ([56816f7](https://github.com/ydethe/fireset/commit/56816f793c12b5d53390a531a5d6501cc071cb88) by Jelmer Vernooĳ).
 - Add sphinx skeleton. ([39639c8](https://github.com/ydethe/fireset/commit/39639c878c8a230e3a6db861ce984340a6a7b76b) by Jelmer Vernooĳ).
 - Add xandikos.web.run_simple_server. ([8863dc9](https://github.com/ydethe/fireset/commit/8863dc9b5a50c81c962af86c49a0dafbf493e926) by Jelmer Vernooĳ).
-- add support for systemd socket activation ([d0d56c8](https://github.com/ydethe/fireset/commit/d0d56c8133d749d8cfa8bf024ee687dc9753def2) by schnusch).
-
-### Fixed
-
-- Fix rustc version for clap ([b7cd275](https://github.com/ydethe/fireset/commit/b7cd27591f67dabbba7d98a138d0ff2026d878d8) by Jelmer Vernooĳ).
-- Fix compatibility with newer dulwich ([28b77ca](https://github.com/ydethe/fireset/commit/28b77ca220a385ab75125cbaae1ce3cb231502e6) by Jelmer Vernooĳ).
-- Fix style ([4818187](https://github.com/ydethe/fireset/commit/4818187d200ac6bacbf0049991e8c1ec9a30e3bb) by Jelmer Vernooĳ).
-- Fix typing. ([41c53e0](https://github.com/ydethe/fireset/commit/41c53e0cf24b436a197d7ee9dcab3efa44b6cc91) by Jelmer Vernooĳ).
-- Fix job names ([6eee74e](https://github.com/ydethe/fireset/commit/6eee74ebcfd88911ecf0d34429bce0a47c08f130) by Jelmer Vernooĳ).
-- Fix pycaldav tests for the moment; enable text_search_not_working ([4e1cca3](https://github.com/ydethe/fireset/commit/4e1cca322c48a8ef7426f568593a728360e0e107) by Jelmer Vernooĳ).
-- fixup for commit 45298417d78db419ea07eef616cd010df173b0b5 pull request https://github.com/jelmer/xandikos/pull/222 ([f088e0e](https://github.com/ydethe/fireset/commit/f088e0e5810803c0a410152cc94035ca5444dfb9) by Tobias Brox).
-- Fix index handling for datetimes. ([fa325f5](https://github.com/ydethe/fireset/commit/fa325f5c50d13a1f113a31ba7e67a2c328651eb5) by Jelmer Vernooĳ).
-- Fix syntax error. ([5758693](https://github.com/ydethe/fireset/commit/575869358ab44ef4e82b6affebe18ec7dbe885dc) by Jelmer Vernooĳ).
-- Fix more typing. ([4e593a6](https://github.com/ydethe/fireset/commit/4e593a61f89bc40d5c6ddc448649326c0843fa4b) by Jelmer Vernooĳ).
-- Fix import order. ([467daf6](https://github.com/ydethe/fireset/commit/467daf6c9966e8534468bb20db393391cb078a9a) by Jelmer Vernooĳ).
-- Fix test ([e192ff9](https://github.com/ydethe/fireset/commit/e192ff9e4e3eb64f20c2bbe079a08fdd07b37256) by Jelmer Vernooĳ).
-- fix type ([aa8d596](https://github.com/ydethe/fireset/commit/aa8d5967fb8a6ad8be238f26b3491d3873131ef2) by Jelmer Vernooĳ).
-- Fix long line. ([1bccb16](https://github.com/ydethe/fireset/commit/1bccb16a25e6256d485cb55a6300c4241ef81b40) by Jelmer Vernooĳ).
-- Fix compat tests. ([2863181](https://github.com/ydethe/fireset/commit/286318124d94a729f6bc70b26f85017b71bbfb68) by Jelmer Vernooĳ).
-- Fix formatting. ([3ae201e](https://github.com/ydethe/fireset/commit/3ae201e27ff06d55536f6f39a52b6a64fb688807) by Jelmer Vernooĳ).
-- Fix tests. ([7fec34f](https://github.com/ydethe/fireset/commit/7fec34f028de36081c51d5558ed20268cd6fee86) by Jelmer Vernooĳ).
-- Fix note about authentication in getting started docs page ([0f66e2c](https://github.com/ydethe/fireset/commit/0f66e2c98c26ce6a5a0d06c56d17d415be7b13c1) by Denis Laxalde).
-- Fix cross-references in documentation ([e8c13b7](https://github.com/ydethe/fireset/commit/e8c13b78d3d2b9a9d49c1d5e1628419867f29af9) by Denis Laxalde).
-- Fix flake8 formatting compatibility. ([85482eb](https://github.com/ydethe/fireset/commit/85482eb441f5d7f1dd0a979cc41a7ee73fd81183) by Jelmer Vernooĳ).
-- Fix typing errors. ([c1ce379](https://github.com/ydethe/fireset/commit/c1ce3791fadd0a2b165f9c8677baae4bce99bb5b) by Jelmer Vernooĳ).
-- Fix syntax. ([b22ced4](https://github.com/ydethe/fireset/commit/b22ced40c294ead29aeaa6a7832aa127942e6187) by Jelmer Vernooĳ).
-- Fix style. ([ddd67ab](https://github.com/ydethe/fireset/commit/ddd67abf4e13107a5e5d44b71623acfdcab8e1b4) by Jelmer Vernooĳ).
-- Fix handling of missing trees. ([7745285](https://github.com/ydethe/fireset/commit/7745285dfb6c6ce10dc8e4105c4b662624673777) by Jelmer Vernooĳ).
-- Fix typo. ([727646a](https://github.com/ydethe/fireset/commit/727646aef321e51c3aba070847a761509d7a4d8b) by Jelmer Vernooĳ).
-- Fix hierarchy for supported report. Fixes #149 ([eadc405](https://github.com/ydethe/fireset/commit/eadc405698ce6d94ffa4517bbc26aaf733d9c761) by Jelmer Vernooĳ).
-- Fix ordering. ([31364b6](https://github.com/ydethe/fireset/commit/31364b6a62085cb1d4d75bf76198698c81a1c9ad) by Jelmer Vernooĳ).
-
-### Removed
-
-- Remove specification of deprecated data_files. See https://github.com/pypa/setuptools/issues/2832 (#214) ([c0ddfd8](https://github.com/ydethe/fireset/commit/c0ddfd80499baae43cf7d22de5148c1bc941967d) by Jelmer Vernooĳ).
-- Remove apt lists from Dockerfile ([72a474f](https://github.com/ydethe/fireset/commit/72a474fbb1cdaceec029c436039b7cb78365026e) by Galen Abell).
-- Remove unnecessary #noqa comments (#154) ([9575eb1](https://github.com/ydethe/fireset/commit/9575eb12b901e22af59fdb9366151f029c75f84a) by Upstream Janitor).
-
-## [v0.2.8](https://github.com/ydethe/fireset/releases/tag/v0.2.8) - 2022-01-09
-
-<small>[Compare with v0.2.7](https://github.com/ydethe/fireset/compare/v0.2.7...v0.2.8)</small>
-
-## [v0.2.7](https://github.com/ydethe/fireset/releases/tag/v0.2.7) - 2021-12-27
-
-<small>[Compare with v0.2.6](https://github.com/ydethe/fireset/compare/v0.2.6...v0.2.7)</small>
-
-### Added
-
 - Add .stestr. ([59cbe9d](https://github.com/ydethe/fireset/commit/59cbe9d533b10589db5ea48a41c1f42ed90d44a4) by Jelmer Vernooĳ).
 - Add stestr config. ([305649b](https://github.com/ydethe/fireset/commit/305649b322dc35d84ff1a1a7b9abceb7969e37c4) by Jelmer Vernooĳ).
 - add a /health target. ([398d799](https://github.com/ydethe/fireset/commit/398d799865911a2ed6f7a9853f0fc14168cdd2c4) by Jelmer Vernooĳ).
+- add support for systemd socket activation ([d0d56c8](https://github.com/ydethe/fireset/commit/d0d56c8133d749d8cfa8bf024ee687dc9753def2) by schnusch).
 - Add SUPPORT.md. ([554e8f0](https://github.com/ydethe/fireset/commit/554e8f00d6acf4e4a23f527b1965326ed1453da7) by Jelmer Vernooĳ).
 - Add basic xmpp property support. ([94ec35a](https://github.com/ydethe/fireset/commit/94ec35a6f253b1a77392125520271c3d86caa225) by Jelmer Vernooĳ).
-
-### Fixed
-
-- Fix yaml ([be42c06](https://github.com/ydethe/fireset/commit/be42c0678ea2ed8b1e2975d7b64f34c2d59b541d) by Jelmer Vernooĳ).
-- Fix typo. ([9de2b51](https://github.com/ydethe/fireset/commit/9de2b514b965c92eced6eea86b6a5b6a8681ae33) by Jelmer Vernooĳ).
-- Fix docker image. ([87bd4ce](https://github.com/ydethe/fireset/commit/87bd4ce9838a1f7b049c53b38b38ede62ec05b99) by Jelmer Vernooĳ).
-- Fix link. ([462cae0](https://github.com/ydethe/fireset/commit/462cae0b21a72299e8442a256c2eafaadeb9c5a7) by Jelmer Vernooĳ).
-
-### Changed
-
-- Change CONTRIBUTING to markdown. ([773b4f9](https://github.com/ydethe/fireset/commit/773b4f91e1de6c831e010b5a69da4ea3689dd933) by Jelmer Vernooĳ).
-
-## [v0.2.6](https://github.com/ydethe/fireset/releases/tag/v0.2.6) - 2021-03-20
-
-<small>[Compare with v0.2.5](https://github.com/ydethe/fireset/compare/v0.2.5...v0.2.6)</small>
-
-### Added
-
 - Add manual page. Fixes #128 ([1fc7e78](https://github.com/ydethe/fireset/commit/1fc7e78af7ccf17d3b542833ccfea8074b509355) by Jelmer Vernooĳ).
 - Add SECURITY.md. ([ac123f0](https://github.com/ydethe/fireset/commit/ac123f037b40d8bd30efb9dc15cd729294fb2b7a) by Jelmer Vernooĳ).
 - Add CODE_OF_CONDUCT.md. ([2905832](https://github.com/ydethe/fireset/commit/29058325fab32a3d72cc3c5643a5c02bc8eef8e9) by Jelmer Vernooĳ).
-
-### Fixed
-
-- Fix handling of async generators. ([11c5c33](https://github.com/ydethe/fireset/commit/11c5c33df8d4993a95d86eb48485e0d33f96c7cc) by Jelmer Vernooĳ).
-- Fix contact email. ([2e3c92a](https://github.com/ydethe/fireset/commit/2e3c92a3942ae0a6b946a050452b199e0a432d66) by Jelmer Vernooĳ).
-
-## [v0.2.5](https://github.com/ydethe/fireset/releases/tag/v0.2.5) - 2021-02-18
-
-<small>[Compare with v0.2.4](https://github.com/ydethe/fireset/compare/v0.2.4...v0.2.5)</small>
-
-## [v0.2.4](https://github.com/ydethe/fireset/releases/tag/v0.2.4) - 2021-02-16
-
-<small>[Compare with v0.2.3](https://github.com/ydethe/fireset/compare/v0.2.3...v0.2.4)</small>
-
-### Added
-
 - Add releaser configuration. ([49c1504](https://github.com/ydethe/fireset/commit/49c15044ce2c18518b0242415c12ffd77cfa1fe1) by Jelmer Vernooĳ).
 - Add support for EXRULE. ([a5e3e0e](https://github.com/ydethe/fireset/commit/a5e3e0edf52d9d6915ac5b117078c63896949ab9) by Jelmer Vernooĳ).
 - Add support for schedule-tag. ([f6af45e](https://github.com/ydethe/fireset/commit/f6af45e80e0b924a4279720e5238b32d1c77b144) by Jelmer Vernooĳ).
 - Add basic support for expanding rrules. Fixes #8 ([22af238](https://github.com/ydethe/fireset/commit/22af238d3543f7e4a892156cf6e5ab5aa8da90c3) by Jelmer Vernooĳ).
-
-### Fixed
-
-- Fix formatting. ([cbde8f7](https://github.com/ydethe/fireset/commit/cbde8f77896c0c3c0211c6696e54b9b3176ec65e) by Jelmer Vernooĳ).
-- fix Dockerfile ([f321bf6](https://github.com/ydethe/fireset/commit/f321bf60aea1457b227c35790b743dff6be53a57) by Tobias Salzmann).
-- Fix Expect support. ([7fefcdb](https://github.com/ydethe/fireset/commit/7fefcdb4f4e99f093779a8ca66e99204a8f0f3d4) by Jelmer Vernooĳ).
-- Fix schedule-tag behaviour. ([2539f24](https://github.com/ydethe/fireset/commit/2539f24e698382275e1826c5e6f022325e345761) by Jelmer Vernooĳ).
-- Fix typos, update NEWS. ([f983dd5](https://github.com/ydethe/fireset/commit/f983dd5dfc62415b19fcd7a739c52a3a8faa1995) by Jelmer Vernooĳ).
-
-## [v0.2.3](https://github.com/ydethe/fireset/releases/tag/v0.2.3) - 2020-07-25
-
-<small>[Compare with v0.2.2](https://github.com/ydethe/fireset/compare/v0.2.2...v0.2.3)</small>
-
-### Added
-
 - Add --no-strict option for clients that don't follow the spec. ([f90510e](https://github.com/ydethe/fireset/commit/f90510e00b1074db9b04a57b1360ad32d60b5506) by Jelmer Vernooĳ).
 - Add avahi support. ([22abdbb](https://github.com/ydethe/fireset/commit/22abdbb85fe1080583c0130ee26a2b1e1864390f) by Jelmer Vernooĳ).
 - Add example avahi service file. ([4e4541d](https://github.com/ydethe/fireset/commit/4e4541d9e0cfc21dbcaebee04e3ac0a15acebd54) by Jelmer Vernooĳ).
@@ -207,44 +80,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add workflow for publishing. ([c78b613](https://github.com/ydethe/fireset/commit/c78b61361c48d3f36bbb58c7a8ef51b30be65e70) by Jelmer Vernooĳ).
 - Add github action. ([1fac6ba](https://github.com/ydethe/fireset/commit/1fac6ba9a79adc6acd49bdd16cfebbeff06cd720) by Jelmer Vernooĳ).
 - Add CollectionSetResource.get_creationdate. ([fe12b64](https://github.com/ydethe/fireset/commit/fe12b64ae25a75d7380d11e89fa8f9b81302a259) by Jelmer Vernooĳ).
-
-### Fixed
-
-- Fix typing. ([b556753](https://github.com/ydethe/fireset/commit/b556753e5def9c3bea9a46b89df70fffe6ede8db) by Jelmer Vernooĳ).
-- Fix attribute name in error. ([3ecda32](https://github.com/ydethe/fireset/commit/3ecda32c18b57b50f4dae9714ec2373666b7404d) by Jelmer Vernooĳ).
-- Fix name error. ([5b96fa6](https://github.com/ydethe/fireset/commit/5b96fa6d36f3f9eb602d5994a1ad3a3a6ef97e61) by Jelmer Vernooĳ).
-- Fix formatting. ([0d6920d](https://github.com/ydethe/fireset/commit/0d6920ddef4658c35a86aea126e0875787cd4665) by Jelmer Vernooĳ).
-- Fix style. ([0fef5e9](https://github.com/ydethe/fireset/commit/0fef5e918aec527c37c376efaf433630e4e4bc02) by Jelmer Vernooĳ).
-- Fix regresion. ([32a142e](https://github.com/ydethe/fireset/commit/32a142eae5949aa238f268ac6a2b4a6354bcb297) by Jelmer Vernooĳ).
-
-## [v0.2.2](https://github.com/ydethe/fireset/releases/tag/v0.2.2) - 2020-05-14
-
-<small>[Compare with v0.2.1](https://github.com/ydethe/fireset/compare/v0.2.1...v0.2.2)</small>
-
-### Fixed
-
-- Fix uwsgi use. ([30f3e4b](https://github.com/ydethe/fireset/commit/30f3e4bbc4c4d4f3008a5ce5b5bcfe1d296c669c) by Jelmer Vernooĳ).
-
-## [v0.2.1](https://github.com/ydethe/fireset/releases/tag/v0.2.1) - 2020-05-06
-
-<small>[Compare with v0.2.0](https://github.com/ydethe/fireset/compare/v0.2.0...v0.2.1)</small>
-
-### Added
-
 - Add missing dependencies on aiohttp, multidict. ([e6edfcc](https://github.com/ydethe/fireset/commit/e6edfccec29c24b5a291c4ffaee6956aea55ac62) by Jelmer Vernooĳ).
-
-### Fixed
-
-- Fix style. ([947be27](https://github.com/ydethe/fireset/commit/947be2768fe075f4dbe75dceb1528aedea8a4edb) by Jelmer Vernooĳ).
-- Fix underindent. ([bdd1441](https://github.com/ydethe/fireset/commit/bdd14419cbe24787a2ec4cb92f039362c40f0eb3) by Jelmer Vernooĳ).
-- Fix types. ([f5761cb](https://github.com/ydethe/fireset/commit/f5761cb041d6c760c159f4cab0ac7193f591905f) by Jelmer Vernooĳ).
-
-## [v0.2.0](https://github.com/ydethe/fireset/releases/tag/v0.2.0) - 2020-05-04
-
-<small>[Compare with v0.1.0](https://github.com/ydethe/fireset/compare/v0.1.0...v0.2.0)</small>
-
-### Added
-
 - Add some more typing. ([5d8cd12](https://github.com/ydethe/fireset/commit/5d8cd12ba5e1e643dc99121e3d84de38cc21be24) by Jelmer Vernooĳ).
 - Add uwsgi notes. ([0d11a88](https://github.com/ydethe/fireset/commit/0d11a88a352a5f36b439b3e3ee2aab58c9f02dfd) by Jelmer Vernooĳ).
 - Add systemd configuration. ([0b32591](https://github.com/ydethe/fireset/commit/0b32591a3067a99b0bbf9a3b50563cedb63acdec) by Jelmer Vernooĳ).
@@ -262,22 +98,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add TODO. ([5a83457](https://github.com/ydethe/fireset/commit/5a83457687079f5003d56fbcfd9d9e208431f774) by Jelmer Vernooĳ).
 - Add a /metrics page. ([fc25afb](https://github.com/ydethe/fireset/commit/fc25afbdf34f53c4aa3488b08175bb3d71561cd8) by Jelmer Vernooĳ).
 - Add initial asyncio version using aiowsgi. ([c068c37](https://github.com/ydethe/fireset/commit/c068c37e3f9e1cb3a0a409f863efc519f1169e28) by Jelmer Vernooĳ).
-
-### Fixed
-
-- Fix formatting. ([70a3030](https://github.com/ydethe/fireset/commit/70a303046eb4bedd9c74b8603dd58f97697589ba) by Jelmer Vernooĳ).
-- Fix docker image. Fixes #117 ([f89e984](https://github.com/ydethe/fireset/commit/f89e984e6ab14fecd302c53c4557499b4012bf10) by Jelmer Vernooĳ).
-- Fix style. ([501d519](https://github.com/ydethe/fireset/commit/501d519cf09eee88631dd03713fcaa231b50ac09) by Jelmer Vernooĳ).
-- Fix base path. ([d8ed224](https://github.com/ydethe/fireset/commit/d8ed22475997c3f2448e6cfa0fddbae4c2414a8e) by Jelmer Vernooĳ).
-- Fix wsgi handling. ([1fd52a8](https://github.com/ydethe/fireset/commit/1fd52a872f89e3120582603386502ce82469025a) by Jelmer Vernooĳ).
-- Fix filtering on property/component in extract_from_calendar. ([9a90449](https://github.com/ydethe/fireset/commit/9a90449cfb90a26f3983b0d8e185e533e08c4716) by Jelmer Vernooĳ).
-
-## [v0.1.0](https://github.com/ydethe/fireset/releases/tag/v0.1.0) - 2019-04-07
-
-<small>[Compare with v0.0.11](https://github.com/ydethe/fireset/compare/v0.0.11...v0.1.0)</small>
-
-### Added
-
 - Add support for ParameterFilter. ([9137473](https://github.com/ydethe/fireset/commit/91374734db74144d014340d16139f7301cf9dfe7) by Jelmer Vernooĳ).
 - Add some assertions. ([a747ce4](https://github.com/ydethe/fireset/commit/a747ce40fbc52646ced5ca8179bd3d2033d06f63) by Jelmer Vernooĳ).
 - Add test for missing components. ([9e35a1e](https://github.com/ydethe/fireset/commit/9e35a1eb2ae2eb4099e3afda01a981046763697f) by Jelmer Vernooĳ).
@@ -302,75 +122,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add repo based configuration. ([9ab8b33](https://github.com/ydethe/fireset/commit/9ab8b33c253ca662f9f9861bf74ed1ed236d6183) by Jelmer Vernooĳ).
 - Add metadata base class. ([23f3058](https://github.com/ydethe/fireset/commit/23f3058d6bc21b910cba90f54b33ad10285973a8) by Jelmer Vernooĳ).
 - Add some tests for config. ([c85c8f5](https://github.com/ydethe/fireset/commit/c85c8f587be5d9f3471afa10c60e67af1b0060d1) by Jelmer Vernooĳ).
-
-### Fixed
-
-- Fix templates for bare principal. ([1d47639](https://github.com/ydethe/fireset/commit/1d47639c3f7900633fbeb5432d347115fd8d9ba6) by Jelmer Vernooĳ).
-- Fix templates. ([18c2a94](https://github.com/ydethe/fireset/commit/18c2a945cc31472e6f80b6d2d8eb43e396271c84) by Jelmer Vernooĳ).
-- Fix checking. ([b786b46](https://github.com/ydethe/fireset/commit/b786b46a1907fd54444e263a6270f6078b0d1fdf) by Jelmer Vernooĳ).
-- Fix handling of filters with missing properties. ([16c0874](https://github.com/ydethe/fireset/commit/16c08749b780104b2b38badd0e50b65aa1b87c48) by Jelmer Vernooĳ).
-- Fix various minor issues. ([91ed9aa](https://github.com/ydethe/fireset/commit/91ed9aa9c10dfc65cd5eb18f3aa2f6f9cb2229c8) by Jelmer Vernooĳ).
-- Fix style. ([0995c18](https://github.com/ydethe/fireset/commit/0995c182c52a38301934d4b519b8c8f5293b0d0a) by Jelmer Vernooĳ).
-- Fix filter parsing. ([1f369ee](https://github.com/ydethe/fireset/commit/1f369eeb569994fa008876427dbd2c05f42900ce) by Jelmer Vernooĳ).
-- Fix tests. ([4f02326](https://github.com/ydethe/fireset/commit/4f02326904fa70602e13ed70b9ab5753b4e6dd99) by Jelmer Vernooĳ).
-- Fix pycaldav test on travis. ([5b23b7b](https://github.com/ydethe/fireset/commit/5b23b7bab7e4b8a43dff23e37f7b2113a7cdac9d) by Jelmer Vernooĳ).
-- Fix handling of get_managed_attachements_server_url. ([69bf99b](https://github.com/ydethe/fireset/commit/69bf99bc6f24f730803f3fab47afdecde63e0f9a) by Jelmer Vernooĳ).
-- Fix error message when unable to convert between content types. ([d3f54cb](https://github.com/ydethe/fireset/commit/d3f54cbb6c5d02321a93ae10e8f0e30d2a08b6ce) by Jelmer Vernooĳ).
-- Fix handling of missing DTSTART in VEVENT. ([f8782b0](https://github.com/ydethe/fireset/commit/f8782b065140fff14dedf8ffbaa957ddae2794ae) by Jelmer Vernooĳ).
-
-### Removed
-
-- Remove unused import. ([6d7b8b0](https://github.com/ydethe/fireset/commit/6d7b8b096b241258723c1e2ec3e9809329436541) by Jelmer Vernooĳ).
-- Remove obsolete class. ([b162e63](https://github.com/ydethe/fireset/commit/b162e630c388167699490cc93d52f4fec80a6777) by Jelmer Vernooĳ).
-- Remove TODO from manifest template ([19042f5](https://github.com/ydethe/fireset/commit/19042f58d0dba6ace778488062d5459414d01a41) by Daniel M. Capella).
-- Remove win32-specific hack. ([adf6837](https://github.com/ydethe/fireset/commit/adf6837cb0744e9830bd86a6e2ed9a43ea4ac3cc) by Jelmer Vernooĳ).
-
-## [v0.0.11](https://github.com/ydethe/fireset/releases/tag/v0.0.11) - 2018-11-14
-
-<small>[Compare with v0.0.10](https://github.com/ydethe/fireset/compare/v0.0.10...v0.0.11)</small>
-
-### Added
-
 - Add GOALS.rst. ([e0f3358](https://github.com/ydethe/fireset/commit/e0f3358fce5a52daadd97b110c2c20a46460f980) by Jelmer Vernooĳ).
-
-### Fixed
-
-- Fix two more style errors. ([9073c7c](https://github.com/ydethe/fireset/commit/9073c7c49397e0d118e610fad947cd3ce12c039e) by Jelmer Vernooĳ).
-- Fix style errors. ([32f70e0](https://github.com/ydethe/fireset/commit/32f70e0b399584c7c11df3dca47e4cb3e2b58a32) by Jelmer Vernooĳ).
-
-## [v0.0.10](https://github.com/ydethe/fireset/releases/tag/v0.0.10) - 2018-10-31
-
-<small>[Compare with v0.0.9](https://github.com/ydethe/fireset/compare/v0.0.9...v0.0.10)</small>
-
-### Added
-
 - Add detail string to InvalidFileContent ([bb87de3](https://github.com/ydethe/fireset/commit/bb87de38164e13aae2ab214b92288ef294d1850d) by Jelmer Vernooĳ).
 - Add cardbook to supported clients. Fixes #77 ([739daab](https://github.com/ydethe/fireset/commit/739daab936e5d79d5565b4fa1fdb21b9d2a4b862) by Jelmer Vernooĳ).
 - Add trailing slash to hrefs. ([1ec180c](https://github.com/ydethe/fireset/commit/1ec180c3d61ade57a4651917a23b0f7d1a61f896) by Jelmer Vernooĳ).
 - Add a separate template for principals. ([1e750cf](https://github.com/ydethe/fireset/commit/1e750cf28a7bbfa20e40c0cc94188f943b407604) by Jelmer Vernooĳ).
 - Add xandikos.__main__. ([4283e94](https://github.com/ydethe/fireset/commit/4283e9457dd19a3694651b454144c7bd66268eb8) by Jelmer Vernooĳ).
-
-### Fixed
-
-- Fix style. ([12a7bb3](https://github.com/ydethe/fireset/commit/12a7bb3ccd164880f4607ae9adbae5e976e6ec48) by Jelmer Vernooĳ).
-- Fix coverage reporting for vdirsyncer tests. ([663d746](https://github.com/ydethe/fireset/commit/663d74654ead977599d5521f29316deb58a41173) by Jelmer Vernooĳ).
-- Fix vdirsyncer tests. ([65a2891](https://github.com/ydethe/fireset/commit/65a2891fb98188f556ad7b7b4311eb1f51e5ec76) by Jelmer Vernooĳ).
-- Fix typo: resource_types => resource_type. ([54de4b9](https://github.com/ydethe/fireset/commit/54de4b94bf402e62dfc309acb5c6f3654766de20) by Jelmer Vernooĳ).
-
-### Removed
-
-- Remove unnecessary __main__. ([e1368f9](https://github.com/ydethe/fireset/commit/e1368f92067ac7f4729f3dbb9e4365d12b4ce265) by Jelmer Vernooĳ).
-
-## [v0.0.9](https://github.com/ydethe/fireset/releases/tag/v0.0.9) - 2018-04-07
-
-<small>[Compare with v0.0.7](https://github.com/ydethe/fireset/compare/v0.0.7...v0.0.9)</small>
-
-## [v0.0.7](https://github.com/ydethe/fireset/releases/tag/v0.0.7) - 2018-04-02
-
-<small>[Compare with v0.0.6](https://github.com/ydethe/fireset/compare/v0.0.6...v0.0.7)</small>
-
-### Added
-
 - Add really basic validation test for calendar. ([b838f8e](https://github.com/ydethe/fireset/commit/b838f8e4d1494bff76afe74fa1bbbd3218c44fe3) by Jelmer Vernooĳ).
 - Add comment about validation. ([421e73e](https://github.com/ydethe/fireset/commit/421e73e94c73dcd0287eeae5fb992d89238fb070) by Jelmer Vernooĳ).
 - Add inbox in glue. ([7474629](https://github.com/ydethe/fireset/commit/7474629717980d7b983ca20238a20dbf6ae882ce) by Jelmer Vernooĳ).
@@ -394,51 +151,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add an environ argument to get_value(). ([16e9a96](https://github.com/ydethe/fireset/commit/16e9a96c594564a1a2a6fd7856b18b25a665c29d) by Jelmer Vernooĳ).
 - Add implementation notes. ([37e2dc5](https://github.com/ydethe/fireset/commit/37e2dc5bcef7d2d5036bbf6d4be4a39c7590315f) by Jelmer Vernooĳ).
 - Add some notes on multi-user support. ([5befd6d](https://github.com/ydethe/fireset/commit/5befd6d55e2ff38e0327f9e78956800a62f8e559) by Jelmer Vernooĳ).
-
-### Fixed
-
-- Fix style. ([6cae497](https://github.com/ydethe/fireset/commit/6cae49755f7d726d89788fd2d347b05e5e2943a5) by Jelmer Vernooĳ).
-- Fix use of max-attachment-per-resource, max-attachment-size. ([54b7bda](https://github.com/ydethe/fireset/commit/54b7bda3d3ec93a14914ab845e467a3cd2f8d746) by Jelmer Vernooĳ).
-- Fix style errors. --BZR-- parent-ids: git-v1:7474629717980d7b983ca20238a20dbf6ae882ce property-branch-nick: HEAD ([e45de8b](https://github.com/ydethe/fireset/commit/e45de8b85c42282988d3df41429ffa1a830c8b09) by Jelmer Vernooĳ).
-- Fix order of arguments to get_property_from_element. ([c4fdc24](https://github.com/ydethe/fireset/commit/c4fdc248c00450d933ce27d8b504d0938409b796) by Jelmer Vernooĳ).
-- Fixes for vdirsyncer's rust usage ([a461c83](https://github.com/ydethe/fireset/commit/a461c83afb34b28ec5c2a2e5b565225f6c9d4b4e) by Markus Unterwaditzer).
-- Fix style error. ([36cdbbb](https://github.com/ydethe/fireset/commit/36cdbbb59ceed4ac43f2eadf9a9f4fb2c9cccec6) by Jelmer Vernooĳ).
-- Fix missing store subpackage ([931c149](https://github.com/ydethe/fireset/commit/931c149123204189de26265b382b93631b675001) by Markus Unterwaditzer).
-- Fix style errors. ([5663a6e](https://github.com/ydethe/fireset/commit/5663a6ea1c72ab008ed2461bad4f502111224d18) by Jelmer Vernooĳ).
-- Fix formatting. ([845ed35](https://github.com/ydethe/fireset/commit/845ed35f2f8f3ee73358b5dee34cc4f43af23b8d) by Jelmer Vernooĳ).
-- Fix the build. ([56b7ba4](https://github.com/ydethe/fireset/commit/56b7ba4661bf4aa662bfda4ed51be980caf9da43) by Jelmer Vernooĳ).
-
-### Removed
-
-- Remove uwsgitop since it's not a strict requirement. ([e763f21](https://github.com/ydethe/fireset/commit/e763f211de11b0b62ae12e6fff33ca46f5934994) by Jelmer Vernooĳ).
-
-## [v0.0.6](https://github.com/ydethe/fireset/releases/tag/v0.0.6) - 2017-07-13
-
-<small>[Compare with v0.0.5](https://github.com/ydethe/fireset/compare/v0.0.5...v0.0.6)</small>
-
-### Added
-
 - Add some constants for scheduling. ([adc16ba](https://github.com/ydethe/fireset/commit/adc16ba34f5d478ffd421c633561a28a620f0055) by Jelmer Vernooĳ).
-- Add TODO. ([cde1156](https://github.com/ydethe/fireset/commit/cde115635f305b35fac79f97eb98331806adfb67) by Jelmer Vernooĳ).
 - Add section on contributing to README. ([7a439aa](https://github.com/ydethe/fireset/commit/7a439aad81fb94143a7e133b5eb54932313242ab) by Jelmer Vernooĳ).
 - Add note on DAV Mount support. ([00b3838](https://github.com/ydethe/fireset/commit/00b3838ec117e56f5c1f72a182be48c1a0c06279) by Jelmer Vernooĳ).
 - Add note about WebDAV Mount. ([1ac49c0](https://github.com/ydethe/fireset/commit/1ac49c02a3a28bcbfdfd5499e9643d693c4a1c8e) by Jelmer Vernooĳ).
-
-### Fixed
-
-- Fix a style error. ([ce765e1](https://github.com/ydethe/fireset/commit/ce765e1f3339d9016efccf1dfa6a0d56a26b818c) by Jelmer Vernooĳ).
-
-### Removed
-
-- Remove duplicate www. Thanks, dmc :) ([a953a5d](https://github.com/ydethe/fireset/commit/a953a5d7a31c217380019188723119067087a22b) by Jelmer Vernooĳ).
-- Remove unnecessary umask. ([766ee8f](https://github.com/ydethe/fireset/commit/766ee8f548e400691050a03da687c588639ea4a5) by Jelmer Vernooĳ).
-
-## [v0.0.5](https://github.com/ydethe/fireset/releases/tag/v0.0.5) - 2017-06-24
-
-<small>[Compare with v0.0.4](https://github.com/ydethe/fireset/compare/v0.0.4...v0.0.5)</small>
-
-### Added
-
 - Add 'et al' to copyright lines. ([a0d19a4](https://github.com/ydethe/fireset/commit/a0d19a4a1a511d0d9cca87b0a64973badb83b1e9) by Jelmer Vernooĳ).
 - Add a principal store type. ([5ab68a6](https://github.com/ydethe/fireset/commit/5ab68a6ccd1aadc0736685fb82eded886463a59e) by Jelmer Vernooĳ).
 - Add additional collections for caldavtester. ([ff7cd60](https://github.com/ydethe/fireset/commit/ff7cd60914407a54d4b0bb1797a958895e163b46) by Jelmer Vernooĳ).
@@ -446,29 +162,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add appveyor config. ([a17c5fd](https://github.com/ydethe/fireset/commit/a17c5fde51a13ed42f1f7646fa118695da2451e1) by Jelmer Vernooĳ).
 - Add calendarsync to supported clients. ([e2a3e54](https://github.com/ydethe/fireset/commit/e2a3e548228483df005250b1e5f410dd9c8da37c) by Jelmer Vernooĳ).
 - Add mailmap. ([7cb4d92](https://github.com/ydethe/fireset/commit/7cb4d92f79b4a9e23b328dccc13d50cae7d4ea98) by Jelmer Vernooĳ).
-
-### Fixed
-
-- Fix support for mkcol-extended. ([f98557c](https://github.com/ydethe/fireset/commit/f98557c0685d54112065ae6ba58d915e37375068) by Jelmer Vernooĳ).
-- Fix returning of supported-report-set. ([b38b8a7](https://github.com/ydethe/fireset/commit/b38b8a7b64b20a88cf6bb8a393e1270fff1a0976) by Jelmer Vernooĳ).
-- Fix mkcalendar. ([df73b92](https://github.com/ydethe/fireset/commit/df73b92b667861461b952be17ddf5639570053e6) by Jelmer Vernooĳ).
-
-## [v0.0.4](https://github.com/ydethe/fireset/releases/tag/v0.0.4) - 2017-04-23
-
-<small>[Compare with v0.0.3](https://github.com/ydethe/fireset/compare/v0.0.3...v0.0.4)</small>
-
-### Fixed
-
-- Fix link to dav-compliance, now in rst. ([a9ada67](https://github.com/ydethe/fireset/commit/a9ada67abab031a3d568c90ecce9e100f5856f58) by Jelmer Vernooĳ).
-- Fix support for CalDAV-sync/CardDAV-sync. ([56870f7](https://github.com/ydethe/fireset/commit/56870f7a207c5829a6ea0bbcfada8fe791ebff5a) by Jelmer Vernooĳ).
-- Fix recursive includes. ([0f85485](https://github.com/ydethe/fireset/commit/0f854856376584f15ab7b70940df6d5c90221ddc) by Jelmer Vernooĳ).
-
-## [v0.0.3](https://github.com/ydethe/fireset/releases/tag/v0.0.3) - 2017-04-11
-
-<small>[Compare with v0.0.2](https://github.com/ydethe/fireset/compare/v0.0.2...v0.0.3)</small>
-
-### Added
-
 - Add initial support for auth. ([14d7b8e](https://github.com/ydethe/fireset/commit/14d7b8e4dbaa5baf58d025a315de40a2c611de62) by Jelmer Vernooĳ).
 - Add Method class. ([1540bb7](https://github.com/ydethe/fireset/commit/1540bb768fb4ea6598640aa898cb7c4054601b27) by Jelmer Vernooĳ).
 - Add headers to txt docs. ([bda33f6](https://github.com/ydethe/fireset/commit/bda33f6d33d955dd162fcc73d328c5bd4772f212) by Jelmer Vernooĳ).
@@ -488,35 +181,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add convenience function for retrieving path from environment. ([11ff4af](https://github.com/ydethe/fireset/commit/11ff4af06bb058f959f3f8185e58236399f11faa) by Jelmer Vernooĳ).
 - Add MKCALENDAR implementation. ([8cc0f95](https://github.com/ydethe/fireset/commit/8cc0f9501e0176d500d6233daa69f8af6ba06c72) by Jelmer Vernooĳ).
 - Add convenience method for creating principal. ([e8bc97e](https://github.com/ydethe/fireset/commit/e8bc97e28ec54231e511c40b443b73742b379047) by Jelmer Vernooĳ).
-
-### Fixed
-
-- Fix style. ([87f0025](https://github.com/ydethe/fireset/commit/87f002525b7d297bd65299d799b77a6bb513de34) by Jelmer Vernooĳ).
-- Fix codecov flags. ([d882bc5](https://github.com/ydethe/fireset/commit/d882bc52778240047028076598329dbc669f1efb) by Jelmer Vernooĳ).
-- Fix paths to coverage files. ([8fb792b](https://github.com/ydethe/fireset/commit/8fb792b559d081b4761a95031ad2d27fa0b7db2c) by Jelmer Vernooĳ).
-- Fix style issue, improve TODO. ([91cd01d](https://github.com/ydethe/fireset/commit/91cd01d1140c4fe986f10097935561504ba78207) by Jelmer Vernooĳ).
-- Fix infrastructure for running caldavtester tests. ([c8e0b74](https://github.com/ydethe/fireset/commit/c8e0b7498d0ca97980ad02cd8da13fa630730f16) by Jelmer Vernooĳ).
-- Fix DAV errors without description. ([c211d5a](https://github.com/ydethe/fireset/commit/c211d5a407c258d3f40dcb80701a34135d93b657) by Jelmer Vernooĳ).
-- Fix trailing slashes ([e90d89e](https://github.com/ydethe/fireset/commit/e90d89e9ea9b59ab39026cc46bdad195d642af4c) by Markus Unterwaditzer).
-- Fix some recently introduced style issues, fix regression. ([722ea0a](https://github.com/ydethe/fireset/commit/722ea0a76cd244c143f03eab0f265b3b10da9f6e) by Jelmer Vernooĳ).
-- Fix line continuation ([9995713](https://github.com/ydethe/fireset/commit/99957134bb5eb0070cbf0b460f149c185b9cd145) by Markus Unterwaditzer).
-- Fix undefined name errors found by flake8. ([2c4f69e](https://github.com/ydethe/fireset/commit/2c4f69eddb4be692e82a21729ac3c88710b2bb42) by Jelmer Vernooĳ).
-- Fix missing reference to href. ([b9b3a2b](https://github.com/ydethe/fireset/commit/b9b3a2b85f0b9be531de96c80a553a96ca873e96) by Jelmer Vernooĳ).
-
-### Changed
-
-- Change line length limit ([76468e6](https://github.com/ydethe/fireset/commit/76468e6885dea626d76bb8e071a8ffa30b77c187) by Markus Unterwaditzer).
-
-### Removed
-
-- Remove unused imports ([d452ec5](https://github.com/ydethe/fireset/commit/d452ec50fa43a1a9d812d19927f49e31a7a6b19c) by Hugo Osvaldo Barrera).
-
-## [v0.0.2](https://github.com/ydethe/fireset/releases/tag/v0.0.2) - 2017-03-14
-
-<small>[Compare with first commit](https://github.com/ydethe/fireset/compare/71d444e03f33530abd6ea0ad8c7d05baa052d4b3...v0.0.2)</small>
-
-### Added
-
 - Add Store(check_for_duplicate_uids=True). ([58c1c4b](https://github.com/ydethe/fireset/commit/58c1c4ba236af70e24f8f01a0e929dc9fec0c03d) by Jelmer Vernooĳ).
 - Add principal notes. ([9dd5299](https://github.com/ydethe/fireset/commit/9dd52999cf12b629c1f357232d3ea8ea77ce54db) by Jelmer Vernooĳ).
 - Add support for RFC5689, fix some errors. ([9ad889b](https://github.com/ydethe/fireset/commit/9ad889bda30196689e22997d291d848ccac33257) by Jelmer Vernooĳ).
@@ -586,7 +250,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add Collection.iter_vcalendars. ([0410f70](https://github.com/ydethe/fireset/commit/0410f7081918bd371cb7638fb24b6cfb504a660d) by Jelmer Vernooĳ).
 - Add GitCollection.open_from_path and GitCollection.open. ([c596675](https://github.com/ydethe/fireset/commit/c5966751509851e75d2a8b9ee36de46cb2273471) by Jelmer Vernooĳ).
 - Add more TODOs. ([3392c75](https://github.com/ydethe/fireset/commit/3392c7539e52e2cd37147a714b534fed53ea0610) by Jelmer Vernooĳ).
-- Add requirements.txt. ([0d0dbf4](https://github.com/ydethe/fireset/commit/0d0dbf4902786a3b917d8b012c2fd3afbad457fa) by Jelmer Vernooĳ).
 - Add travis file. ([ccd245b](https://github.com/ydethe/fireset/commit/ccd245b325948f08b6fd0093813b7c8558380281) by Jelmer Vernooĳ).
 - Add Collection.get_ctag(). ([52f342a](https://github.com/ydethe/fireset/commit/52f342a9d0def5d8a5e5370441ea6ee1e41ddf2e) by Jelmer Vernooĳ).
 - Add iter_with_etag. ([b84b20d](https://github.com/ydethe/fireset/commit/b84b20d07a497f72bc4982f15fafa320888f717e) by Jelmer Vernooĳ).
@@ -605,11 +268,99 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- Fixed tests imports ([5bb4c74](https://github.com/ydethe/fireset/commit/5bb4c74c9f063ec4abff3c55ab95a2119f3ed482) by Yann de The).
+- Fix pycaldav (#297) ([fcdb84a](https://github.com/ydethe/fireset/commit/fcdb84a1175e9d2c630f536f9acb6e8255f7a25b) by Jelmer Vernooĳ).
+- Fix tasks.org link ([97a81e2](https://github.com/ydethe/fireset/commit/97a81e25f7b4fef9b60b0bda82b841516e0f2f69) by Jelmer Vernooĳ).
+- Fix disperse workflow name ([978f9d8](https://github.com/ydethe/fireset/commit/978f9d87b767e12f69f971c2ce21477f985264a8) by Jelmer Vernooĳ).
+- Fix href handling ([01264f7](https://github.com/ydethe/fireset/commit/01264f7acfe05952b801d5f89c235b148dabf55f) by Tcc100).
+- Fix rustc version for clap ([b7cd275](https://github.com/ydethe/fireset/commit/b7cd27591f67dabbba7d98a138d0ff2026d878d8) by Jelmer Vernooĳ).
+- Fix compatibility with newer dulwich ([28b77ca](https://github.com/ydethe/fireset/commit/28b77ca220a385ab75125cbaae1ce3cb231502e6) by Jelmer Vernooĳ).
+- Fix style ([4818187](https://github.com/ydethe/fireset/commit/4818187d200ac6bacbf0049991e8c1ec9a30e3bb) by Jelmer Vernooĳ).
+- Fix typing. ([41c53e0](https://github.com/ydethe/fireset/commit/41c53e0cf24b436a197d7ee9dcab3efa44b6cc91) by Jelmer Vernooĳ).
+- Fix job names ([6eee74e](https://github.com/ydethe/fireset/commit/6eee74ebcfd88911ecf0d34429bce0a47c08f130) by Jelmer Vernooĳ).
+- Fix pycaldav tests for the moment; enable text_search_not_working ([4e1cca3](https://github.com/ydethe/fireset/commit/4e1cca322c48a8ef7426f568593a728360e0e107) by Jelmer Vernooĳ).
+- fixup for commit 45298417d78db419ea07eef616cd010df173b0b5 pull request https://github.com/jelmer/xandikos/pull/222 ([f088e0e](https://github.com/ydethe/fireset/commit/f088e0e5810803c0a410152cc94035ca5444dfb9) by Tobias Brox).
+- Fix index handling for datetimes. ([fa325f5](https://github.com/ydethe/fireset/commit/fa325f5c50d13a1f113a31ba7e67a2c328651eb5) by Jelmer Vernooĳ).
+- Fix syntax error. ([5758693](https://github.com/ydethe/fireset/commit/575869358ab44ef4e82b6affebe18ec7dbe885dc) by Jelmer Vernooĳ).
+- Fix more typing. ([4e593a6](https://github.com/ydethe/fireset/commit/4e593a61f89bc40d5c6ddc448649326c0843fa4b) by Jelmer Vernooĳ).
+- Fix import order. ([467daf6](https://github.com/ydethe/fireset/commit/467daf6c9966e8534468bb20db393391cb078a9a) by Jelmer Vernooĳ).
+- Fix test ([e192ff9](https://github.com/ydethe/fireset/commit/e192ff9e4e3eb64f20c2bbe079a08fdd07b37256) by Jelmer Vernooĳ).
+- fix type ([aa8d596](https://github.com/ydethe/fireset/commit/aa8d5967fb8a6ad8be238f26b3491d3873131ef2) by Jelmer Vernooĳ).
+- Fix long line. ([1bccb16](https://github.com/ydethe/fireset/commit/1bccb16a25e6256d485cb55a6300c4241ef81b40) by Jelmer Vernooĳ).
+- Fix compat tests. ([2863181](https://github.com/ydethe/fireset/commit/286318124d94a729f6bc70b26f85017b71bbfb68) by Jelmer Vernooĳ).
+- Fix formatting. ([3ae201e](https://github.com/ydethe/fireset/commit/3ae201e27ff06d55536f6f39a52b6a64fb688807) by Jelmer Vernooĳ).
+- Fix tests. ([7fec34f](https://github.com/ydethe/fireset/commit/7fec34f028de36081c51d5558ed20268cd6fee86) by Jelmer Vernooĳ).
+- Fix note about authentication in getting started docs page ([0f66e2c](https://github.com/ydethe/fireset/commit/0f66e2c98c26ce6a5a0d06c56d17d415be7b13c1) by Denis Laxalde).
+- Fix cross-references in documentation ([e8c13b7](https://github.com/ydethe/fireset/commit/e8c13b78d3d2b9a9d49c1d5e1628419867f29af9) by Denis Laxalde).
+- Fix flake8 formatting compatibility. ([85482eb](https://github.com/ydethe/fireset/commit/85482eb441f5d7f1dd0a979cc41a7ee73fd81183) by Jelmer Vernooĳ).
+- Fix typing errors. ([c1ce379](https://github.com/ydethe/fireset/commit/c1ce3791fadd0a2b165f9c8677baae4bce99bb5b) by Jelmer Vernooĳ).
+- Fix syntax. ([b22ced4](https://github.com/ydethe/fireset/commit/b22ced40c294ead29aeaa6a7832aa127942e6187) by Jelmer Vernooĳ).
+- Fix style. ([ddd67ab](https://github.com/ydethe/fireset/commit/ddd67abf4e13107a5e5d44b71623acfdcab8e1b4) by Jelmer Vernooĳ).
+- Fix handling of missing trees. ([7745285](https://github.com/ydethe/fireset/commit/7745285dfb6c6ce10dc8e4105c4b662624673777) by Jelmer Vernooĳ).
+- Fix typo. ([727646a](https://github.com/ydethe/fireset/commit/727646aef321e51c3aba070847a761509d7a4d8b) by Jelmer Vernooĳ).
+- Fix hierarchy for supported report. Fixes #149 ([eadc405](https://github.com/ydethe/fireset/commit/eadc405698ce6d94ffa4517bbc26aaf733d9c761) by Jelmer Vernooĳ).
+- Fix ordering. ([31364b6](https://github.com/ydethe/fireset/commit/31364b6a62085cb1d4d75bf76198698c81a1c9ad) by Jelmer Vernooĳ).
+- Fix yaml ([be42c06](https://github.com/ydethe/fireset/commit/be42c0678ea2ed8b1e2975d7b64f34c2d59b541d) by Jelmer Vernooĳ).
+- Fix docker image. ([87bd4ce](https://github.com/ydethe/fireset/commit/87bd4ce9838a1f7b049c53b38b38ede62ec05b99) by Jelmer Vernooĳ).
+- Fix link. ([462cae0](https://github.com/ydethe/fireset/commit/462cae0b21a72299e8442a256c2eafaadeb9c5a7) by Jelmer Vernooĳ).
+- Fix handling of async generators. ([11c5c33](https://github.com/ydethe/fireset/commit/11c5c33df8d4993a95d86eb48485e0d33f96c7cc) by Jelmer Vernooĳ).
+- Fix contact email. ([2e3c92a](https://github.com/ydethe/fireset/commit/2e3c92a3942ae0a6b946a050452b199e0a432d66) by Jelmer Vernooĳ).
+- fix Dockerfile ([f321bf6](https://github.com/ydethe/fireset/commit/f321bf60aea1457b227c35790b743dff6be53a57) by Tobias Salzmann).
+- Fix Expect support. ([7fefcdb](https://github.com/ydethe/fireset/commit/7fefcdb4f4e99f093779a8ca66e99204a8f0f3d4) by Jelmer Vernooĳ).
+- Fix schedule-tag behaviour. ([2539f24](https://github.com/ydethe/fireset/commit/2539f24e698382275e1826c5e6f022325e345761) by Jelmer Vernooĳ).
+- Fix typos, update NEWS. ([f983dd5](https://github.com/ydethe/fireset/commit/f983dd5dfc62415b19fcd7a739c52a3a8faa1995) by Jelmer Vernooĳ).
+- Fix attribute name in error. ([3ecda32](https://github.com/ydethe/fireset/commit/3ecda32c18b57b50f4dae9714ec2373666b7404d) by Jelmer Vernooĳ).
+- Fix name error. ([5b96fa6](https://github.com/ydethe/fireset/commit/5b96fa6d36f3f9eb602d5994a1ad3a3a6ef97e61) by Jelmer Vernooĳ).
+- Fix regresion. ([32a142e](https://github.com/ydethe/fireset/commit/32a142eae5949aa238f268ac6a2b4a6354bcb297) by Jelmer Vernooĳ).
+- Fix uwsgi use. ([30f3e4b](https://github.com/ydethe/fireset/commit/30f3e4bbc4c4d4f3008a5ce5b5bcfe1d296c669c) by Jelmer Vernooĳ).
+- Fix underindent. ([bdd1441](https://github.com/ydethe/fireset/commit/bdd14419cbe24787a2ec4cb92f039362c40f0eb3) by Jelmer Vernooĳ).
+- Fix types. ([f5761cb](https://github.com/ydethe/fireset/commit/f5761cb041d6c760c159f4cab0ac7193f591905f) by Jelmer Vernooĳ).
+- Fix docker image. Fixes #117 ([f89e984](https://github.com/ydethe/fireset/commit/f89e984e6ab14fecd302c53c4557499b4012bf10) by Jelmer Vernooĳ).
+- Fix base path. ([d8ed224](https://github.com/ydethe/fireset/commit/d8ed22475997c3f2448e6cfa0fddbae4c2414a8e) by Jelmer Vernooĳ).
+- Fix wsgi handling. ([1fd52a8](https://github.com/ydethe/fireset/commit/1fd52a872f89e3120582603386502ce82469025a) by Jelmer Vernooĳ).
+- Fix filtering on property/component in extract_from_calendar. ([9a90449](https://github.com/ydethe/fireset/commit/9a90449cfb90a26f3983b0d8e185e533e08c4716) by Jelmer Vernooĳ).
+- Fix templates for bare principal. ([1d47639](https://github.com/ydethe/fireset/commit/1d47639c3f7900633fbeb5432d347115fd8d9ba6) by Jelmer Vernooĳ).
+- Fix templates. ([18c2a94](https://github.com/ydethe/fireset/commit/18c2a945cc31472e6f80b6d2d8eb43e396271c84) by Jelmer Vernooĳ).
+- Fix checking. ([b786b46](https://github.com/ydethe/fireset/commit/b786b46a1907fd54444e263a6270f6078b0d1fdf) by Jelmer Vernooĳ).
+- Fix handling of filters with missing properties. ([16c0874](https://github.com/ydethe/fireset/commit/16c08749b780104b2b38badd0e50b65aa1b87c48) by Jelmer Vernooĳ).
+- Fix various minor issues. ([91ed9aa](https://github.com/ydethe/fireset/commit/91ed9aa9c10dfc65cd5eb18f3aa2f6f9cb2229c8) by Jelmer Vernooĳ).
+- Fix filter parsing. ([1f369ee](https://github.com/ydethe/fireset/commit/1f369eeb569994fa008876427dbd2c05f42900ce) by Jelmer Vernooĳ).
+- Fix pycaldav test on travis. ([5b23b7b](https://github.com/ydethe/fireset/commit/5b23b7bab7e4b8a43dff23e37f7b2113a7cdac9d) by Jelmer Vernooĳ).
+- Fix handling of get_managed_attachements_server_url. ([69bf99b](https://github.com/ydethe/fireset/commit/69bf99bc6f24f730803f3fab47afdecde63e0f9a) by Jelmer Vernooĳ).
+- Fix error message when unable to convert between content types. ([d3f54cb](https://github.com/ydethe/fireset/commit/d3f54cbb6c5d02321a93ae10e8f0e30d2a08b6ce) by Jelmer Vernooĳ).
+- Fix handling of missing DTSTART in VEVENT. ([f8782b0](https://github.com/ydethe/fireset/commit/f8782b065140fff14dedf8ffbaa957ddae2794ae) by Jelmer Vernooĳ).
+- Fix two more style errors. ([9073c7c](https://github.com/ydethe/fireset/commit/9073c7c49397e0d118e610fad947cd3ce12c039e) by Jelmer Vernooĳ).
+- Fix style errors. ([32f70e0](https://github.com/ydethe/fireset/commit/32f70e0b399584c7c11df3dca47e4cb3e2b58a32) by Jelmer Vernooĳ).
+- Fix coverage reporting for vdirsyncer tests. ([663d746](https://github.com/ydethe/fireset/commit/663d74654ead977599d5521f29316deb58a41173) by Jelmer Vernooĳ).
+- Fix vdirsyncer tests. ([65a2891](https://github.com/ydethe/fireset/commit/65a2891fb98188f556ad7b7b4311eb1f51e5ec76) by Jelmer Vernooĳ).
+- Fix typo: resource_types => resource_type. ([54de4b9](https://github.com/ydethe/fireset/commit/54de4b94bf402e62dfc309acb5c6f3654766de20) by Jelmer Vernooĳ).
+- Fix use of max-attachment-per-resource, max-attachment-size. ([54b7bda](https://github.com/ydethe/fireset/commit/54b7bda3d3ec93a14914ab845e467a3cd2f8d746) by Jelmer Vernooĳ).
+- Fix style errors. --BZR-- parent-ids: git-v1:7474629717980d7b983ca20238a20dbf6ae882ce property-branch-nick: HEAD ([e45de8b](https://github.com/ydethe/fireset/commit/e45de8b85c42282988d3df41429ffa1a830c8b09) by Jelmer Vernooĳ).
+- Fix order of arguments to get_property_from_element. ([c4fdc24](https://github.com/ydethe/fireset/commit/c4fdc248c00450d933ce27d8b504d0938409b796) by Jelmer Vernooĳ).
+- Fixes for vdirsyncer's rust usage ([a461c83](https://github.com/ydethe/fireset/commit/a461c83afb34b28ec5c2a2e5b565225f6c9d4b4e) by Markus Unterwaditzer).
+- Fix style error. ([36cdbbb](https://github.com/ydethe/fireset/commit/36cdbbb59ceed4ac43f2eadf9a9f4fb2c9cccec6) by Jelmer Vernooĳ).
+- Fix missing store subpackage ([931c149](https://github.com/ydethe/fireset/commit/931c149123204189de26265b382b93631b675001) by Markus Unterwaditzer).
+- Fix the build. ([56b7ba4](https://github.com/ydethe/fireset/commit/56b7ba4661bf4aa662bfda4ed51be980caf9da43) by Jelmer Vernooĳ).
+- Fix a style error. ([ce765e1](https://github.com/ydethe/fireset/commit/ce765e1f3339d9016efccf1dfa6a0d56a26b818c) by Jelmer Vernooĳ).
+- Fix support for mkcol-extended. ([f98557c](https://github.com/ydethe/fireset/commit/f98557c0685d54112065ae6ba58d915e37375068) by Jelmer Vernooĳ).
+- Fix returning of supported-report-set. ([b38b8a7](https://github.com/ydethe/fireset/commit/b38b8a7b64b20a88cf6bb8a393e1270fff1a0976) by Jelmer Vernooĳ).
+- Fix mkcalendar. ([df73b92](https://github.com/ydethe/fireset/commit/df73b92b667861461b952be17ddf5639570053e6) by Jelmer Vernooĳ).
+- Fix link to dav-compliance, now in rst. ([a9ada67](https://github.com/ydethe/fireset/commit/a9ada67abab031a3d568c90ecce9e100f5856f58) by Jelmer Vernooĳ).
+- Fix support for CalDAV-sync/CardDAV-sync. ([56870f7](https://github.com/ydethe/fireset/commit/56870f7a207c5829a6ea0bbcfada8fe791ebff5a) by Jelmer Vernooĳ).
+- Fix recursive includes. ([0f85485](https://github.com/ydethe/fireset/commit/0f854856376584f15ab7b70940df6d5c90221ddc) by Jelmer Vernooĳ).
+- Fix codecov flags. ([d882bc5](https://github.com/ydethe/fireset/commit/d882bc52778240047028076598329dbc669f1efb) by Jelmer Vernooĳ).
+- Fix paths to coverage files. ([8fb792b](https://github.com/ydethe/fireset/commit/8fb792b559d081b4761a95031ad2d27fa0b7db2c) by Jelmer Vernooĳ).
+- Fix style issue, improve TODO. ([91cd01d](https://github.com/ydethe/fireset/commit/91cd01d1140c4fe986f10097935561504ba78207) by Jelmer Vernooĳ).
+- Fix infrastructure for running caldavtester tests. ([c8e0b74](https://github.com/ydethe/fireset/commit/c8e0b7498d0ca97980ad02cd8da13fa630730f16) by Jelmer Vernooĳ).
+- Fix DAV errors without description. ([c211d5a](https://github.com/ydethe/fireset/commit/c211d5a407c258d3f40dcb80701a34135d93b657) by Jelmer Vernooĳ).
+- Fix trailing slashes ([e90d89e](https://github.com/ydethe/fireset/commit/e90d89e9ea9b59ab39026cc46bdad195d642af4c) by Markus Unterwaditzer).
+- Fix some recently introduced style issues, fix regression. ([722ea0a](https://github.com/ydethe/fireset/commit/722ea0a76cd244c143f03eab0f265b3b10da9f6e) by Jelmer Vernooĳ).
+- Fix line continuation ([9995713](https://github.com/ydethe/fireset/commit/99957134bb5eb0070cbf0b460f149c185b9cd145) by Markus Unterwaditzer).
+- Fix undefined name errors found by flake8. ([2c4f69e](https://github.com/ydethe/fireset/commit/2c4f69eddb4be692e82a21729ac3c88710b2bb42) by Jelmer Vernooĳ).
+- Fix missing reference to href. ([b9b3a2b](https://github.com/ydethe/fireset/commit/b9b3a2b85f0b9be531de96c80a553a96ca873e96) by Jelmer Vernooĳ).
 - Fix license field (GPLv3) ([0c6127a](https://github.com/ydethe/fireset/commit/0c6127a4f4a79a1f02d913a71394c3979bbe3d80) by Jelmer Vernooĳ).
 - fix typo in web.py ([f3b3994](https://github.com/ydethe/fireset/commit/f3b3994fa740354b8500073d23087834999363b4) by Félix Sipma).
 - Fix DTSTART/DTEND fields. ([704e8e1](https://github.com/ydethe/fireset/commit/704e8e130661428c859902f1de1d9d380f5b31f5) by Jelmer Vernooĳ).
-- Fix typo. ([4445fc3](https://github.com/ydethe/fireset/commit/4445fc37aa4c4340d0b94d05cbdc35b2f40b0492) by Jelmer Vernooĳ).
-- Fix link. ([b20520c](https://github.com/ydethe/fireset/commit/b20520c4393b427550f39065ea2ea21e992b8c9b) by Jelmer Vernooĳ).
 - Fix POST. ([209a8e5](https://github.com/ydethe/fireset/commit/209a8e5a37f83b39030e45002479db31302fdccf) by Jelmer Vernooĳ).
 - Fix data properties. ([15963b6](https://github.com/ydethe/fireset/commit/15963b6a0b85c14a4b6584726bc30d822bb15805) by Jelmer Vernooĳ).
 - Fix missing import. ([16ad9cb](https://github.com/ydethe/fireset/commit/16ad9cbdd8a82fb9a0a237076f170c3a82c3178f) by Jelmer Vernooĳ).
@@ -626,7 +377,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Fix support for depth=infinity. ([c7055ed](https://github.com/ydethe/fireset/commit/c7055ed46403e684c1ce7b7c4835a1b38ef834aa) by Jelmer Vernooĳ).
 - Fix namespace. ([a1f0f95](https://github.com/ydethe/fireset/commit/a1f0f9572922f242f5e9e5d5ec5ad50217ef083f) by Jelmer Vernooĳ).
 - Fix REPORT. ([bd8c2a0](https://github.com/ydethe/fireset/commit/bd8c2a0f17744e92e783269be4c20cd66ac45a9d) by Jelmer Vernooĳ).
-- Fix tests. ([411409b](https://github.com/ydethe/fireset/commit/411409b89c80dc159e8073be2ab717c6b90bf939) by Jelmer Vernooĳ).
 - Fix syntax errors. ([ba52b6d](https://github.com/ydethe/fireset/commit/ba52b6d515caf84cd1219db7246e36267e3f1069) by Jelmer Vernooĳ).
 - Fix getting by uid. ([cb86139](https://github.com/ydethe/fireset/commit/cb86139bbe9540c1d36336a2c25185a901eebeef) by Jelmer Vernooĳ).
 - Fix typos in property names. ([fc0ab8c](https://github.com/ydethe/fireset/commit/fc0ab8c1fb1950defed032c022bdeb042b4b90f6) by Jelmer Vernooĳ).
@@ -644,11 +394,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Fix SCRIPT_NAME handling. ([f4b92e9](https://github.com/ydethe/fireset/commit/f4b92e9413bcc0cfc27cb8265fb61a75fbaf0b23) by Jelmer Vernooĳ).
 - Fix path handling. ([3e9f886](https://github.com/ydethe/fireset/commit/3e9f886972e4ede987f5ada8b1fbbf987b178ba1) by Jelmer Vernooĳ).
 - Fix disk path mapping. ([96c3bb0](https://github.com/ydethe/fireset/commit/96c3bb02094714d49fe7eee0b108e43442a78b85) by Jelmer Vernooĳ).
-- Fix syntax error. ([7ef5de1](https://github.com/ydethe/fireset/commit/7ef5de10c7214b3dd58c205b378f985172fbd4ab) by Jelmer Vernooĳ).
 - Fix path parsing. ([dbb32b0](https://github.com/ydethe/fireset/commit/dbb32b0a7522a968d44192e5e68911531a31a090) by Jelmer Vernooĳ).
 - fix argument ([cd36beb](https://github.com/ydethe/fireset/commit/cd36bebadda52c5165a7aca7ff240967cf5c9c0b) by Jelmer Vernooĳ).
 - Fix import. ([cf777d2](https://github.com/ydethe/fireset/commit/cf777d25b1568a06a8074d3097748f97c273907d) by Jelmer Vernooĳ).
-- Fix types. ([8e0c347](https://github.com/ydethe/fireset/commit/8e0c3479df52fde5bec3ebb9c81891eb6cfcddac) by Jelmer Vernooĳ).
 - Fix caldav module. ([c7d337e](https://github.com/ydethe/fireset/commit/c7d337ea4966454fa9ef9e5125ff61e5523cdea1) by Jelmer Vernooĳ).
 - Fix tests ([144b411](https://github.com/ydethe/fireset/commit/144b4119cd506234b7d7599af1c280659f2836c0) by Jelmer Vernooĳ).
 - Fix tests to use properties. ([17d861e](https://github.com/ydethe/fireset/commit/17d861e8b35af7a1405962614ce9ed2acc31b187) by Jelmer Vernooĳ).
@@ -660,10 +408,26 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- Change CONTRIBUTING to markdown. ([773b4f9](https://github.com/ydethe/fireset/commit/773b4f91e1de6c831e010b5a69da4ea3689dd933) by Jelmer Vernooĳ).
+- Change line length limit ([76468e6](https://github.com/ydethe/fireset/commit/76468e6885dea626d76bb8e071a8ffa30b77c187) by Markus Unterwaditzer).
 - Change default calendar path for travel to 'calendar'. ([ec597e4](https://github.com/ydethe/fireset/commit/ec597e4937444cf47ac9bd8e1976c6c10700d4f3) by Jelmer Vernooij).
 
 ### Removed
 
+- Removed all store except DatabaseStore ([56b68c2](https://github.com/ydethe/fireset/commit/56b68c224c455aced1271feff606e51f03861ea2) by Yann de The).
+- Removed support files ([3e53b91](https://github.com/ydethe/fireset/commit/3e53b91d5e96c2c0d8eab7876416b08300842f99) by Yann de The).
+- Remove specification of deprecated data_files. See https://github.com/pypa/setuptools/issues/2832 (#214) ([c0ddfd8](https://github.com/ydethe/fireset/commit/c0ddfd80499baae43cf7d22de5148c1bc941967d) by Jelmer Vernooĳ).
+- Remove apt lists from Dockerfile ([72a474f](https://github.com/ydethe/fireset/commit/72a474fbb1cdaceec029c436039b7cb78365026e) by Galen Abell).
+- Remove unnecessary #noqa comments (#154) ([9575eb1](https://github.com/ydethe/fireset/commit/9575eb12b901e22af59fdb9366151f029c75f84a) by Upstream Janitor).
+- Remove unused import. ([6d7b8b0](https://github.com/ydethe/fireset/commit/6d7b8b096b241258723c1e2ec3e9809329436541) by Jelmer Vernooĳ).
+- Remove obsolete class. ([b162e63](https://github.com/ydethe/fireset/commit/b162e630c388167699490cc93d52f4fec80a6777) by Jelmer Vernooĳ).
+- Remove TODO from manifest template ([19042f5](https://github.com/ydethe/fireset/commit/19042f58d0dba6ace778488062d5459414d01a41) by Daniel M. Capella).
+- Remove win32-specific hack. ([adf6837](https://github.com/ydethe/fireset/commit/adf6837cb0744e9830bd86a6e2ed9a43ea4ac3cc) by Jelmer Vernooĳ).
+- Remove unnecessary __main__. ([e1368f9](https://github.com/ydethe/fireset/commit/e1368f92067ac7f4729f3dbb9e4365d12b4ce265) by Jelmer Vernooĳ).
+- Remove uwsgitop since it's not a strict requirement. ([e763f21](https://github.com/ydethe/fireset/commit/e763f211de11b0b62ae12e6fff33ca46f5934994) by Jelmer Vernooĳ).
+- Remove duplicate www. Thanks, dmc :) ([a953a5d](https://github.com/ydethe/fireset/commit/a953a5d7a31c217380019188723119067087a22b) by Jelmer Vernooĳ).
+- Remove unnecessary umask. ([766ee8f](https://github.com/ydethe/fireset/commit/766ee8f548e400691050a03da687c588639ea4a5) by Jelmer Vernooĳ).
+- Remove unused imports ([d452ec5](https://github.com/ydethe/fireset/commit/d452ec50fa43a1a9d812d19927f49e31a7a6b19c) by Hugo Osvaldo Barrera).
 - Remove public lookup_uid. ([9de14d8](https://github.com/ydethe/fireset/commit/9de14d8f72d4c8f65bed82c5e2298a25e7d809bb) by Jelmer Vernooĳ).
 - Remove unused imports. ([c1588cf](https://github.com/ydethe/fireset/commit/c1588cf0e8885519d43dc2bce177ae25e141d97e) by Jelmer Vernooĳ).
 - Remove extensions. ([31ec930](https://github.com/ydethe/fireset/commit/31ec9300f48cc8237740022c99a2132904e24ce7) by Jelmer Vernooĳ).
@@ -675,3 +439,4 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Remove generated output. ([d599740](https://github.com/ydethe/fireset/commit/d599740d81407e068165e639f8ca7e6f9768b7fe) by Jelmer Vernooĳ).
 - Remove porting to vobject from the TODO list. ([7cb464d](https://github.com/ydethe/fireset/commit/7cb464d51af6a31bde4f7a8990f2d178ddba6ffd) by Jelmer Vernooĳ).
 
+<!-- insertion marker -->
