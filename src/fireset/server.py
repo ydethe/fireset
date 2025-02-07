@@ -7,13 +7,11 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 from sqlmodel import select
 
-from .geographique import calcIsochrone
-from .config import config
+from . import settings
 from .schemas import (
     Etablissement,
     EtablissementPublicAvecResultats,
-    DvUser,
-    Isochrone,
+    FsUser,
     QueryParameters,
     get_db,
 )
@@ -32,7 +30,7 @@ app = FastAPI(
     summary="Taux de réussite des écoles",
     description="RestFul API pour lister les écoles et leurs taux de réussite aux examens nationaux",
     version="1.0.0",
-    root_path=config.API_PATH,
+    root_path=settings.api_path,
 )
 router = APIRouter()
 
@@ -42,7 +40,7 @@ logfire.instrument_fastapi(app)
 @router.get("/etablissement/{uai}", response_model=EtablissementPublicAvecResultats)
 async def read_etablissement(
     uai: str,
-    user: DvUser = Security(supabase_auth),
+    user: FsUser = Security(supabase_auth),
     db: Session = Depends(get_db),
 ) -> EtablissementPublicAvecResultats:
     stmt = select(Etablissement).where(Etablissement.UAI == uai)
@@ -61,7 +59,7 @@ async def read_etablissement(
 @router.post("/etablissements", response_model=T.List[EtablissementPublicAvecResultats])
 async def etablissement_in_zone(
     body: QueryParameters,
-    user: DvUser = Security(supabase_auth),
+    user: FsUser = Security(supabase_auth),
     db: Session = Depends(get_db),
 ) -> T.List[EtablissementPublicAvecResultats]:
     stmt = select(Etablissement).where(func.ST_Within(Etablissement.position, body.iso.getGeom()))
@@ -77,24 +75,10 @@ async def etablissement_in_zone(
     return list(a)
 
 
-@router.get("/isochrone", response_model=Isochrone)
-async def isochrone(
-    lat: float,
-    lon: float,
-    dist: float,
-    transp: str = "driving-car",
-    user: DvUser = Security(supabase_auth),
-) -> Isochrone:
-    center = [lon, lat]
-    iso = calcIsochrone(center, dist, transp)
-
-    return iso
-
-
-@router.get("/user", response_model=DvUser)
+@router.get("/user", response_model=FsUser)
 async def get_user(
-    user: DvUser = Security(supabase_auth),
-) -> DvUser:
+    user: FsUser = Security(supabase_auth),
+) -> FsUser:
     return user
 
 

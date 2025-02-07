@@ -10,13 +10,13 @@ from supabase.lib.client_options import ClientOptions
 from jose import jwt
 from jose.exceptions import JOSEError
 
-from .schemas import DvUser
-from .config import config
+from .schemas import FsUser
+from . import settings
 
 
 def check_token(
     token: str, supabase_jwt_secret: str, supabase_url: str, supabase_admin_key: str
-) -> DvUser:
+) -> FsUser:
     try:
         payload = jwt.decode(token, supabase_jwt_secret, audience="authenticated")
     except JOSEError as e:
@@ -45,7 +45,7 @@ def check_token(
 
     supabase.auth.sign_out()
 
-    user = DvUser(
+    user = FsUser(
         id=user_id,
         last_name=user_data["last_name"],
         first_name=user_data["first_name"],
@@ -133,7 +133,7 @@ class SupabaseAuth(HTTPBearer):
         self.supabase_url = supabase_url
         self.supabase_admin_key = supabase_admin_key
 
-    async def __call__(self, request: Request) -> T.Optional[DvUser]:
+    async def __call__(self, request: Request) -> T.Optional[FsUser]:
         authorization = request.headers.get("Authorization")
         scheme, credentials = get_authorization_scheme_param(authorization)
 
@@ -150,7 +150,7 @@ class SupabaseAuth(HTTPBearer):
 
         return user
 
-    async def get_token_user(self, token: str) -> DvUser:
+    async def get_token_user(self, token: str) -> FsUser:
         user = check_token(
             token, self.supabase_jwt_secret, self.supabase_url, self.supabase_admin_key
         )
@@ -168,7 +168,7 @@ def create_access_token(supabase_url: str, supabase_key: str, email: str, passwo
 
 
 supabase_auth = SupabaseAuth(
-    supabase_jwt_secret=config.SUPABASE_JWT_SECRET,
-    supabase_url=config.SUPABASE_URL,
-    supabase_admin_key=config.SUPABASE_ADMIN_KEY,
+    supabase_jwt_secret=settings.supabase_jwt_secret,
+    supabase_url=settings.supabase_url,
+    supabase_admin_key=settings.supabase_admin_key,
 )

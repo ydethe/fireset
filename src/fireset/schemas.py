@@ -4,18 +4,17 @@ import json
 
 from pydantic import field_validator, BaseModel
 import sqlalchemy as sa
-from sqlalchemy.sql.functions import _FunctionGenerator
 from geoalchemy2 import Geometry, WKBElement
 from sqlmodel import Field, Relationship, Session, SQLModel, create_engine, UniqueConstraint, Column
 
-from .config import config
+from . import settings
 
 
 # ==============================
 # Database access
 # ==============================
 def get_engine():
-    engine = create_engine(config.SQLALCHEMY_DATABASE_URI, echo=False)
+    engine = create_engine(settings.database_uri, echo=False)
     SQLModel.metadata.create_all(engine)
 
     return engine
@@ -29,14 +28,14 @@ def get_db():
 
 
 def create_db_and_tables():
-    engine = create_engine(config.SQLALCHEMY_DATABASE_URI, echo=False)
+    engine = create_engine(settings.database_uri, echo=False)
     SQLModel.metadata.create_all(engine)
 
 
 # ==============================
 # Authentication objects
 # ==============================
-class DvUser(SQLModel):
+class FsUser(SQLModel):
     id: str | None = None
     login: str = None
     first_name: str | None = None
@@ -157,27 +156,8 @@ class EtablissementPublicAvecResultats(EtablissementPublic):
     resultats: list[Resultat] = []
 
 
-# ==============================
-# Isochrone objects
-# ==============================
-class Isochrone(BaseModel):
-    lonlat: T.Tuple[float, float]
-    dist: float
-    transp: str
-    geometry: T.List[T.Tuple[float, float]]
-
-    def getGeom(self) -> _FunctionGenerator:
-        pg = "POLYGON(("
-        for lon, lat in self.geometry:
-            pg += "%f %f," % (lon, lat)
-        pg = pg[:-1] + "))"
-
-        return sa.func.ST_GeomFromEWKT(pg)
-
-
 class QueryParameters(BaseModel):
     year: T.Optional[int] = None
     nature: T.Optional[T.List[str]] = None
     secteur: T.Optional[T.List[str]] = None
     stat_min: T.Optional[int] = None
-    iso: Isochrone

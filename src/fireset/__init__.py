@@ -34,6 +34,10 @@ class Settings(BaseSettings):
     server_url: AnyHttpUrl
     logfire_token: str
     database_uri: AnyUrl
+    api_path: str
+    supabase_jwt_secret: str
+    supabase_url: str
+    supabase_admin_key: str
 
 
 settings = Settings()
