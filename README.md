@@ -7,7 +7,7 @@
 
 # Quick look
 
-A cardDAV server that uses any backend to store the contacts' information
+A contact server to store your contacts' information
 
 # Contributing
 

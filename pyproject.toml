@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "fireset"
 dynamic = ["version"]
-description = "A contact server that uses any backend to store the contacts' information"
+description = "A contact server to store your contacts' information"
 authors = [
     { name = "Yann de Thé", email = "ydethe@gmail.com" },
 ]
