@@ -1,10 +1,11 @@
 import typing as T
 from datetime import datetime
 import json
+import enum
 
 from pydantic import field_validator, BaseModel
 import sqlalchemy as sa
-from geoalchemy2 import Geometry, WKBElement
+from geoalchemy2 import WKBElement
 from sqlmodel import Field, Relationship, Session, SQLModel, create_engine, UniqueConstraint, Column
 
 from . import settings
@@ -45,22 +46,48 @@ class FsUser(SQLModel):
     permissions: list[str] = None
 
 
+class AdresseType(enum.Enum):
+    domicile = "domicile"
+    bureau = "bureau"
+    secondaire = "secondaire"
+
+
+class ExperienceType(enum.Enum):
+    formation = "formation"
+    professionnel = "professionnel"
+    humanitaire = "humanitaire"
+
+
+class OrganisationType(enum.Enum):
+    Ecole = "Ecole"
+    Entreprise = "Entreprise"
+    Association = "Association"
+
+
+class CiviliteType(enum.Enum):
+    Monsieur = "Monsieur"
+    Madame = "Madame"
+    Mademoiselle = "Mademoiselle"
+    Père = "Père"
+    Frère = "Frère"
+    Soeur = "Soeur"
+
+
 # ==============================
-# Etablissement objects
+# Contact objects
 # ==============================
-class EtablissementBase(SQLModel):
-    UAI: str = Field(nullable=False, unique=True)
+class ContactBase(SQLModel):
+    date_creation: datetime = Field(nullable=False)
+    date_modification: datetime = Field(nullable=False)
     nom: str = Field(nullable=False)
-    adresse: T.Optional[str] = Field(nullable=True)
-    lieu_dit: T.Optional[str] = Field(nullable=True)
-    code_postal: str = Field(nullable=False)
-    commune: str = Field(nullable=False)
-    position: T.Any = Field(sa_column=Column(Geometry("POINT"), nullable=False))
-    departement: str = Field(nullable=False)
-    academie: T.Optional[str] = Field(nullable=True)
-    secteur: str = Field(nullable=False)
-    ouverture: T.Optional[datetime] = Field(nullable=True)
-    nature: str = Field(nullable=False)
+    prenom: str = Field(nullable=False)
+    particule: str = Field(nullable=True)
+    civilite: CiviliteType = Field(
+        sa_column=Column(sa.Enum(CiviliteType), default=None, nullable=True, index=False)
+    )
+    date_naissance: datetime = Field(nullable=True)
+    nom_de_naissance: str = Field(nullable=True)
+    profil_linkedin: str = Field(nullable=True)
 
     @field_validator("position", mode="before")
     def convert_geom_to_geojson(cls, v):
@@ -82,20 +109,20 @@ class EtablissementBase(SQLModel):
             return json.loads(session.scalar(v))
 
 
-class Etablissement(EtablissementBase, table=True):
-    id: int | None = Field(default=None, primary_key=True)
-    resultats: list["Resultat"] = Relationship(back_populates="etablissement", cascade_delete=True)
+class Contact(ContactBase, table=True):
+    idx: int | None = Field(default=None, primary_key=True)
+    resultats: list["Resultat"] = Relationship(back_populates="contact", cascade_delete=True)
 
 
-class EtablissementCreate(EtablissementBase):
+class ContactCreate(ContactBase):
     pass
 
 
-class EtablissementPublic(EtablissementBase):
+class ContactPublic(ContactBase):
     id: int
 
 
-class EtablissementUpdate(SQLModel):
+class ContactUpdate(SQLModel):
     UAI: str | None = None
     nom: str | None = None
     adresse: str | None = None
@@ -128,7 +155,7 @@ class Resultat(ResultatBase, table=True):
     __table_args__ = (UniqueConstraint("diplome", "annee", "etablissement_uai"),)
 
     idx: int | None = Field(default=None, primary_key=True)
-    etablissement: Etablissement | None = Relationship(back_populates="resultats")
+    etablissement: Contact | None = Relationship(back_populates="resultats")
 
 
 class ResultatPublic(ResultatBase):
@@ -148,11 +175,11 @@ class ResultatUpdate(SQLModel):
     etablissement_uai: str | None = None
 
 
-class ResultatPublicAvecEtablissement(ResultatPublic):
-    etablissement: EtablissementPublic | None = None
+class ResultatPublicAvecContact(ResultatPublic):
+    etablissement: ContactPublic | None = None
 
 
-class EtablissementPublicAvecResultats(EtablissementPublic):
+class ContactPublicAvecResultats(ContactPublic):
     resultats: list[Resultat] = []
 
 

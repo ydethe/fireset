@@ -35,6 +35,15 @@ class Settings(BaseSettings):
     logfire_token: str
     repo_url: AnyUrl
     repo_token: str
+    postgres_db: str
+    postgres_user: str
+    postgres_password: str
+    postgres_host: str
+
+    @property
+    def sqlalchemy_database_uri(self) -> str:
+        db_uri = f"postgresql+psycopg2://{self.postgres_user}:{self.postgres_password}@{self.postgres_host}/{self.postgres_db}"
+        return db_uri
 
 
 settings = Settings()
