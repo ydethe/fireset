@@ -19,8 +19,7 @@ dependencies = [
     "sqlmodel>=0.0.22",
     "logfire[fastapi]>=3.5.3",
     "geoalchemy2>=0.17.0",
-    "supabase>=2.13.0",
-    "jose>=1.0.0",
+    "dulwich>=0.22.7",
 ]
 requires-python = ">=3.10,<3.13"
 readme = "README.md"
